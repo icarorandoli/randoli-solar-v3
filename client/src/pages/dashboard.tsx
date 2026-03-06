@@ -1,11 +1,13 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
   FolderOpen, Users, CheckCircle, Clock, Zap, AlertCircle,
   XCircle, FileText, ClipboardList, Wrench, Eye, ShieldCheck,
-  DollarSign, TrendingUp, BadgeCheck, Hourglass
+  DollarSign, TrendingUp, BadgeCheck, Hourglass, ChevronRight,
 } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import type { Project, Client } from "@shared/schema";
@@ -86,8 +88,54 @@ interface FinancialStats {
   pendingTotal: number;
 }
 
+type FinancialFilter = "today" | "month" | "paid" | "pending";
+
+const FILTER_LABELS: Record<FinancialFilter, string> = {
+  today: "Receita Hoje",
+  month: "Receita do Mês",
+  paid: "Projetos Pagos",
+  pending: "A Receber",
+};
+
+function formatBRL(val: number | string | null | undefined) {
+  const n = typeof val === "string"
+    ? parseFloat(val.replace(/[^0-9.,]/g, "").replace(",", ".")) || 0
+    : Number(val ?? 0);
+  return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+function ProjectRow({ project }: { project: Project & { client: Client | null } }) {
+  return (
+    <div className="flex items-start gap-3 py-3 border-b border-border/50 last:border-0">
+      <div className="h-2.5 w-2.5 rounded-full flex-shrink-0 mt-1.5" style={{ backgroundColor: STATUS_COLORS[project.status] }} />
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium truncate">{project.title}</p>
+        <p className="text-xs text-muted-foreground truncate">
+          {project.client?.name || "—"}
+          {project.concessionaria ? ` · ${project.concessionaria}` : ""}
+        </p>
+        {project.updatedAt && (
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {new Date(project.updatedAt).toLocaleDateString("pt-BR")}
+          </p>
+        )}
+      </div>
+      <div className="flex flex-col items-end gap-1 flex-shrink-0">
+        {project.valor && (
+          <span className="text-sm font-semibold text-foreground">{formatBRL(project.valor)}</span>
+        )}
+        <span className={`text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap ${STATUS_BADGE_STYLES[project.status]}`}>
+          {STATUS_LABELS[project.status] || project.status}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const { user } = useAuth();
+  const [activeFilter, setActiveFilter] = useState<FinancialFilter | null>(null);
+
   const { data: stats, isLoading: statsLoading } = useQuery<Stats>({ queryKey: ["/api/stats"] });
   const { data: projects = [], isLoading: projectsLoading } = useQuery<(Project & { client: Client | null })[]>({
     queryKey: ["/api/projects"],
@@ -96,6 +144,11 @@ export default function DashboardPage() {
   const { data: finStats, isLoading: finLoading } = useQuery<FinancialStats>({
     queryKey: ["/api/stats/financial"],
     enabled: canSeeFinancial,
+  });
+  const { data: filterProjects = [], isLoading: filterLoading } = useQuery<(Project & { client: Client | null })[]>({
+    queryKey: ["/api/stats/financial/projects", activeFilter],
+    queryFn: () => fetch(`/api/stats/financial/projects?filter=${activeFilter}`, { credentials: "include" }).then(r => r.json()),
+    enabled: !!activeFilter,
   });
 
   const pieData = Object.entries(stats?.byStatus || {})
@@ -184,8 +237,12 @@ export default function DashboardPage() {
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
             <DollarSign className="h-4 w-4" /> Resumo Financeiro
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Card className="hover-elevate border-green-200 dark:border-green-800">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card
+              className="hover-elevate border-green-200 dark:border-green-800 cursor-pointer group"
+              onClick={() => setActiveFilter("today")}
+              data-testid="card-fin-today"
+            >
               <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Receita Hoje</CardTitle>
                 <TrendingUp className="h-4 w-4 text-green-500" />
@@ -193,14 +250,20 @@ export default function DashboardPage() {
               <CardContent>
                 {finLoading ? <Skeleton className="h-8 w-24" /> : (
                   <div className="text-2xl font-bold text-green-600 dark:text-green-400" data-testid="text-today-total">
-                    {Number(finStats?.todayTotal ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                    {formatBRL(finStats?.todayTotal)}
                   </div>
                 )}
-                <p className="text-xs text-muted-foreground mt-1">pagamentos recebidos hoje</p>
+                <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                  pagamentos recebidos hoje <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </p>
               </CardContent>
             </Card>
 
-            <Card className="hover-elevate border-blue-200 dark:border-blue-800">
+            <Card
+              className="hover-elevate border-blue-200 dark:border-blue-800 cursor-pointer group"
+              onClick={() => setActiveFilter("month")}
+              data-testid="card-fin-month"
+            >
               <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Receita do Mês</CardTitle>
                 <DollarSign className="h-4 w-4 text-blue-500" />
@@ -208,14 +271,20 @@ export default function DashboardPage() {
               <CardContent>
                 {finLoading ? <Skeleton className="h-8 w-24" /> : (
                   <div className="text-2xl font-bold text-blue-600 dark:text-blue-400" data-testid="text-month-total">
-                    {Number(finStats?.monthTotal ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                    {formatBRL(finStats?.monthTotal)}
                   </div>
                 )}
-                <p className="text-xs text-muted-foreground mt-1">faturamento no mês atual</p>
+                <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                  faturamento no mês atual <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </p>
               </CardContent>
             </Card>
 
-            <Card className="hover-elevate border-violet-200 dark:border-violet-800">
+            <Card
+              className="hover-elevate border-violet-200 dark:border-violet-800 cursor-pointer group"
+              onClick={() => setActiveFilter("paid")}
+              data-testid="card-fin-paid"
+            >
               <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Projetos Pagos</CardTitle>
                 <BadgeCheck className="h-4 w-4 text-violet-500" />
@@ -226,11 +295,17 @@ export default function DashboardPage() {
                     {finStats?.paidCount ?? 0}
                   </div>
                 )}
-                <p className="text-xs text-muted-foreground mt-1">projetos com pagamento confirmado</p>
+                <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                  pagamento confirmado <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </p>
               </CardContent>
             </Card>
 
-            <Card className="hover-elevate border-orange-200 dark:border-orange-800">
+            <Card
+              className="hover-elevate border-orange-200 dark:border-orange-800 cursor-pointer group"
+              onClick={() => setActiveFilter("pending")}
+              data-testid="card-fin-pending"
+            >
               <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">A Receber</CardTitle>
                 <Hourglass className="h-4 w-4 text-orange-500" />
@@ -238,15 +313,65 @@ export default function DashboardPage() {
               <CardContent>
                 {finLoading ? <Skeleton className="h-8 w-24" /> : (
                   <div className="text-2xl font-bold text-orange-600 dark:text-orange-400" data-testid="text-pending-total">
-                    {Number(finStats?.pendingTotal ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                    {formatBRL(finStats?.pendingTotal)}
                   </div>
                 )}
-                <p className="text-xs text-muted-foreground mt-1">pagamentos pendentes de recebimento</p>
+                <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                  pagamentos pendentes <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </p>
               </CardContent>
             </Card>
           </div>
         </div>
       )}
+
+      {/* Sheet: Lista de projetos filtrados */}
+      <Sheet open={!!activeFilter} onOpenChange={(o) => { if (!o) setActiveFilter(null); }}>
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader className="mb-4">
+            <SheetTitle className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5 text-primary" />
+              {activeFilter ? FILTER_LABELS[activeFilter] : ""}
+            </SheetTitle>
+          </SheetHeader>
+          {filterLoading ? (
+            <div className="space-y-3">
+              {Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
+            </div>
+          ) : filterProjects.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+              <FolderOpen className="h-10 w-10 mb-2 opacity-40" />
+              <p className="text-sm">Nenhum projeto encontrado</p>
+            </div>
+          ) : (
+            <div>
+              {activeFilter !== "paid" && activeFilter !== "today" && activeFilter !== "month" && (
+                <p className="text-sm text-muted-foreground mb-3">
+                  {filterProjects.length} projeto{filterProjects.length !== 1 ? "s" : ""} · Total:{" "}
+                  <span className="font-semibold text-foreground">
+                    {formatBRL(filterProjects.reduce((s, p) => {
+                      const v = p.valor ? parseFloat(String(p.valor).replace(/[^0-9.,]/g, "").replace(",", ".")) || 0 : 0;
+                      return s + v;
+                    }, 0))}
+                  </span>
+                </p>
+              )}
+              {(activeFilter === "paid" || activeFilter === "today" || activeFilter === "month") && (
+                <p className="text-sm text-muted-foreground mb-3">
+                  {filterProjects.length} projeto{filterProjects.length !== 1 ? "s" : ""} · Total pago:{" "}
+                  <span className="font-semibold text-foreground">
+                    {formatBRL(filterProjects.reduce((s, p) => {
+                      const v = p.valor ? parseFloat(String(p.valor).replace(/[^0-9.,]/g, "").replace(",", ".")) || 0 : 0;
+                      return s + v;
+                    }, 0))}
+                  </span>
+                </p>
+              )}
+              {filterProjects.map(p => <ProjectRow key={p.id} project={p} />)}
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
 
       {/* Fluxo de Homologação */}
       <Card>

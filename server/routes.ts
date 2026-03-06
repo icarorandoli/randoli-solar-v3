@@ -1270,7 +1270,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     if (!project) return res.status(404).json({ error: "Projeto não encontrado" });
 
     const isAdmin = ["admin", "engenharia", "financeiro"].includes(user.role);
-    if (!isAdmin && project.userId !== user.id) {
+    const projectIntegradorId = project.client?.userId;
+    if (!isAdmin && projectIntegradorId !== user.id) {
       return res.status(403).json({ error: "Sem permissão" });
     }
 
@@ -1285,8 +1286,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     });
 
     const wsEvent = { type: "chat_message", projectId: req.params.id, message: msg };
-    if (project.userId) {
-      broadcastToProjectParticipants(project.userId, wsEvent);
+    if (projectIntegradorId) {
+      broadcastToProjectParticipants(projectIntegradorId, wsEvent);
     } else {
       broadcastToAdmins(wsEvent);
     }

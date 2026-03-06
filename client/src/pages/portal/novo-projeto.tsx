@@ -16,6 +16,7 @@ import {
   FileText, Upload, X, CheckCircle2, User, AlertCircle
 } from "lucide-react";
 import { useForm, Controller } from "react-hook-form";
+import { formatCpfCnpj, formatPhone } from "@/lib/utils";
 
 const CONCESSIONARIAS = [
   "ENEL SP", "ENEL CE", "ENEL GO", "ENEL RJ",
@@ -320,6 +321,7 @@ export default function NovoProjetoPage() {
                   {...register("cpfCnpjCliente", { required: "CPF/CNPJ obrigatório" })}
                   placeholder="000.000.000-00"
                   data-testid="input-cpfcnpj-cliente"
+                  onChange={e => setValue("cpfCnpjCliente", formatCpfCnpj(e.target.value))}
                 />
                 {errors.cpfCnpjCliente && <p className="text-xs text-destructive">{errors.cpfCnpjCliente.message}</p>}
               </div>
@@ -329,6 +331,7 @@ export default function NovoProjetoPage() {
                   {...register("telefoneCliente")}
                   placeholder="(00) 00000-0000"
                   data-testid="input-tel-cliente"
+                  onChange={e => setValue("telefoneCliente", formatPhone(e.target.value))}
                 />
               </div>
             </div>

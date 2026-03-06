@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { User, Lock, Save } from "lucide-react";
+import { formatPhone } from "@/lib/utils";
 
 export default function ContaPage() {
   const { user } = useAuth();
@@ -110,7 +111,7 @@ export default function ContaPage() {
                 <Label>Telefone</Label>
                 <Input
                   value={profile.phone}
-                  onChange={e => setProfile(p => ({ ...p, phone: e.target.value }))}
+                  onChange={e => setProfile(p => ({ ...p, phone: formatPhone(e.target.value) }))}
                   placeholder="(00) 00000-0000"
                   data-testid="input-profile-phone"
                 />

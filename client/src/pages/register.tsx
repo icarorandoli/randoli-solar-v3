@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Zap, User, Building2 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useQueryClient } from "@tanstack/react-query";
+import { formatCpfCnpj, formatCep, formatPhone, lookupCep } from "@/lib/utils";
 
 interface RegisterForm {
   name: string;
@@ -43,6 +44,27 @@ export default function RegisterPage() {
 
   const set = (k: keyof RegisterForm) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm(prev => ({ ...prev, [k]: e.target.value }));
+
+  const handleCpfCnpj = (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm(prev => ({ ...prev, cpfCnpj: formatCpfCnpj(e.target.value) }));
+
+  const handlePhone = (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm(prev => ({ ...prev, phone: formatPhone(e.target.value) }));
+
+  const handleCep = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatCep(e.target.value);
+    setForm(prev => ({ ...prev, cep: formatted }));
+    const data = await lookupCep(formatted);
+    if (data) {
+      setForm(prev => ({
+        ...prev,
+        rua: data.logradouro || prev.rua,
+        bairro: data.bairro || prev.bairro,
+        cidade: data.localidade || prev.cidade,
+        estado: data.uf || prev.estado,
+      }));
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -123,11 +145,11 @@ export default function RegisterPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label>{clientType === "PF" ? "CPF *" : "CNPJ *"}</Label>
-                    <Input value={form.cpfCnpj} onChange={set("cpfCnpj")} placeholder={clientType === "PF" ? "000.000.000-00" : "00.000.000/0001-00"} data-testid="input-cpfcnpj" />
+                    <Input value={form.cpfCnpj} onChange={handleCpfCnpj} placeholder={clientType === "PF" ? "000.000.000-00" : "00.000.000/0001-00"} data-testid="input-cpfcnpj" />
                   </div>
                   <div className="space-y-1.5">
                     <Label>Telefone</Label>
-                    <Input value={form.phone} onChange={set("phone")} placeholder="(00) 00000-0000" data-testid="input-phone" />
+                    <Input value={form.phone} onChange={handlePhone} placeholder="(00) 00000-0000" data-testid="input-phone" />
                   </div>
                 </div>
                 <div className="space-y-1.5">
@@ -151,7 +173,7 @@ export default function RegisterPage() {
                   </div>
                   <div className="space-y-1.5">
                     <Label>CEP</Label>
-                    <Input value={form.cep} onChange={set("cep")} placeholder="00000-000" data-testid="input-cep" />
+                    <Input value={form.cep} onChange={handleCep} placeholder="00000-000" maxLength={9} data-testid="input-cep" />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">

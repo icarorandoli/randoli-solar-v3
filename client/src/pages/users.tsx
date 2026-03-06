@@ -19,6 +19,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Controller, useForm } from "react-hook-form";
 import type { User as UserType } from "@shared/schema";
+import { formatCpfCnpj, formatPhone, formatCep, lookupCep as lookupCepUtil } from "@/lib/utils";
 
 type SafeUser = Omit<UserType, "password">;
 
@@ -103,7 +104,8 @@ function EditUserDialog({ open, onClose, user }: { open: boolean; onClose: () =>
             </div>
             <div className="space-y-1.5">
               <Label>Telefone</Label>
-              <Input {...register("phone")} placeholder="(11) 99999-9999" data-testid="input-edit-phone" />
+              <Input {...register("phone")} placeholder="(11) 99999-9999" data-testid="input-edit-phone"
+                onChange={e => setValue("phone", formatPhone(e.target.value))} />
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -150,7 +152,8 @@ function EditUserDialog({ open, onClose, user }: { open: boolean; onClose: () =>
             <div className="space-y-1.5">
               <Label>{watch("clientType") === "PJ" ? "CNPJ" : "CPF"}</Label>
               <div className="flex gap-2">
-                <Input {...register("cpfCnpj")} placeholder={watch("clientType") === "PJ" ? "00.000.000/0001-00" : "000.000.000-00"} data-testid="input-edit-cpfcnpj" />
+                <Input {...register("cpfCnpj")} placeholder={watch("clientType") === "PJ" ? "00.000.000/0001-00" : "000.000.000-00"} data-testid="input-edit-cpfcnpj"
+                  onChange={e => setValue("cpfCnpj", formatCpfCnpj(e.target.value))} />
                 {watch("clientType") === "PJ" && (
                   <Button type="button" size="sm" variant="outline" disabled={cnpjLoading} onClick={() => lookupCnpj(watch("cpfCnpj"))} data-testid="button-edit-lookup-cnpj">
                     {cnpjLoading ? "..." : "Buscar"}
@@ -182,7 +185,18 @@ function EditUserDialog({ open, onClose, user }: { open: boolean; onClose: () =>
             </div>
             <div className="space-y-1.5">
               <Label>CEP</Label>
-              <Input {...register("cep")} placeholder="00000-000" data-testid="input-edit-cep" />
+              <Input {...register("cep")} placeholder="00000-000" data-testid="input-edit-cep" maxLength={9}
+                onChange={async e => {
+                  const fmt = formatCep(e.target.value);
+                  setValue("cep", fmt);
+                  const data = await lookupCepUtil(fmt);
+                  if (data) {
+                    if (data.logradouro) setValue("rua", data.logradouro);
+                    if (data.bairro) setValue("bairro", data.bairro);
+                    if (data.localidade) setValue("cidade", data.localidade);
+                    if (data.uf) setValue("estado", data.uf);
+                  }
+                }} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -313,21 +327,6 @@ function CreateUserDialog({ open, onClose, defaultRole = "integrador" }: { open:
     finally { setCnpjLoading(false); }
   };
 
-  const lookupCep = async (cep: string) => {
-    const cleaned = cep.replace(/\D/g, "");
-    if (cleaned.length !== 8) return;
-    try {
-      const res = await fetch(`https://viacep.com.br/ws/${cleaned}/json/`);
-      const data = await res.json();
-      if (!data.erro) {
-        if (data.logradouro) setValue("rua", data.logradouro);
-        if (data.bairro) setValue("bairro", data.bairro);
-        if (data.localidade) setValue("cidade", data.localidade);
-        if (data.uf) setValue("estado", data.uf);
-      }
-    } catch { /* ignore */ }
-  };
-
   const createMut = useMutation({
     mutationFn: (data: any) => apiRequest("POST", "/api/auth/register", data),
     onSuccess: () => {
@@ -402,6 +401,7 @@ function CreateUserDialog({ open, onClose, defaultRole = "integrador" }: { open:
                       {...register("cpfCnpj")}
                       placeholder={isPJ ? "00.000.000/0000-00" : "000.000.000-00"}
                       data-testid="input-new-cpfcnpj"
+                      onChange={e => setValue("cpfCnpj", formatCpfCnpj(e.target.value))}
                     />
                     {isPJ && (
                       <Button
@@ -431,11 +431,17 @@ function CreateUserDialog({ open, onClose, defaultRole = "integrador" }: { open:
                     {...register("cep")}
                     placeholder="00000-000"
                     data-testid="input-new-cep"
-                    onChange={e => {
-                      const val = e.target.value.replace(/\D/g, "").slice(0, 8);
-                      const fmt = val.length > 5 ? `${val.slice(0,5)}-${val.slice(5)}` : val;
+                    maxLength={9}
+                    onChange={async e => {
+                      const fmt = formatCep(e.target.value);
                       setValue("cep", fmt);
-                      lookupCep(val);
+                      const data = await lookupCepUtil(fmt);
+                      if (data) {
+                        if (data.logradouro) setValue("rua", data.logradouro);
+                        if (data.bairro) setValue("bairro", data.bairro);
+                        if (data.localidade) setValue("cidade", data.localidade);
+                        if (data.uf) setValue("estado", data.uf);
+                      }
                     }}
                   />
                 </div>
@@ -483,7 +489,8 @@ function CreateUserDialog({ open, onClose, defaultRole = "integrador" }: { open:
             </div>
             <div className="space-y-1.5">
               <Label>Telefone</Label>
-              <Input {...register("phone")} placeholder="(11) 99999-9999" data-testid="input-new-phone" />
+              <Input {...register("phone")} placeholder="(11) 99999-9999" data-testid="input-new-phone"
+                onChange={e => setValue("phone", formatPhone(e.target.value))} />
             </div>
           </div>
           <div className="space-y-1.5">

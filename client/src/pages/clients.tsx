@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, Search, Pencil, Trash2, Users, Phone, Mail, Building2, User } from "lucide-react";
 import { useForm, Controller } from "react-hook-form";
 import type { Client, InsertClient } from "@shared/schema";
+import { formatCpfCnpj, formatPhone } from "@/lib/utils";
 
 function ClientDialog({
   open,
@@ -24,7 +25,7 @@ function ClientDialog({
   client?: Client;
 }) {
   const { toast } = useToast();
-  const { register, handleSubmit, control, reset, formState: { errors } } = useForm<InsertClient>({
+  const { register, handleSubmit, control, reset, setValue, formState: { errors } } = useForm<InsertClient>({
     defaultValues: client ? {
       name: client.name,
       email: client.email,
@@ -103,7 +104,8 @@ function ClientDialog({
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="cpfCnpj">CPF / CNPJ</Label>
-              <Input id="cpfCnpj" {...register("cpfCnpj")} placeholder="000.000.000-00" data-testid="input-client-cpfcnpj" />
+              <Input id="cpfCnpj" {...register("cpfCnpj")} placeholder="000.000.000-00" data-testid="input-client-cpfcnpj"
+                onChange={e => setValue("cpfCnpj", formatCpfCnpj(e.target.value))} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="email">E-mail *</Label>
@@ -111,7 +113,8 @@ function ClientDialog({
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="phone">Telefone</Label>
-              <Input id="phone" {...register("phone")} placeholder="(00) 00000-0000" data-testid="input-client-phone" />
+              <Input id="phone" {...register("phone")} placeholder="(00) 00000-0000" data-testid="input-client-phone"
+                onChange={e => setValue("phone", formatPhone(e.target.value))} />
             </div>
             <div className="col-span-2 space-y-1.5">
               <Label htmlFor="address">Endereço</Label>

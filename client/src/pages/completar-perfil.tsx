@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Zap } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { formatCpfCnpj, formatPhone } from "@/lib/utils";
 
 export default function CompletarPerfilPage() {
   const { user, refetch } = useAuth();
@@ -146,6 +147,7 @@ export default function CompletarPerfilPage() {
                       {...register("cpfCnpj", isPJ ? { required: "CNPJ obrigatório" } : {})}
                       placeholder={isPJ ? "00.000.000/0001-00" : "000.000.000-00"}
                       data-testid="input-complete-cpfcnpj"
+                      onChange={e => setValue("cpfCnpj", formatCpfCnpj(e.target.value))}
                     />
                     {isPJ && (
                       <Button
@@ -185,6 +187,7 @@ export default function CompletarPerfilPage() {
                     {...register("phone", { required: "Telefone obrigatório" })}
                     placeholder="(66) 99999-9999"
                     data-testid="input-complete-phone"
+                    onChange={e => setValue("phone", formatPhone(e.target.value))}
                   />
                   {errors.phone && <p className="text-xs text-destructive">{errors.phone.message}</p>}
                 </div>

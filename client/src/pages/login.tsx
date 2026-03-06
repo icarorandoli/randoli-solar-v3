@@ -171,7 +171,7 @@ function PartnersList() {
             <img 
               src={partner.logoUrl} 
               alt={partner.name} 
-              className="h-8 w-auto object-contain max-w-[100px]" 
+              className="h-14 w-auto object-contain max-w-[140px]" 
             />
           ) : (
             <span className="text-sm font-bold text-muted-foreground whitespace-nowrap">{partner.name}</span>

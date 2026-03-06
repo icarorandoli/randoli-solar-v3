@@ -22,6 +22,7 @@ import {
   LogOut,
   KanbanSquare,
   DollarSign,
+  BarChart3,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
@@ -33,6 +34,7 @@ const navItems: { title: string; url: string; icon: any; roles?: string[] }[] = 
   { title: "Kanban", url: "/kanban", icon: KanbanSquare },
   { title: "Clientes", url: "/clientes", icon: Users },
   { title: "Preços", url: "/precos", icon: DollarSign, roles: ["admin", "financeiro"] },
+  { title: "Relatórios", url: "/relatorios", icon: BarChart3, roles: ["admin", "financeiro"] },
   { title: "Parceiros", url: "/parceiros", icon: Star, roles: ["admin", "financeiro"] },
   { title: "Usuários", url: "/usuarios", icon: UserCog, roles: ["admin"] },
   { title: "Configurações", url: "/configuracoes", icon: Settings, roles: ["admin", "financeiro"] },

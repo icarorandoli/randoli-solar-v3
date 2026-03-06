@@ -82,6 +82,7 @@ export interface IStorage {
 
   // Financial Stats
   getFinancialStats(): Promise<{ todayTotal: number; monthTotal: number; paidCount: number; pendingTotal: number }>;
+  getFinancialProjects(filter: "today" | "month" | "paid" | "pending"): Promise<(Project & { client: Client | null })[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -339,6 +340,28 @@ export class DatabaseStorage implements IStorage {
       }
     }
     return { todayTotal, monthTotal, paidCount, pendingTotal };
+  }
+
+  async getFinancialProjects(filter: "today" | "month" | "paid" | "pending"): Promise<(Project & { client: Client | null })[]> {
+    const allProjects = await db.select().from(projects).where(eq(projects.archived, false)).orderBy(projects.updatedAt);
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    let filtered: typeof allProjects;
+    if (filter === "today") {
+      filtered = allProjects.filter(p => p.paymentStatus === "approved" && p.updatedAt && p.updatedAt >= todayStart);
+    } else if (filter === "month") {
+      filtered = allProjects.filter(p => p.paymentStatus === "approved" && p.updatedAt && p.updatedAt >= monthStart);
+    } else if (filter === "paid") {
+      filtered = allProjects.filter(p => p.paymentStatus === "approved");
+    } else {
+      filtered = allProjects.filter(p => p.paymentStatus !== "approved" && p.valor);
+    }
+
+    const clientList = await db.select().from(clients);
+    const clientMap = new Map(clientList.map(c => [c.id, c]));
+    return filtered.map(p => ({ ...p, client: clientMap.get(p.clientId ?? "") ?? null })).reverse();
   }
 }
 

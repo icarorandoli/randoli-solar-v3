@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, Search, Pencil, Trash2, Users, Phone, Mail, Building2, User } from "lucide-react";
 import { useForm, Controller } from "react-hook-form";
 import type { Client, InsertClient } from "@shared/schema";
-import { formatCpfCnpj, formatPhone } from "@/lib/utils";
+import { formatCpfCnpj, formatPhone, formatCep, lookupCep, validateCpfCnpj } from "@/lib/utils";
 
 function ClientDialog({
   open,
@@ -25,7 +25,8 @@ function ClientDialog({
   client?: Client;
 }) {
   const { toast } = useToast();
-  const { register, handleSubmit, control, reset, setValue, formState: { errors } } = useForm<InsertClient>({
+  const [cnpjLoading, setCnpjLoading] = useState(false);
+  const { register, handleSubmit, control, reset, setValue, watch, formState: { errors } } = useForm<InsertClient>({
     defaultValues: client ? {
       name: client.name,
       email: client.email,
@@ -33,15 +34,40 @@ function ClientDialog({
       cpfCnpj: client.cpfCnpj || "",
       type: client.type,
       address: client.address || "",
+      rua: (client as any).rua || "",
+      numero: (client as any).numero || "",
+      bairro: (client as any).bairro || "",
+      cep: (client as any).cep || "",
+      cidade: (client as any).cidade || "",
+      estado: (client as any).estado || "",
     } : {
-      name: "",
-      email: "",
-      phone: "",
-      cpfCnpj: "",
-      type: "PF",
-      address: "",
+      name: "", email: "", phone: "", cpfCnpj: "", type: "PF", address: "",
+      rua: "", numero: "", bairro: "", cep: "", cidade: "", estado: "",
     },
   });
+
+  const clientType = watch("type");
+
+  const lookupCnpj = async (cnpj: string) => {
+    const cleaned = cnpj.replace(/\D/g, "");
+    if (cleaned.length !== 14) return;
+    setCnpjLoading(true);
+    try {
+      const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cleaned}`);
+      if (!res.ok) { toast({ title: "CNPJ não encontrado", variant: "destructive" }); return; }
+      const data = await res.json();
+      if (data.razao_social) setValue("name", data.razao_social);
+      if (data.logradouro) setValue("rua", data.logradouro);
+      if (data.numero) setValue("numero", data.numero);
+      if (data.bairro) setValue("bairro", data.bairro);
+      if (data.municipio) setValue("cidade", data.municipio);
+      if (data.uf) setValue("estado", data.uf);
+      if (data.cep) setValue("cep", data.cep.replace(/\D/g, "").replace(/(\d{5})(\d{3})/, "$1-$2"));
+      if (data.ddd_telefone_1) setValue("phone", formatPhone(data.ddd_telefone_1));
+      toast({ title: "CNPJ encontrado!", description: "Dados preenchidos automaticamente." });
+    } catch { toast({ title: "Erro ao buscar CNPJ", variant: "destructive" }); }
+    finally { setCnpjLoading(false); }
+  };
 
   const createMut = useMutation({
     mutationFn: (data: InsertClient) => apiRequest("POST", "/api/clients", data),
@@ -66,6 +92,11 @@ function ClientDialog({
   });
 
   const onSubmit = (data: InsertClient) => {
+    const cpfCnpjResult = data.cpfCnpj ? validateCpfCnpj(data.cpfCnpj) : true;
+    if (cpfCnpjResult !== true) {
+      toast({ title: cpfCnpjResult, variant: "destructive" });
+      return;
+    }
     if (client) updateMut.mutate(data);
     else createMut.mutate(data);
   };
@@ -74,14 +105,14 @@ function ClientDialog({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{client ? "Editar Cliente" : "Novo Cliente"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-2">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2 space-y-1.5">
-              <Label htmlFor="name">Nome Completo *</Label>
+              <Label htmlFor="name">Nome Completo / Razão Social *</Label>
               <Input id="name" {...register("name", { required: true })} placeholder="Nome do cliente" data-testid="input-client-name" />
             </div>
             <div className="space-y-1.5">
@@ -104,8 +135,15 @@ function ClientDialog({
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="cpfCnpj">CPF / CNPJ</Label>
-              <Input id="cpfCnpj" {...register("cpfCnpj")} placeholder="000.000.000-00" data-testid="input-client-cpfcnpj"
-                onChange={e => setValue("cpfCnpj", formatCpfCnpj(e.target.value))} />
+              <div className="flex gap-2">
+                <Input id="cpfCnpj" {...register("cpfCnpj")} placeholder={clientType === "PJ" ? "00.000.000/0001-00" : "000.000.000-00"} data-testid="input-client-cpfcnpj"
+                  onChange={e => setValue("cpfCnpj", formatCpfCnpj(e.target.value))} />
+                {clientType === "PJ" && (
+                  <Button type="button" size="sm" variant="outline" disabled={cnpjLoading} onClick={() => lookupCnpj(watch("cpfCnpj") || "")}>
+                    {cnpjLoading ? "..." : "Buscar"}
+                  </Button>
+                )}
+              </div>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="email">E-mail *</Label>
@@ -116,9 +154,45 @@ function ClientDialog({
               <Input id="phone" {...register("phone")} placeholder="(00) 00000-0000" data-testid="input-client-phone"
                 onChange={e => setValue("phone", formatPhone(e.target.value))} />
             </div>
-            <div className="col-span-2 space-y-1.5">
-              <Label htmlFor="address">Endereço</Label>
-              <Input id="address" {...register("address")} placeholder="Rua, número, bairro, cidade" data-testid="input-client-address" />
+          </div>
+          <div className="space-y-2 p-3 rounded-lg bg-muted/40 border">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Endereço</p>
+            <div className="grid grid-cols-6 gap-2">
+              <div className="col-span-2 space-y-1.5">
+                <Label>CEP</Label>
+                <Input {...register("cep")} placeholder="00000-000" maxLength={9} data-testid="input-client-cep"
+                  onChange={async e => {
+                    const fmt = formatCep(e.target.value);
+                    setValue("cep", fmt);
+                    const data = await lookupCep(fmt);
+                    if (data) {
+                      if (data.logradouro) setValue("rua", data.logradouro);
+                      if (data.bairro) setValue("bairro", data.bairro);
+                      if (data.localidade) setValue("cidade", data.localidade);
+                      if (data.uf) setValue("estado", data.uf);
+                    }
+                  }} />
+              </div>
+              <div className="col-span-4 space-y-1.5">
+                <Label>Rua / Logradouro</Label>
+                <Input {...register("rua")} placeholder="Rua das Flores" data-testid="input-client-rua" />
+              </div>
+              <div className="col-span-2 space-y-1.5">
+                <Label>Número</Label>
+                <Input {...register("numero")} placeholder="123" data-testid="input-client-numero" />
+              </div>
+              <div className="col-span-4 space-y-1.5">
+                <Label>Bairro</Label>
+                <Input {...register("bairro")} placeholder="Centro" data-testid="input-client-bairro" />
+              </div>
+              <div className="col-span-4 space-y-1.5">
+                <Label>Cidade</Label>
+                <Input {...register("cidade")} placeholder="São Paulo" data-testid="input-client-cidade" />
+              </div>
+              <div className="col-span-2 space-y-1.5">
+                <Label>UF</Label>
+                <Input {...register("estado")} placeholder="SP" maxLength={2} style={{ textTransform: "uppercase" }} data-testid="input-client-estado" />
+              </div>
             </div>
           </div>
           <DialogFooter>

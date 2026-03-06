@@ -4,10 +4,11 @@ import {
   SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
   SidebarHeader, SidebarFooter,
 } from "@/components/ui/sidebar";
-import { LayoutDashboard, FolderOpen, Plus, User, LogOut, Zap } from "lucide-react";
+import { LayoutDashboard, FolderOpen, Plus, User, LogOut, Zap, MessageSquare } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 const navItems = [
   { title: "Meus Projetos", url: "/portal", icon: LayoutDashboard },
@@ -19,7 +20,13 @@ export function PortalSidebar() {
   const [location] = useLocation();
   const { user, logout } = useAuth();
   const { data: settings } = useQuery<Record<string, string>>({ queryKey: ["/api/settings"] });
+  const { data: chatUnread } = useQuery<{ count: number }>({
+    queryKey: ["/api/chat/unread"],
+    queryFn: () => apiRequest("GET", "/api/chat/unread").then(r => r.json()),
+    refetchInterval: 30000,
+  });
 
+  const unreadCount = chatUnread?.count ?? 0;
   const companyName = settings?.company_name || "Randoli Engenharia";
   const logoUrl = settings?.logo_url;
 
@@ -48,12 +55,18 @@ export function PortalSidebar() {
             <SidebarMenu>
               {navItems.map(item => {
                 const isActive = location === item.url;
+                const showBadge = item.url === "/portal" && unreadCount > 0;
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild data-active={isActive} data-testid={`link-portal-${item.title.toLowerCase().replace(/\s/g, "-")}`}>
                       <Link href={item.url}>
                         <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
+                        <span className="flex-1">{item.title}</span>
+                        {showBadge && (
+                          <span className="ml-auto inline-flex items-center justify-center h-4 min-w-4 rounded-full bg-orange-500 text-white text-[10px] font-bold px-1">
+                            {unreadCount > 99 ? "99+" : unreadCount}
+                          </span>
+                        )}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Zap } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { formatCpfCnpj, formatPhone } from "@/lib/utils";
+import { formatCpfCnpj, formatPhone, validateCpfCnpj } from "@/lib/utils";
 
 export default function CompletarPerfilPage() {
   const { user, refetch } = useAuth();
@@ -81,6 +81,13 @@ export default function CompletarPerfilPage() {
   };
 
   const onSubmit = async (data: any) => {
+    if (data.cpfCnpj) {
+      const result = validateCpfCnpj(data.cpfCnpj);
+      if (result !== true) {
+        toast({ title: result, variant: "destructive" });
+        return;
+      }
+    }
     setSaving(true);
     try {
       await apiRequest("POST", "/api/auth/complete-profile", data);

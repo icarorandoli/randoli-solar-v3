@@ -44,6 +44,12 @@ export const clients = pgTable("clients", {
   type: clientTypeEnum("type").notNull().default("PF"),
   address: text("address"),
   company: text("company"),
+  rua: text("rua"),
+  numero: text("numero"),
+  bairro: text("bairro"),
+  cep: text("cep"),
+  cidade: text("cidade"),
+  estado: text("estado"),
   userId: varchar("user_id").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -241,6 +247,28 @@ export const clientPricing = pgTable("client_pricing", {
 export const insertClientPricingSchema = createInsertSchema(clientPricing).omit({ id: true, createdAt: true });
 export type InsertClientPricing = z.infer<typeof insertClientPricingSchema>;
 export type ClientPricing = typeof clientPricing.$inferSelect;
+
+// ─── CHAT MESSAGES ────────────────────────────────────────────────────
+export const chatMessages = pgTable("chat_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").notNull().references(() => projects.id),
+  senderId: varchar("sender_id").notNull().references(() => users.id),
+  senderName: text("sender_name").notNull(),
+  senderRole: text("sender_role").notNull(),
+  content: text("content").notNull(),
+  readByAdmin: boolean("read_by_admin").notNull().default(false),
+  readByIntegrador: boolean("read_by_integrador").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({ id: true, createdAt: true });
+export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
+export type ChatMessage = typeof chatMessages.$inferSelect;
+
+export const chatMessageRelations = relations(chatMessages, ({ one }) => ({
+  project: one(projects, { fields: [chatMessages.projectId], references: [projects.id] }),
+  sender: one(users, { fields: [chatMessages.senderId], references: [users.id] }),
+}));
 
 // ─── PASSWORD RESET TOKENS ─────────────────────────────────────────────
 export const passwordResetTokens = pgTable("password_reset_tokens", {

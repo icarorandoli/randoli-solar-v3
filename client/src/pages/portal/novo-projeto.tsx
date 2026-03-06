@@ -47,12 +47,16 @@ interface FileUploadZoneProps {
 function FileUploadZone({ label, docType, required, uploaded, onUploaded, onRemove, testId }: FileUploadZoneProps) {
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { uploadFile } = useUpload({
     onSuccess: (res) => {
       onUploaded({ name: res.metadata.name, objectPath: res.objectPath, docType, docLabel: label });
       setUploading(false);
+      setPendingFile(null);
+      setPreviewUrl(null);
     },
     onError: () => {
       toast({ title: `Erro ao enviar ${label}`, variant: "destructive" });
@@ -60,13 +64,56 @@ function FileUploadZone({ label, docType, required, uploaded, onUploaded, onRemo
     },
   });
 
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setUploading(true);
-    await uploadFile(file);
+    const isImage = file.type.startsWith("image/");
+    if (isImage) {
+      const url = URL.createObjectURL(file);
+      setPendingFile(file);
+      setPreviewUrl(url);
+    } else {
+      setUploading(true);
+      uploadFile(file);
+    }
     if (inputRef.current) inputRef.current.value = "";
   };
+
+  const confirmUpload = async () => {
+    if (!pendingFile) return;
+    setUploading(true);
+    await uploadFile(pendingFile);
+  };
+
+  const cancelPreview = () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPendingFile(null);
+    setPreviewUrl(null);
+  };
+
+  if (previewUrl && pendingFile) {
+    return (
+      <div className="rounded-lg border-2 border-primary/40 overflow-hidden">
+        <div className="relative">
+          <img src={previewUrl} alt="Preview" className="w-full max-h-48 object-contain bg-muted/30" />
+          {uploading && (
+            <div className="absolute inset-0 bg-background/70 flex items-center justify-center">
+              <p className="text-sm font-medium text-primary animate-pulse">Enviando...</p>
+            </div>
+          )}
+        </div>
+        <div className="p-2 bg-muted/30 flex items-center gap-2 justify-between">
+          <p className="text-xs text-muted-foreground truncate flex-1">{pendingFile.name}</p>
+          {!uploading && (
+            <div className="flex gap-1.5 flex-shrink-0">
+              <button type="button" onClick={cancelPreview} className="text-xs px-2 py-1 rounded border text-muted-foreground hover:text-destructive">Cancelar</button>
+              <button type="button" onClick={confirmUpload} className="text-xs px-2 py-1 rounded bg-primary text-primary-foreground hover:bg-primary/90">Confirmar</button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   if (uploaded) {
     return (

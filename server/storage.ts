@@ -1,6 +1,6 @@
 import {
   users, clients, projects, partners, siteSettings, documents, timeline,
-  pricingRanges, clientPricing,
+  pricingRanges, clientPricing, chatMessages,
   type User, type InsertUser,
   type Client, type InsertClient,
   type Project, type InsertProject,
@@ -10,6 +10,7 @@ import {
   type Timeline, type InsertTimeline,
   type PricingRange, type InsertPricingRange,
   type ClientPricing, type InsertClientPricing,
+  type ChatMessage, type InsertChatMessage,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, count, isNull, not, gte, lte, and } from "drizzle-orm";
@@ -83,6 +84,12 @@ export interface IStorage {
   // Financial Stats
   getFinancialStats(): Promise<{ todayTotal: number; monthTotal: number; paidCount: number; pendingTotal: number }>;
   getFinancialProjects(filter: "today" | "month" | "paid" | "pending"): Promise<(Project & { client: Client | null })[]>;
+
+  // Chat Messages
+  getChatMessages(projectId: string): Promise<ChatMessage[]>;
+  createChatMessage(msg: InsertChatMessage): Promise<ChatMessage>;
+  markChatMessagesRead(projectId: string, role: "admin" | "integrador"): Promise<void>;
+  getUnreadChatCount(userId: string, role: string): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -362,6 +369,40 @@ export class DatabaseStorage implements IStorage {
     const clientList = await db.select().from(clients);
     const clientMap = new Map(clientList.map(c => [c.id, c]));
     return filtered.map(p => ({ ...p, client: clientMap.get(p.clientId ?? "") ?? null })).reverse();
+  }
+
+  // ── Chat ──
+  async getChatMessages(projectId: string): Promise<ChatMessage[]> {
+    return db.select().from(chatMessages)
+      .where(eq(chatMessages.projectId, projectId))
+      .orderBy(chatMessages.createdAt);
+  }
+
+  async createChatMessage(msg: InsertChatMessage): Promise<ChatMessage> {
+    const [m] = await db.insert(chatMessages).values(msg).returning();
+    return m;
+  }
+
+  async markChatMessagesRead(projectId: string, role: "admin" | "integrador"): Promise<void> {
+    if (role === "admin") {
+      await db.update(chatMessages).set({ readByAdmin: true })
+        .where(eq(chatMessages.projectId, projectId));
+    } else {
+      await db.update(chatMessages).set({ readByIntegrador: true })
+        .where(eq(chatMessages.projectId, projectId));
+    }
+  }
+
+  async getUnreadChatCount(userId: string, role: string): Promise<number> {
+    const isAdmin = ["admin", "engenharia", "financeiro"].includes(role);
+    const allMessages = await db.select().from(chatMessages);
+    if (isAdmin) {
+      return allMessages.filter(m => !m.readByAdmin && m.senderRole !== "admin" && m.senderRole !== "engenharia" && m.senderRole !== "financeiro").length;
+    } else {
+      const userProjects = await db.select().from(projects).where(eq(projects.userId, userId));
+      const projectIds = userProjects.map(p => p.id);
+      return allMessages.filter(m => projectIds.includes(m.projectId) && !m.readByIntegrador && ["admin", "engenharia", "financeiro"].includes(m.senderRole)).length;
+    }
   }
 }
 

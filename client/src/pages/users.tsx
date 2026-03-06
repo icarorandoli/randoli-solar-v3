@@ -20,6 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Controller, useForm } from "react-hook-form";
 import type { User as UserType } from "@shared/schema";
 import { formatCpfCnpj, formatPhone, formatCep, lookupCep as lookupCepUtil } from "@/lib/utils";
+import { PasswordStrength } from "@/components/password-strength";
 
 type SafeUser = Omit<UserType, "password">;
 
@@ -506,6 +507,7 @@ function CreateUserDialog({ open, onClose, defaultRole = "integrador" }: { open:
                 {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
+            <PasswordStrength password={watch("password") || ""} />
             {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
           </div>
           <DialogFooter>

@@ -19,6 +19,8 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import type { Project, Client, Document, Timeline } from "@shared/schema";
+import ChatPanel from "@/components/chat-panel";
+import { useProjectWebSocket } from "@/hooks/use-websocket";
 
 const STATUS_LABELS: Record<string, string> = {
   orcamento: "Orçamento",
@@ -427,6 +429,9 @@ function TimelineItem({ entry, isLast }: { entry: Timeline; isLast: boolean }) {
 export default function PortalProjetoPage() {
   const { id } = useParams<{ id: string }>();
   const { toast } = useToast();
+  const { user } = useAuth();
+
+  useProjectWebSocket(user?.id ?? null, user?.role ?? null, id ?? "");
 
   const { data: project, isLoading } = useQuery<ProjectDetail>({
     queryKey: ["/api/projects", id],
@@ -748,6 +753,17 @@ export default function PortalProjetoPage() {
               )}
             </CardContent>
           </Card>
+
+          {/* Chat */}
+          {user && id && (
+            <div className="h-[420px]">
+              <ChatPanel
+                projectId={id}
+                currentUserId={user.id}
+                currentUserRole={user.role}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import { broadcastToProjectParticipants, broadcastToAdmins, broadcastToUser } from "./websocket";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import passport from "passport";
@@ -1247,6 +1248,57 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const list = await storage.getFinancialProjects(filter as any);
       res.json(list);
     } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // ── CHAT ────────────────────────────────────────────────────────────
+  app.get("/api/projects/:id/chat", requireAuth, async (req, res) => {
+    const user = await getCurrentUser(req);
+    if (!user) return res.status(401).json({ error: "Não autenticado" });
+    const messages = await storage.getChatMessages(req.params.id);
+    const isAdmin = ["admin", "engenharia", "financeiro"].includes(user.role);
+    await storage.markChatMessagesRead(req.params.id, isAdmin ? "admin" : "integrador");
+    res.json(messages);
+  });
+
+  app.post("/api/projects/:id/chat", requireAuth, async (req, res) => {
+    const user = await getCurrentUser(req);
+    if (!user) return res.status(401).json({ error: "Não autenticado" });
+    const { content } = req.body;
+    if (!content?.trim()) return res.status(400).json({ error: "Mensagem vazia" });
+
+    const project = await storage.getProject(req.params.id);
+    if (!project) return res.status(404).json({ error: "Projeto não encontrado" });
+
+    const isAdmin = ["admin", "engenharia", "financeiro"].includes(user.role);
+    if (!isAdmin && project.userId !== user.id) {
+      return res.status(403).json({ error: "Sem permissão" });
+    }
+
+    const msg = await storage.createChatMessage({
+      projectId: req.params.id,
+      senderId: user.id,
+      senderName: user.name || user.username,
+      senderRole: user.role,
+      content: content.trim(),
+      readByAdmin: isAdmin,
+      readByIntegrador: !isAdmin,
+    });
+
+    const wsEvent = { type: "chat_message", projectId: req.params.id, message: msg };
+    if (project.userId) {
+      broadcastToProjectParticipants(project.userId, wsEvent);
+    } else {
+      broadcastToAdmins(wsEvent);
+    }
+
+    res.json(msg);
+  });
+
+  app.get("/api/chat/unread", requireAuth, async (req, res) => {
+    const user = await getCurrentUser(req);
+    if (!user) return res.status(401).json({ error: "Não autenticado" });
+    const count = await storage.getUnreadChatCount(user.id, user.role);
+    res.json({ count });
   });
 
   // ── DOWNLOAD TEMPORÁRIO ────────────────────────────────────────────

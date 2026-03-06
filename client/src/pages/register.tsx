@@ -10,7 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Zap, User, Building2 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useQueryClient } from "@tanstack/react-query";
-import { formatCpfCnpj, formatCep, formatPhone, lookupCep } from "@/lib/utils";
+import { formatCpfCnpj, formatCep, formatPhone, lookupCep, validateCpfCnpj } from "@/lib/utils";
+import { PasswordStrength } from "@/components/password-strength";
 
 interface RegisterForm {
   name: string;
@@ -35,6 +36,7 @@ export default function RegisterPage() {
   const queryClient = useQueryClient();
   const [clientType, setClientType] = useState<"PF" | "PJ">("PF");
   const [loading, setLoading] = useState(false);
+  const [cnpjLoading, setCnpjLoading] = useState(false);
   const [form, setForm] = useState<RegisterForm>({
     name: "", username: "", email: "", phone: "",
     cpfCnpj: "", password: "", confirmPassword: "",
@@ -50,6 +52,31 @@ export default function RegisterPage() {
 
   const handlePhone = (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm(prev => ({ ...prev, phone: formatPhone(e.target.value) }));
+
+  const lookupCnpj = async (cnpj: string) => {
+    const cleaned = cnpj.replace(/\D/g, "");
+    if (cleaned.length !== 14) return;
+    setCnpjLoading(true);
+    try {
+      const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cleaned}`);
+      if (!res.ok) { toast({ title: "CNPJ não encontrado", variant: "destructive" }); return; }
+      const data = await res.json();
+      setForm(prev => ({
+        ...prev,
+        name: data.razao_social || prev.name,
+        company: data.nome_fantasia || prev.company,
+        rua: data.logradouro || prev.rua,
+        numero: data.numero || prev.numero,
+        bairro: data.bairro || prev.bairro,
+        cidade: data.municipio || prev.cidade,
+        estado: data.uf || prev.estado,
+        cep: data.cep ? data.cep.replace(/\D/g, "").replace(/(\d{5})(\d{3})/, "$1-$2") : prev.cep,
+        phone: data.ddd_telefone_1 ? formatPhone(data.ddd_telefone_1) : prev.phone,
+      }));
+      toast({ title: "CNPJ encontrado!", description: "Dados preenchidos automaticamente." });
+    } catch { toast({ title: "Erro ao buscar CNPJ", variant: "destructive" }); }
+    finally { setCnpjLoading(false); }
+  };
 
   const handleCep = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatCep(e.target.value);
@@ -75,6 +102,13 @@ export default function RegisterPage() {
     if (form.password.length < 6) {
       toast({ title: "Senha deve ter no mínimo 6 caracteres", variant: "destructive" });
       return;
+    }
+    if (form.cpfCnpj) {
+      const cpfCnpjError = validateCpfCnpj(form.cpfCnpj);
+      if (cpfCnpjError !== true) {
+        toast({ title: cpfCnpjError, variant: "destructive" });
+        return;
+      }
     }
     setLoading(true);
     try {
@@ -145,7 +179,14 @@ export default function RegisterPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label>{clientType === "PF" ? "CPF *" : "CNPJ *"}</Label>
-                    <Input value={form.cpfCnpj} onChange={handleCpfCnpj} placeholder={clientType === "PF" ? "000.000.000-00" : "00.000.000/0001-00"} data-testid="input-cpfcnpj" />
+                    <div className="flex gap-2">
+                      <Input value={form.cpfCnpj} onChange={handleCpfCnpj} placeholder={clientType === "PF" ? "000.000.000-00" : "00.000.000/0001-00"} data-testid="input-cpfcnpj" />
+                      {clientType === "PJ" && (
+                        <Button type="button" size="sm" variant="outline" disabled={cnpjLoading} onClick={() => lookupCnpj(form.cpfCnpj)} data-testid="button-lookup-cnpj-register">
+                          {cnpjLoading ? "..." : "Buscar"}
+                        </Button>
+                      )}
+                    </div>
                   </div>
                   <div className="space-y-1.5">
                     <Label>Telefone</Label>
@@ -195,6 +236,7 @@ export default function RegisterPage() {
                     <div className="space-y-1.5">
                       <Label>Senha *</Label>
                       <Input type="password" value={form.password} onChange={set("password")} placeholder="Mín. 6 caracteres" required data-testid="input-password" />
+                      <PasswordStrength password={form.password} />
                     </div>
                     <div className="space-y-1.5">
                       <Label>Confirmar Senha *</Label>

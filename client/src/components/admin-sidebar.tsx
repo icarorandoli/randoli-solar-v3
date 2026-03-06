@@ -27,6 +27,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
+import { apiRequest } from "@/lib/queryClient";
 
 const navItems: { title: string; url: string; icon: any; roles?: string[] }[] = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -46,7 +47,13 @@ export function AdminSidebar() {
   const { data: settings } = useQuery<Record<string, string>>({
     queryKey: ["/api/settings"],
   });
+  const { data: chatUnread } = useQuery<{ count: number }>({
+    queryKey: ["/api/chat/unread"],
+    queryFn: () => apiRequest("GET", "/api/chat/unread").then(r => r.json()),
+    refetchInterval: 30000,
+  });
 
+  const unreadCount = chatUnread?.count ?? 0;
   const companyName = settings?.company_name || "Randoli Engenharia";
   const logoUrl = settings?.logo_url;
 
@@ -84,12 +91,18 @@ export function AdminSidebar() {
                 .filter(item => !item.roles || item.roles.includes(user?.role ?? ""))
                 .map((item) => {
                   const isActive = location === item.url;
+                  const showBadge = item.url === "/projetos" && unreadCount > 0;
                   return (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton asChild data-active={isActive} data-testid={`link-nav-${item.title.toLowerCase()}`}>
                         <Link href={item.url}>
                           <item.icon className="h-4 w-4" />
-                          <span>{item.title}</span>
+                          <span className="flex-1">{item.title}</span>
+                          {showBadge && (
+                            <span className="ml-auto inline-flex items-center justify-center h-4 min-w-4 rounded-full bg-orange-500 text-white text-[10px] font-bold px-1">
+                              {unreadCount > 99 ? "99+" : unreadCount}
+                            </span>
+                          )}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>

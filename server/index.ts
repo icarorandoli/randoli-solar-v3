@@ -3,6 +3,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import { setupWebSocket } from "./websocket";
 import { seedDatabase } from "./seed";
 
 const app = express();
@@ -63,6 +64,7 @@ app.use((req, res, next) => {
 
 (async () => {
   await registerRoutes(httpServer, app);
+  setupWebSocket(httpServer);
   await seedDatabase();
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {

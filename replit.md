@@ -21,10 +21,11 @@ Sistema SaaS para gerenciamento de projetos de homologação fotovoltaica. Inclu
 
 ### Banco de Dados (schema.ts)
 - `users` — roles: `admin`, `engenharia`, `financeiro`, `integrador`; campos de endereço separados (rua/numero/bairro/cep/cidade/estado)
-- `clients` — registros de clientes/integradores (referenciados nos projetos)
+- `clients` — registros de clientes/integradores; campos de endereço estruturado (rua/numero/bairro/cep/cidade/estado); CNPJ lookup via BrasilAPI
 - `projects` — projetos fotovoltaicos com status de homologação (12 status), campos paymentLink/paymentId/paymentStatus, archived, valor
 - `documents` — arquivos enviados por projeto
 - `timeline` — log de eventos por projeto
+- `chat_messages` — mensagens de chat por projeto (admin ↔ integrador); campos readByAdmin, readByIntegrador
 - `partners` — parceiros para carousel do site
 - `site_settings` — configurações: logo, nome, SMTP, Mercado Pago (mp_access_token, mp_webhook_secret, mp_enabled)
 - `pricing_ranges` — faixas de potência com preços (seed: 5 faixas padrão 1-10, 10-15, 15-25, 25-50, 50-75 kWp)
@@ -69,6 +70,9 @@ Sistema SaaS para gerenciamento de projetos de homologação fotovoltaica. Inclu
 - `GET/POST/PATCH/DELETE /api/pricing-ranges` — faixas de preço por kWp
 - `GET /api/pricing-ranges/calculate?kwp=X` — calcula preço para determinado kWp
 - `GET/POST/DELETE /api/client-pricing` — preços promocionais por cliente
+- `GET/POST /api/projects/:id/chat` — mensagens de chat por projeto
+- `GET /api/chat/unread` — contagem de mensagens não lidas para o usuário logado
+- WebSocket em `/ws` — autenticação por mensagem `{type:"auth",userId,role}`, eventos: `chat_message`, `project_updated`, `status_changed`, `document_added`, `timeline_added`
 
 ### Frontend
 - `/login` — Página de login
@@ -95,11 +99,14 @@ client/src/
   App.tsx                    — Roteamento com auth guard (suporte roles engenharia/financeiro)
   contexts/AuthContext.tsx   — Contexto de autenticação
   components/
-    admin-sidebar.tsx        — Sidebar do painel admin (inclui Kanban, Preços)
-    portal-sidebar.tsx       — Sidebar do portal integrador
+    admin-sidebar.tsx        — Sidebar do painel admin (inclui Kanban, Preços, badge chat não lido)
+    portal-sidebar.tsx       — Sidebar do portal integrador (badge chat não lido)
     ObjectUploader.tsx       — Upload de arquivos para Object Storage
+    password-strength.tsx    — Indicador visual de força de senha (barra colorida)
+    chat-panel.tsx           — Chat interno por projeto (admin ↔ integrador) com auto-scroll
   hooks/
     use-upload.ts            — Hook para presigned URL upload
+    use-websocket.ts         — Hook WebSocket global (auth, reconexão, broadcast para queries)
   pages/
     login.tsx / register.tsx / forgot-password.tsx / reset-password.tsx
     dashboard.tsx / projects.tsx / clients.tsx / partners.tsx / settings.tsx
@@ -112,9 +119,10 @@ client/src/
 
 server/
   index.ts       — Entry point, seed
-  routes.ts      — Todas as rotas API + setup de sessão
+  routes.ts      — Todas as rotas API + setup de sessão + rotas de chat
   auth.ts        — hashPassword, comparePasswords, requireAuth
-  storage.ts     — DatabaseStorage (interface + implementação Drizzle)
+  storage.ts     — DatabaseStorage (interface + implementação Drizzle, incluindo chat_messages)
+  websocket.ts   — WebSocket server (auth, mapa de conexões, broadcast por userId/admin)
   mercadopago.ts — Integração Mercado Pago (criar preferência, verificar pagamento, validar webhook)
   email.ts       — Envio de e-mails SMTP (notificações de status + link de pagamento)
   seed.ts        — Dados de exemplo (inclui seed de pricing_ranges)

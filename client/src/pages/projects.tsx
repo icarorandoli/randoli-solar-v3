@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import { useForm, Controller } from "react-hook-form";
 import type { Project, Client, Document, Timeline } from "@shared/schema";
+import ChatPanel from "@/components/chat-panel";
+import { useProjectWebSocket } from "@/hooks/use-websocket";
 import { useUpload } from "@/hooks/use-upload";
 
 const STATUS_LABELS: Record<string, string> = {
@@ -99,6 +101,8 @@ function ProjectDetailSheet({
   const [newStatus, setNewStatus] = useState("");
   const [newProtocolo, setNewProtocolo] = useState("");
   const [newValor, setNewValor] = useState("");
+
+  useProjectWebSocket(user?.id ?? null, user?.role ?? null, project?.id ?? "");
 
   const { data: docs = [], isLoading: docsLoading } = useQuery<Document[]>({
     queryKey: ["/api/projects", project?.id, "documents"],
@@ -592,6 +596,19 @@ function ProjectDetailSheet({
               </div>
             )}
           </div>
+
+          <Separator />
+
+          {/* Chat */}
+          {project && user && (
+            <div className="h-[380px]">
+              <ChatPanel
+                projectId={project.id}
+                currentUserId={user.id}
+                currentUserRole={user.role}
+              />
+            </div>
+          )}
         </div>
       </SheetContent>
     </Sheet>

@@ -718,11 +718,6 @@ export default function PortalProjetoPage() {
                         <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer">
                           <Button size="sm" variant="outline" data-testid={`button-view-doc-${doc.id}`}>Ver</Button>
                         </a>
-                        {doc.uploadedByRole !== "admin" && (
-                          <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => deleteDocMut.mutate(doc.id)} data-testid={`button-delete-doc-${doc.id}`}>
-                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                          </Button>
-                        )}
                       </div>
                     </div>
                   ))}

@@ -18,6 +18,7 @@ import SettingsPage from "@/pages/settings";
 import UsersPage from "@/pages/users";
 import KanbanPage from "@/pages/kanban";
 import PrecosPage from "@/pages/precos";
+import RelatoriosPage from "@/pages/relatorios";
 import PlanosPage from "@/pages/planos";
 import LoginPage from "@/pages/login";
 import RegisterPage from "@/pages/register";
@@ -69,6 +70,9 @@ function AdminLayout() {
               <Route path="/clientes" component={ClientsPage} />
               <Route path="/precos">
                 <RoleGuard allow={["admin", "financeiro"]}><PrecosPage /></RoleGuard>
+              </Route>
+              <Route path="/relatorios">
+                <RoleGuard allow={["admin", "financeiro"]}><RelatoriosPage /></RoleGuard>
               </Route>
               <Route path="/parceiros">
                 <RoleGuard allow={["admin", "financeiro"]}><PartnersPage /></RoleGuard>

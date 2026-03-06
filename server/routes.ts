@@ -1238,6 +1238,17 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
+  app.get("/api/stats/financial/projects", requireAuth, async (req, res) => {
+    try {
+      const user = await getCurrentUser(req);
+      if (!["admin", "financeiro"].includes(user?.role || "")) return res.status(403).json({ error: "Sem permissão" });
+      const filter = req.query.filter as string;
+      if (!["today", "month", "paid", "pending"].includes(filter)) return res.status(400).json({ error: "Filtro inválido" });
+      const list = await storage.getFinancialProjects(filter as any);
+      res.json(list);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
   // ── DOWNLOAD TEMPORÁRIO ────────────────────────────────────────────
   app.get("/api/download-source", async (req, res) => {
     const fs = await import("fs");

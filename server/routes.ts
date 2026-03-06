@@ -13,7 +13,7 @@ import {
   insertDocumentSchema, insertTimelineSchema,
 } from "@shared/schema";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
-import { sendStatusEmail, sendTestEmail, sendPasswordResetEmail, type EmailConfig } from "./email";
+import { sendStatusEmail, sendTestEmail, sendPasswordResetEmail, sendDocumentEmail, sendTimelineEmail, type EmailConfig } from "./email";
 import { createPaymentPreference, createPixPayment, getPaymentInfo, verifyWebhookSignature } from "./mercadopago";
 import { registerUploadRoutes } from "./upload";
 import path from "path";
@@ -796,6 +796,27 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         createdByRole: user?.role || "integrador",
       });
 
+      // Email notification to integrador when admin uploads a document
+      const isAdminUpload = user && ["admin", "engenharia", "financeiro"].includes(user.role);
+      if (isAdminUpload) {
+        const project = await storage.getProject(req.params.id);
+        if (project) {
+          const integradorEmail = project.integrador?.email || project.client?.email;
+          const integradorName = project.integrador?.name || project.client?.name || "Integrador";
+          if (integradorEmail) {
+            getEmailConfig().then(emailConfig => sendDocumentEmail({
+              to: integradorEmail,
+              integradorName,
+              projectTitle: project.title,
+              ticketNumber: project.ticketNumber,
+              documentName: doc.name,
+              uploadedBy: "Randoli Engenharia Solar",
+              config: emailConfig,
+            })).catch(err => console.error("[email] Falha ao enviar notificação de documento:", err));
+          }
+        }
+      }
+
       res.status(201).json(doc);
     } catch (err: any) { res.status(400).json({ error: err.message }); }
   });
@@ -821,6 +842,28 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         details: req.body.details,
         createdByRole: user?.role || "admin",
       });
+
+      // Email notification to integrador when admin adds a timeline note
+      const isAdminAction = user && ["admin", "engenharia", "financeiro"].includes(user.role);
+      if (isAdminAction) {
+        const project = await storage.getProject(req.params.id);
+        if (project) {
+          const integradorEmail = project.integrador?.email || project.client?.email;
+          const integradorName = project.integrador?.name || project.client?.name || "Integrador";
+          if (integradorEmail) {
+            getEmailConfig().then(emailConfig => sendTimelineEmail({
+              to: integradorEmail,
+              integradorName,
+              projectTitle: project.title,
+              ticketNumber: project.ticketNumber,
+              event: req.body.event,
+              details: req.body.details,
+              config: emailConfig,
+            })).catch(err => console.error("[email] Falha ao enviar notificação de histórico:", err));
+          }
+        }
+      }
+
       res.status(201).json(entry);
     } catch (err: any) { res.status(400).json({ error: err.message }); }
   });

@@ -276,6 +276,201 @@ export async function sendPasswordResetEmail({
   }
 }
 
+export async function sendDocumentEmail({
+  to,
+  integradorName,
+  projectTitle,
+  ticketNumber,
+  documentName,
+  uploadedBy,
+  portalUrl,
+  config,
+}: {
+  to: string;
+  integradorName: string;
+  projectTitle: string;
+  ticketNumber: string | null | undefined;
+  documentName: string;
+  uploadedBy: string;
+  portalUrl?: string;
+  config?: EmailConfig;
+}) {
+  const transporter = createTransporter(config);
+  if (!transporter) return;
+
+  const from = config?.smtpFrom || process.env.SMTP_FROM || config?.smtpUser || process.env.SMTP_USER;
+  const ticket = ticketNumber ? ` [${ticketNumber}]` : "";
+  const portal = portalUrl || config?.portalUrl || process.env.APP_URL || "https://projetos.randolisolar.com.br";
+
+  try {
+    await transporter.sendMail({
+      from: `"Randoli Engenharia Solar" <${from}>`,
+      to,
+      subject: `📎 Novo Documento${ticket} — ${projectTitle}`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,sans-serif">
+          <table width="100%" cellpadding="0" cellspacing="0" style="padding:32px 16px">
+            <tr><td align="center">
+              <table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;max-width:600px">
+                <tr>
+                  <td style="background:#1e3a5f;padding:28px 36px">
+                    <p style="color:#fff;margin:0;font-size:22px;font-weight:bold">⚡ Randoli Engenharia Solar</p>
+                    <p style="color:#93c5fd;margin:6px 0 0;font-size:14px">Portal do Integrador Solar</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:36px">
+                    <p style="color:#374151;margin:0 0 8px;font-size:16px">Olá, <strong>${integradorName}</strong>!</p>
+                    <p style="color:#6b7280;margin:0 0 28px;font-size:14px">Um novo documento foi adicionado ao seu projeto pela equipe Randoli.</p>
+
+                    <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;border-radius:10px;border:1px solid #e5e7eb;margin-bottom:28px">
+                      <tr>
+                        <td style="padding:20px 24px">
+                          <p style="color:#9ca3af;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px">PROJETO</p>
+                          <p style="color:#111827;font-size:16px;font-weight:bold;margin:0 0 20px">${projectTitle}${ticket}</p>
+
+                          <p style="color:#9ca3af;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 8px">DOCUMENTO</p>
+                          <table cellpadding="0" cellspacing="0">
+                            <tr>
+                              <td style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:10px 18px">
+                                <p style="color:#1d4ed8;font-size:15px;font-weight:bold;margin:0">📎 ${documentName}</p>
+                              </td>
+                            </tr>
+                          </table>
+
+                          <p style="color:#9ca3af;font-size:12px;margin:16px 0 0">Enviado por: ${uploadedBy}</p>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <table cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="background:#1e3a5f;border-radius:8px;padding:14px 28px">
+                          <a href="${portal}" style="color:#fff;font-size:14px;font-weight:bold;text-decoration:none">Ver no Portal →</a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="background:#f9fafb;padding:16px 36px;border-top:1px solid #e5e7eb">
+                    <p style="color:#9ca3af;font-size:12px;margin:0">Este é um e-mail automático da Randoli Engenharia Solar. Não responda.</p>
+                  </td>
+                </tr>
+              </table>
+            </td></tr>
+          </table>
+        </body>
+        </html>
+      `,
+    });
+    console.log(`[email] ✓ Notificação de documento enviada para ${to}`);
+  } catch (err) {
+    console.error("[email] Erro ao enviar e-mail de documento:", err);
+  }
+}
+
+export async function sendTimelineEmail({
+  to,
+  integradorName,
+  projectTitle,
+  ticketNumber,
+  event,
+  details,
+  portalUrl,
+  config,
+}: {
+  to: string;
+  integradorName: string;
+  projectTitle: string;
+  ticketNumber: string | null | undefined;
+  event: string;
+  details?: string;
+  portalUrl?: string;
+  config?: EmailConfig;
+}) {
+  const transporter = createTransporter(config);
+  if (!transporter) return;
+
+  const from = config?.smtpFrom || process.env.SMTP_FROM || config?.smtpUser || process.env.SMTP_USER;
+  const ticket = ticketNumber ? ` [${ticketNumber}]` : "";
+  const portal = portalUrl || config?.portalUrl || process.env.APP_URL || "https://projetos.randolisolar.com.br";
+
+  try {
+    await transporter.sendMail({
+      from: `"Randoli Engenharia Solar" <${from}>`,
+      to,
+      subject: `📋 Nova Atualização no Histórico${ticket} — ${projectTitle}`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,sans-serif">
+          <table width="100%" cellpadding="0" cellspacing="0" style="padding:32px 16px">
+            <tr><td align="center">
+              <table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;max-width:600px">
+                <tr>
+                  <td style="background:#1e3a5f;padding:28px 36px">
+                    <p style="color:#fff;margin:0;font-size:22px;font-weight:bold">⚡ Randoli Engenharia Solar</p>
+                    <p style="color:#93c5fd;margin:6px 0 0;font-size:14px">Portal do Integrador Solar</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:36px">
+                    <p style="color:#374151;margin:0 0 8px;font-size:16px">Olá, <strong>${integradorName}</strong>!</p>
+                    <p style="color:#6b7280;margin:0 0 28px;font-size:14px">Uma nova atualização foi adicionada ao histórico do seu projeto.</p>
+
+                    <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;border-radius:10px;border:1px solid #e5e7eb;margin-bottom:28px">
+                      <tr>
+                        <td style="padding:20px 24px">
+                          <p style="color:#9ca3af;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px">PROJETO</p>
+                          <p style="color:#111827;font-size:16px;font-weight:bold;margin:0 0 20px">${projectTitle}${ticket}</p>
+
+                          <p style="color:#9ca3af;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 8px">EVENTO</p>
+                          <table cellpadding="0" cellspacing="0" style="margin-bottom:${details ? "16px" : "0"}">
+                            <tr>
+                              <td style="background:#faf5ff;border:1px solid #e9d5ff;border-radius:6px;padding:10px 18px">
+                                <p style="color:#7c3aed;font-size:15px;font-weight:bold;margin:0">📋 ${event}</p>
+                              </td>
+                            </tr>
+                          </table>
+
+                          ${details ? `
+                          <p style="color:#9ca3af;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 8px">DETALHES</p>
+                          <p style="color:#374151;font-size:14px;margin:0">${details}</p>
+                          ` : ""}
+                        </td>
+                      </tr>
+                    </table>
+
+                    <table cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="background:#1e3a5f;border-radius:8px;padding:14px 28px">
+                          <a href="${portal}" style="color:#fff;font-size:14px;font-weight:bold;text-decoration:none">Ver no Portal →</a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="background:#f9fafb;padding:16px 36px;border-top:1px solid #e5e7eb">
+                    <p style="color:#9ca3af;font-size:12px;margin:0">Este é um e-mail automático da Randoli Engenharia Solar. Não responda.</p>
+                  </td>
+                </tr>
+              </table>
+            </td></tr>
+          </table>
+        </body>
+        </html>
+      `,
+    });
+    console.log(`[email] ✓ Notificação de histórico enviada para ${to}`);
+  } catch (err) {
+    console.error("[email] Erro ao enviar e-mail de histórico:", err);
+  }
+}
+
 export async function sendTestEmail(to: string, config?: EmailConfig) {
   const transporter = createTransporter(config);
   if (!transporter) throw new Error("SMTP não configurado");

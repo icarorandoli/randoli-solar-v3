@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/AuthContext";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -92,6 +93,8 @@ function ProjectDetailSheet({
   onClose: () => void;
 }) {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const canDeleteDocs = ["admin", "engenharia"].includes(user?.role || "");
   const [timelineNote, setTimelineNote] = useState("");
   const [newStatus, setNewStatus] = useState("");
   const [newProtocolo, setNewProtocolo] = useState("");
@@ -534,20 +537,22 @@ function ProjectDetailSheet({
                     <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer">
                       <Button size="sm" variant="outline" data-testid={`button-view-doc-${doc.id}`}>Ver</Button>
                     </a>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-destructive hover:text-destructive hover:bg-destructive/10 p-1.5 h-auto"
-                      disabled={deleteDocMut.isPending}
-                      onClick={() => {
-                        if (confirm("Tem certeza que deseja remover este documento?")) {
-                          deleteDocMut.mutate(doc.id);
-                        }
-                      }}
-                      data-testid={`button-delete-doc-${doc.id}`}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
+                    {canDeleteDocs && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10 p-1.5 h-auto"
+                        disabled={deleteDocMut.isPending}
+                        onClick={() => {
+                          if (confirm("Tem certeza que deseja remover este documento?")) {
+                            deleteDocMut.mutate(doc.id);
+                          }
+                        }}
+                        data-testid={`button-delete-doc-${doc.id}`}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                   </div>
                 ))}
               </div>

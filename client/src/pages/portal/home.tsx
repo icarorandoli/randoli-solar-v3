@@ -127,9 +127,14 @@ export default function PortalHomePage() {
       {/* Projects list */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-2 pb-3">
-          <CardTitle className="text-base">Meus Projetos</CardTitle>
-          <Button variant="ghost" size="sm" asChild data-testid="link-all-projects">
-            <Link href="/portal/projetos">Ver todos <ChevronRight className="h-3.5 w-3.5 ml-1" /></Link>
+          <div>
+            <CardTitle className="text-base">Meus Projetos</CardTitle>
+            {projects.length > 5 && (
+              <p className="text-xs text-muted-foreground mt-0.5">Mostrando 5 de {projects.length}</p>
+            )}
+          </div>
+          <Button variant="outline" size="sm" asChild data-testid="link-all-projects" className="gap-1">
+            <Link href="/portal/projetos">Ver todos ({projects.length}) <ChevronRight className="h-3.5 w-3.5" /></Link>
           </Button>
         </CardHeader>
         <CardContent>
@@ -150,7 +155,7 @@ export default function PortalHomePage() {
             </div>
           ) : (
             <div className="space-y-2">
-              {projects.slice(0, 6).map(project => (
+              {projects.slice(0, 5).map(project => (
                 <Link key={project.id} href={`/portal/projetos/${project.id}`}>
                   <div className="flex items-center gap-3 p-3 rounded-lg border border-border/60 bg-card cursor-pointer hover-elevate" data-testid={`card-portal-project-${project.id}`}>
                     <div className="h-3 w-3 rounded-full flex-shrink-0" style={{ backgroundColor: STATUS_COLORS[project.status] }} />

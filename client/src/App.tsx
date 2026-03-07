@@ -29,6 +29,7 @@ import ForgotPasswordPage from "@/pages/forgot-password";
 import ResetPasswordPage from "@/pages/reset-password";
 import PortalHomePage from "@/pages/portal/home";
 import PortalProjetoPage from "@/pages/portal/projeto";
+import PortalProjetosPage from "@/pages/portal/projetos";
 import NovoProjetoPage from "@/pages/portal/novo-projeto";
 import ContaPage from "@/pages/portal/conta";
 import CompletarPerfilPage from "@/pages/completar-perfil";
@@ -127,6 +128,7 @@ function PortalLayout() {
             <Switch>
               <Route path="/portal" component={PortalHomePage} />
               <Route path="/portal/novo-projeto" component={NovoProjetoPage} />
+              <Route path="/portal/projetos" component={PortalProjetosPage} />
               <Route path="/portal/projetos/:id" component={PortalProjetoPage} />
               <Route path="/portal/conta" component={ContaPage} />
               <Route><Redirect to="/portal" /></Route>

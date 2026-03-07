@@ -473,7 +473,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       if (!user) return res.status(401).json({ error: "Não autenticado" });
       const archived = req.query.archived === "true";
 
-      if (user.role === "admin") {
+      const isInternal = ["admin", "engenharia", "financeiro", "tecnico"].includes(user.role);
+      if (isInternal) {
         res.json(archived ? await storage.getArchivedProjects() : await storage.getProjects());
       } else {
         const client = await storage.getClientByUserId(user.id);
@@ -497,8 +498,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const p = await storage.getProject(req.params.id);
       if (!p) return res.status(404).json({ error: "Não encontrado" });
 
-      // Integrador can only see their own projects
-      if (user?.role !== "admin") {
+      // Internal roles can see all projects; integrators only see their own
+      const isInternal = ["admin", "engenharia", "financeiro", "tecnico"].includes(user?.role || "");
+      if (!isInternal) {
         const client = await storage.getClientByUserId(user!.id);
         if (!client || p.clientId !== client.id) return res.status(403).json({ error: "Acesso negado" });
       }

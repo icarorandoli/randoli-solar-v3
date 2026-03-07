@@ -18,9 +18,25 @@ export default function LoginPage() {
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const { data: settings } = useQuery<Record<string, string>>({ queryKey: ["/api/settings"], retry: false });
+  const { data: settings } = useQuery<Record<string, string>>({ queryKey: ["/api/settings/public"], retry: false });
   const companyName = settings?.company_name || "Randoli Engenharia Solar";
   const logoUrl = settings?.logo_url;
+
+  const loginBadgeText = settings?.login_badge_text || "Portal SaaS de Homologação";
+  const loginHeadline = settings?.login_headline || "Gerencie projetos de energia solar de forma simples e eficiente";
+  const loginHighlight = settings?.login_headline_highlight || "energia solar";
+  const loginDescription = settings?.login_description || "Acompanhe cada etapa da homologação fotovoltaica, do orçamento à aprovação final, com total transparência.";
+  const loginFeature1 = settings?.login_feature_1 || "Acompanhamento em tempo real de cada etapa";
+  const loginFeature2 = settings?.login_feature_2 || "Documentos e ART centralizados no portal";
+  const loginFeature3 = settings?.login_feature_3 || "Status atualizado automaticamente pela nossa equipe";
+  const loginBgType = settings?.login_bg_type || "gradient";
+  const loginBgImage = settings?.login_bg_image || "";
+
+  const headlineNode = (() => {
+    if (!loginHighlight || !loginHeadline.includes(loginHighlight)) return <>{loginHeadline}</>;
+    const parts = loginHeadline.split(loginHighlight);
+    return <>{parts[0]}<span className="text-sky-300">{loginHighlight}</span>{parts.slice(1).join(loginHighlight)}</>;
+  })();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,7 +54,17 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
       {/* Left panel — brand */}
-      <div className="hidden lg:flex lg:w-1/2 xl:w-[55%] flex-col bg-gradient-to-br from-[#0c2340] via-[#0e3460] to-[#0d6efd]/70 p-10 relative overflow-hidden">
+      <div
+        className="hidden lg:flex lg:w-1/2 xl:w-[55%] flex-col p-10 relative overflow-hidden"
+        style={loginBgType === "image" && loginBgImage
+          ? { backgroundImage: `url(${loginBgImage})`, backgroundSize: "cover", backgroundPosition: "center" }
+          : { background: "linear-gradient(135deg, #0c2340 0%, #0e3460 50%, rgba(13,110,253,0.7) 100%)" }
+        }
+      >
+        {/* Overlay for image bg */}
+        {loginBgType === "image" && loginBgImage && (
+          <div className="absolute inset-0 bg-[#0c2340]/70" />
+        )}
         {/* Decorative circles */}
         <div className="absolute -top-24 -right-24 h-80 w-80 rounded-full bg-primary/20 blur-3xl" />
         <div className="absolute -bottom-32 -left-16 h-96 w-96 rounded-full bg-sky-400/10 blur-3xl" />
@@ -59,23 +85,21 @@ export default function LoginPage() {
         <div className="flex-1 flex flex-col justify-center relative z-10">
           <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-3 py-1 text-xs text-sky-200 font-medium w-fit mb-6">
             <Zap className="h-3 w-3" />
-            Portal SaaS de Homologação
+            {loginBadgeText}
           </div>
           <h1 className="text-3xl xl:text-4xl font-bold text-white leading-tight mb-4">
-            Gerencie projetos de<br />
-            <span className="text-sky-300">energia solar</span> de forma<br />
-            simples e eficiente
+            {headlineNode}
           </h1>
           <p className="text-sky-100/80 text-sm leading-relaxed max-w-sm">
-            Acompanhe cada etapa da homologação fotovoltaica, do orçamento à aprovação final, com total transparência.
+            {loginDescription}
           </p>
 
           {/* Feature list */}
           <div className="mt-8 space-y-3">
             {[
-              { icon: CheckCircle, text: "Acompanhamento em tempo real de cada etapa" },
-              { icon: ShieldCheck, text: "Documentos e ART centralizados no portal" },
-              { icon: Clock, text: "Status atualizado automaticamente pela nossa equipe" },
+              { icon: CheckCircle, text: loginFeature1 },
+              { icon: ShieldCheck, text: loginFeature2 },
+              { icon: Clock, text: loginFeature3 },
             ].map(({ icon: Icon, text }) => (
               <div key={text} className="flex items-center gap-3">
                 <div className="h-7 w-7 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">

@@ -1098,7 +1098,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     try {
       const settings = await storage.getSiteSettings();
       const map: Record<string, string> = {};
-      const publicKeys = ["mp_public_key", "mp_enabled", "company_name", "logo_url", "primary_color"];
+      const publicKeys = [
+        "mp_public_key", "mp_enabled", "company_name", "logo_url", "primary_color",
+        "login_badge_text", "login_headline", "login_headline_highlight",
+        "login_description", "login_feature_1", "login_feature_2", "login_feature_3",
+        "login_bg_type", "login_bg_image",
+      ];
       for (const s of settings) {
         if (!s.value) continue;
         if (publicKeys.includes(s.key)) {

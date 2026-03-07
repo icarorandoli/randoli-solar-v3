@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Save, Upload, Zap, Building2, ImageOff, Mail, Send, Eye, EyeOff, CreditCard } from "lucide-react";
+import { Save, Upload, Zap, Building2, ImageOff, Mail, Send, Eye, EyeOff, CreditCard, MonitorPlay, Image } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { useUpload } from "@/hooks/use-upload";
 
 function LogoUploadSection({
@@ -88,6 +89,162 @@ function LogoUploadSection({
   );
 }
 
+function LoginCustomSection({
+  badgeText, setBadgeText,
+  headline, setHeadline,
+  highlight, setHighlight,
+  description, setDescription,
+  feature1, setFeature1,
+  feature2, setFeature2,
+  feature3, setFeature3,
+  bgType, setBgType,
+  bgImage, setBgImage,
+  uploadingBg, setUploadingBg,
+}: {
+  badgeText: string; setBadgeText: (v: string) => void;
+  headline: string; setHeadline: (v: string) => void;
+  highlight: string; setHighlight: (v: string) => void;
+  description: string; setDescription: (v: string) => void;
+  feature1: string; setFeature1: (v: string) => void;
+  feature2: string; setFeature2: (v: string) => void;
+  feature3: string; setFeature3: (v: string) => void;
+  bgType: "gradient" | "image"; setBgType: (v: "gradient" | "image") => void;
+  bgImage: string; setBgImage: (v: string) => void;
+  uploadingBg: boolean; setUploadingBg: (v: boolean) => void;
+}) {
+  const { toast } = useToast();
+  const { uploadFile } = useUpload({
+    onSuccess: (res) => { setBgImage(res.objectPath); setUploadingBg(false); toast({ title: "Imagem de fundo enviada!" }); },
+    onError: () => { toast({ title: "Erro ao enviar imagem", variant: "destructive" }); setUploadingBg(false); },
+  });
+
+  const handleBgUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingBg(true);
+    await uploadFile(file);
+  };
+
+  const headlineWithHighlight = (() => {
+    if (!highlight || !headline.includes(highlight)) return <span>{headline}</span>;
+    const parts = headline.split(highlight);
+    return <>{parts[0]}<span className="text-sky-300">{highlight}</span>{parts.slice(1).join(highlight)}</>;
+  })();
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <MonitorPlay className="h-4 w-4 text-primary" />
+          <CardTitle className="text-base">Personalização da Tela de Login</CardTitle>
+        </div>
+        <CardDescription>Altere textos, imagem de fundo e conteúdo do painel esquerdo sem precisar editar código</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Preview */}
+        <div className="rounded-xl overflow-hidden border border-border h-40 relative flex items-center" style={{
+          background: bgType === "image" && bgImage
+            ? `url(${bgImage}) center/cover no-repeat`
+            : "linear-gradient(135deg, #0c2340 0%, #0e3460 50%, rgba(13,110,253,0.7) 100%)",
+        }}>
+          <div className="absolute inset-0 bg-black/20" />
+          <div className="relative z-10 p-5 text-white">
+            <div className="text-[10px] bg-white/15 rounded-full px-2 py-0.5 w-fit mb-2 text-sky-200">{badgeText}</div>
+            <div className="text-sm font-bold leading-snug">{headlineWithHighlight}</div>
+            <div className="text-[10px] text-sky-100/70 mt-1 max-w-xs line-clamp-2">{description}</div>
+          </div>
+          <div className="absolute top-2 right-2 text-[9px] bg-black/40 text-white px-1.5 py-0.5 rounded">Preview</div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Badge */}
+          <div className="space-y-1.5">
+            <Label>Texto do Badge</Label>
+            <Input value={badgeText} onChange={e => setBadgeText(e.target.value)} placeholder="Portal SaaS de Homologação" data-testid="input-login-badge" />
+            <p className="text-xs text-muted-foreground">Aparece no topo do painel esquerdo</p>
+          </div>
+
+          {/* Highlight */}
+          <div className="space-y-1.5">
+            <Label>Palavra(s) em Destaque</Label>
+            <Input value={highlight} onChange={e => setHighlight(e.target.value)} placeholder="energia solar" data-testid="input-login-highlight" />
+            <p className="text-xs text-muted-foreground">Será colorido em azul claro no título</p>
+          </div>
+        </div>
+
+        {/* Headline */}
+        <div className="space-y-1.5">
+          <Label>Título Principal</Label>
+          <Textarea value={headline} onChange={e => setHeadline(e.target.value)} rows={2} placeholder="Gerencie projetos de energia solar de forma simples e eficiente" data-testid="input-login-headline" />
+          <p className="text-xs text-muted-foreground">A palavra de destaque acima será colorida automaticamente dentro deste texto</p>
+        </div>
+
+        {/* Description */}
+        <div className="space-y-1.5">
+          <Label>Descrição</Label>
+          <Textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} placeholder="Acompanhe cada etapa da homologação..." data-testid="input-login-description" />
+        </div>
+
+        {/* Features */}
+        <div className="space-y-2">
+          <Label>Bullets de Destaque (3 itens)</Label>
+          <Input value={feature1} onChange={e => setFeature1(e.target.value)} placeholder="Bullet 1" data-testid="input-login-feature-1" />
+          <Input value={feature2} onChange={e => setFeature2(e.target.value)} placeholder="Bullet 2" data-testid="input-login-feature-2" />
+          <Input value={feature3} onChange={e => setFeature3(e.target.value)} placeholder="Bullet 3" data-testid="input-login-feature-3" />
+        </div>
+
+        {/* Background */}
+        <div className="space-y-3">
+          <Label>Fundo do Painel</Label>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => setBgType("gradient")}
+              className={`flex-1 flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all ${bgType === "gradient" ? "border-primary bg-primary/5" : "border-border bg-muted/30"}`}
+              data-testid="button-bg-gradient"
+            >
+              <div className="h-10 w-full rounded bg-gradient-to-br from-[#0c2340] via-[#0e3460] to-[#0d6efd]/70" />
+              <span className="text-xs font-medium">Gradiente Padrão</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setBgType("image")}
+              className={`flex-1 flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all ${bgType === "image" ? "border-primary bg-primary/5" : "border-border bg-muted/30"}`}
+              data-testid="button-bg-image"
+            >
+              <div className="h-10 w-full rounded bg-muted border-2 border-dashed border-muted-foreground/30 flex items-center justify-center">
+                <Image className="h-4 w-4 text-muted-foreground/50" />
+              </div>
+              <span className="text-xs font-medium">Foto Personalizada</span>
+            </button>
+          </div>
+
+          {bgType === "image" && (
+            <div className="space-y-2">
+              <Input value={bgImage} onChange={e => setBgImage(e.target.value)} placeholder="https://... ou faça upload abaixo" data-testid="input-login-bg-url" />
+              <div className="flex items-center gap-3">
+                <label>
+                  <Button type="button" variant="outline" size="sm" className="relative" disabled={uploadingBg} data-testid="button-upload-bg">
+                    <Upload className="h-3.5 w-3.5 mr-1.5" />
+                    {uploadingBg ? "Enviando..." : "Upload de Foto"}
+                    <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleBgUpload} disabled={uploadingBg} />
+                  </Button>
+                </label>
+                {bgImage && (
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setBgImage("")} data-testid="button-remove-bg">
+                    Remover foto
+                  </Button>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">Recomendado: JPG ou WebP, mínimo 1200×800px. A foto será escurecida levemente para legibilidade.</p>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function SettingsPage() {
   const { toast } = useToast();
 
@@ -115,6 +272,17 @@ export default function SettingsPage() {
   const [mpWebhookSecret, setMpWebhookSecret] = useState("");
   const [showMpToken, setShowMpToken] = useState(false);
 
+  const [loginBadgeText, setLoginBadgeText] = useState("Portal SaaS de Homologação");
+  const [loginHeadline, setLoginHeadline] = useState("Gerencie projetos de energia solar de forma simples e eficiente");
+  const [loginHighlight, setLoginHighlight] = useState("energia solar");
+  const [loginDescription, setLoginDescription] = useState("Acompanhe cada etapa da homologação fotovoltaica, do orçamento à aprovação final, com total transparência.");
+  const [loginFeature1, setLoginFeature1] = useState("Acompanhamento em tempo real de cada etapa");
+  const [loginFeature2, setLoginFeature2] = useState("Documentos e ART centralizados no portal");
+  const [loginFeature3, setLoginFeature3] = useState("Status atualizado automaticamente pela nossa equipe");
+  const [loginBgType, setLoginBgType] = useState<"gradient" | "image">("gradient");
+  const [loginBgImage, setLoginBgImage] = useState("");
+  const [uploadingBg, setUploadingBg] = useState(false);
+
   const [initialized, setInitialized] = useState(false);
 
   if (settings && !initialized) {
@@ -133,6 +301,15 @@ export default function SettingsPage() {
     setMpAccessToken(settings.mp_access_token || "");
     setMpPublicKey(settings.mp_public_key || "");
     setMpWebhookSecret(settings.mp_webhook_secret || "");
+    if (settings.login_badge_text) setLoginBadgeText(settings.login_badge_text);
+    if (settings.login_headline) setLoginHeadline(settings.login_headline);
+    if (settings.login_headline_highlight) setLoginHighlight(settings.login_headline_highlight);
+    if (settings.login_description) setLoginDescription(settings.login_description);
+    if (settings.login_feature_1) setLoginFeature1(settings.login_feature_1);
+    if (settings.login_feature_2) setLoginFeature2(settings.login_feature_2);
+    if (settings.login_feature_3) setLoginFeature3(settings.login_feature_3);
+    if (settings.login_bg_type) setLoginBgType(settings.login_bg_type as "gradient" | "image");
+    if (settings.login_bg_image) setLoginBgImage(settings.login_bg_image);
     setInitialized(true);
   }
 
@@ -160,6 +337,17 @@ export default function SettingsPage() {
       if (mpWebhookSecret && mpWebhookSecret !== "••••••••") {
         pairs.push({ key: "mp_webhook_secret", value: mpWebhookSecret });
       }
+      pairs.push(
+        { key: "login_badge_text", value: loginBadgeText },
+        { key: "login_headline", value: loginHeadline },
+        { key: "login_headline_highlight", value: loginHighlight },
+        { key: "login_description", value: loginDescription },
+        { key: "login_feature_1", value: loginFeature1 },
+        { key: "login_feature_2", value: loginFeature2 },
+        { key: "login_feature_3", value: loginFeature3 },
+        { key: "login_bg_type", value: loginBgType },
+        { key: "login_bg_image", value: loginBgImage },
+      );
       await Promise.all(pairs.map(p => apiRequest("POST", "/api/settings", p)));
     },
     onSuccess: () => {
@@ -485,6 +673,20 @@ export default function SettingsPage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Personalização do Login */}
+          <LoginCustomSection
+            badgeText={loginBadgeText} setBadgeText={setLoginBadgeText}
+            headline={loginHeadline} setHeadline={setLoginHeadline}
+            highlight={loginHighlight} setHighlight={setLoginHighlight}
+            description={loginDescription} setDescription={setLoginDescription}
+            feature1={loginFeature1} setFeature1={setLoginFeature1}
+            feature2={loginFeature2} setFeature2={setLoginFeature2}
+            feature3={loginFeature3} setFeature3={setLoginFeature3}
+            bgType={loginBgType} setBgType={setLoginBgType}
+            bgImage={loginBgImage} setBgImage={setLoginBgImage}
+            uploadingBg={uploadingBg} setUploadingBg={setUploadingBg}
+          />
 
           {/* Save Button */}
           <div className="flex justify-end">

@@ -1,6 +1,6 @@
 import {
   users, clients, projects, partners, siteSettings, documents, timeline,
-  pricingRanges, clientPricing, chatMessages, statusConfigs,
+  pricingRanges, clientPricing, chatMessages, statusConfigs, notifications,
   type User, type InsertUser,
   type Client, type InsertClient,
   type Project, type InsertProject,
@@ -12,6 +12,7 @@ import {
   type ClientPricing, type InsertClientPricing,
   type ChatMessage, type InsertChatMessage,
   type StatusConfig,
+  type Notification, type InsertNotification,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, count, isNull, not, gte, lte, and } from "drizzle-orm";
@@ -91,6 +92,13 @@ export interface IStorage {
   createChatMessage(msg: InsertChatMessage): Promise<ChatMessage>;
   markChatMessagesRead(projectId: string, role: "admin" | "integrador"): Promise<void>;
   getUnreadChatCount(userId: string, role: string): Promise<number>;
+
+  // Notifications
+  getNotifications(limit?: number): Promise<Notification[]>;
+  getUnreadNotificationCount(): Promise<number>;
+  createNotification(data: InsertNotification): Promise<Notification>;
+  markNotificationRead(id: string): Promise<void>;
+  markAllNotificationsRead(): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -434,6 +442,29 @@ export class DatabaseStorage implements IStorage {
       const projectIds = userProjects.map(p => p.id);
       return allMessages.filter(m => projectIds.includes(m.projectId) && !m.readByIntegrador && ["admin", "engenharia", "financeiro"].includes(m.senderRole)).length;
     }
+  }
+
+  // ── Notifications ──
+  async getNotifications(limit = 50): Promise<Notification[]> {
+    return db.select().from(notifications).orderBy(desc(notifications.createdAt)).limit(limit);
+  }
+
+  async getUnreadNotificationCount(): Promise<number> {
+    const result = await db.select({ cnt: count() }).from(notifications).where(isNull(notifications.readAt));
+    return result[0]?.cnt ?? 0;
+  }
+
+  async createNotification(data: InsertNotification): Promise<Notification> {
+    const [notif] = await db.insert(notifications).values(data).returning();
+    return notif;
+  }
+
+  async markNotificationRead(id: string): Promise<void> {
+    await db.update(notifications).set({ readAt: new Date() }).where(eq(notifications.id, id));
+  }
+
+  async markAllNotificationsRead(): Promise<void> {
+    await db.update(notifications).set({ readAt: new Date() }).where(isNull(notifications.readAt));
   }
 }
 

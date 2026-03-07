@@ -804,8 +804,23 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         createdByRole: user?.role || "integrador",
       });
 
-      // Email notification to integrador when admin uploads a document
+      // Notification for admin when integrador uploads document
       const isAdminUpload = user && ["admin", "engenharia", "financeiro"].includes(user.role);
+      if (!isAdminUpload) {
+        const proj = await storage.getProject(req.params.id);
+        if (proj) {
+          storage.createNotification({
+            type: "document",
+            title: `Documento enviado por integrador`,
+            body: `${user?.name || "Integrador"} enviou "${doc.name}" no projeto ${proj.ticketNumber || proj.title}`,
+            projectId: proj.id,
+            projectTitle: proj.title,
+            ticketNumber: proj.ticketNumber,
+          }).catch(() => {});
+        }
+      }
+
+      // Email notification to integrador when admin uploads a document
       if (isAdminUpload) {
         const project = await storage.getProject(req.params.id);
         if (project) {
@@ -947,6 +962,15 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         details: `Pagamento #${paymentId} aprovado (R$ ${paidValue.toFixed(2).replace(".", ",")}). Status avançado automaticamente para Projeto Técnico.`,
         createdByRole: "admin",
       });
+
+      storage.createNotification({
+        type: "payment",
+        title: `Pagamento aprovado`,
+        body: `Pagamento de R$ ${paidValue.toFixed(2).replace(".", ",")} aprovado no projeto ${project.ticketNumber || project.title}. Status avançado para Projeto Técnico.`,
+        projectId,
+        projectTitle: project.title,
+        ticketNumber: project.ticketNumber,
+      }).catch(() => {});
 
       const integradorEmail = project.integrador?.email || project.client?.email;
       const integradorName = project.integrador?.name || project.client?.name || "Integrador";
@@ -1129,6 +1153,39 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const { label, color, showInKanban, sortOrder } = req.body;
       const updated = await storage.upsertStatusConfig(req.params.key as string, { label, color, showInKanban, sortOrder });
       res.json(updated);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // ── NOTIFICATIONS ────────────────────────────────────────────────────
+  app.get("/api/notifications", requireAuth, async (req, res) => {
+    try {
+      const user = await getCurrentUser(req);
+      if (!user || !["admin", "engenharia", "financeiro"].includes(user.role)) return res.status(403).json({ error: "Sem permissão" });
+      const notifs = await storage.getNotifications(100);
+      res.json(notifs);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.get("/api/notifications/count", requireAuth, async (req, res) => {
+    try {
+      const user = await getCurrentUser(req);
+      if (!user || !["admin", "engenharia", "financeiro"].includes(user.role)) return res.json({ count: 0 });
+      const count = await storage.getUnreadNotificationCount();
+      res.json({ count });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.patch("/api/notifications/:id/read", requireAuth, async (req, res) => {
+    try {
+      await storage.markNotificationRead(req.params.id);
+      res.json({ ok: true });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.patch("/api/notifications/read-all", requireAuth, async (req, res) => {
+    try {
+      await storage.markAllNotificationsRead();
+      res.json({ ok: true });
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
@@ -1380,6 +1437,18 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       broadcastToProjectParticipants(projectIntegradorId, wsEvent);
     } else {
       broadcastToAdmins(wsEvent);
+    }
+
+    // Notification for admin when integrador sends a message
+    if (!isAdmin) {
+      storage.createNotification({
+        type: "message",
+        title: `Nova mensagem de integrador`,
+        body: `${user.name || user.username} enviou uma mensagem no projeto ${project.ticketNumber || project.title}: "${content.trim().slice(0, 80)}${content.trim().length > 80 ? "…" : ""}"`,
+        projectId: project.id,
+        projectTitle: project.title,
+        ticketNumber: project.ticketNumber,
+      }).catch(() => {});
     }
 
     res.json(msg);

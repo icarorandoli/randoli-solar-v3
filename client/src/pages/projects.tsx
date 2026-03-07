@@ -1,4 +1,5 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -617,8 +618,20 @@ export default function ProjectsPage() {
   const getStatusLabel = (key: string) => configMap[key]?.label ?? key;
   const getStatusBadge = (key: string) => getBadgeClass(configMap[key]?.color ?? "slate");
 
+  const [, navigate] = useLocation();
+
   const allProjects = [...projects, ...archived];
   const detailProject = detailProjectId ? allProjects.find(p => p.id === detailProjectId) || null : null;
+
+  // Auto-open project from ?open= query param (e.g. clicked from a notification)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const openId = params.get("open");
+    if (openId && allProjects.length > 0) {
+      setDetailProjectId(openId);
+      navigate("/projetos", { replace: true });
+    }
+  }, [allProjects.length]);
 
   const deleteMut = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/projects/${id}`),

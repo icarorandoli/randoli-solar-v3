@@ -35,6 +35,7 @@ import ContaPage from "@/pages/portal/conta";
 import CompletarPerfilPage from "@/pages/completar-perfil";
 import NotFound from "@/pages/not-found";
 import StatusConfigPage from "@/pages/status-config";
+import { NotificationBell } from "@/components/notification-bell";
 
 import type { ReactNode } from "react";
 
@@ -81,6 +82,7 @@ function AdminLayout() {
             <SidebarTrigger data-testid="button-sidebar-toggle" />
             <div className="flex-1" />
             <span className="text-xs text-muted-foreground font-medium hidden sm:block">Portal Admin</span>
+            <NotificationBell />
             <ThemeToggle />
           </header>
           <main className="flex-1 overflow-auto">

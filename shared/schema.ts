@@ -285,6 +285,25 @@ export const insertStatusConfigSchema = createInsertSchema(statusConfigs).omit({
 export type InsertStatusConfig = z.infer<typeof insertStatusConfigSchema>;
 export type StatusConfig = typeof statusConfigs.$inferSelect;
 
+// ─── NOTIFICATIONS ─────────────────────────────────────────────────────
+export const notifTypeEnum = pgEnum("notif_type", ["document", "message", "payment"]);
+
+export const notifications = pgTable("notifications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  type: notifTypeEnum("type").notNull(),
+  title: text("title").notNull(),
+  body: text("body"),
+  projectId: varchar("project_id").references(() => projects.id),
+  projectTitle: text("project_title"),
+  ticketNumber: text("ticket_number"),
+  readAt: timestamp("read_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertNotificationSchema = createInsertSchema(notifications).omit({ id: true, createdAt: true, readAt: true });
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+export type Notification = typeof notifications.$inferSelect;
+
 // ─── PASSWORD RESET TOKENS ─────────────────────────────────────────────
 export const passwordResetTokens = pgTable("password_reset_tokens", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

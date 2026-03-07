@@ -75,6 +75,10 @@ Sistema SaaS para gerenciamento de projetos de homologação fotovoltaica. Inclu
 - `GET /api/chat/unread` — contagem de mensagens não lidas para o usuário logado
 - `GET /api/status-configs` — lista configurações dos 12 status (faz seed automático se vazio)
 - `PATCH /api/status-configs/:key` — atualiza configuração de um status (somente admin)
+- `GET /api/notifications` — lista notificações (admin/engenharia/financeiro)
+- `GET /api/notifications/count` — contagem de notificações não lidas
+- `PATCH /api/notifications/:id/read` — marca uma notificação como lida
+- `PATCH /api/notifications/read-all` — marca todas como lidas
 - WebSocket em `/ws` — autenticação por mensagem `{type:"auth",userId,role}`, eventos: `chat_message`, `project_updated`, `status_changed`, `document_added`, `timeline_added`
 
 ### Frontend

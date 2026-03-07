@@ -502,31 +502,75 @@ export default function PortalProjetoPage() {
         </div>
       </div>
 
-      {/* Status Progress Bar */}
+      {/* Status Stepper */}
       {project.status !== "cancelado" && (
         <Card>
-          <CardContent className="p-4">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Progresso da Homologação</p>
-            <div className="flex items-center gap-0.5 overflow-x-auto pb-1">
+          <CardContent className="p-4 pb-5">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Progresso da Homologação</p>
+              <span className="text-xs text-muted-foreground">
+                Etapa {currentIdx + 1} de {STATUS_ORDER.length}
+              </span>
+            </div>
+
+            {/* Progress bar */}
+            <div className="relative mb-5">
+              <div className="h-1.5 w-full bg-border rounded-full" />
+              <div
+                className="h-1.5 rounded-full absolute top-0 left-0 transition-all duration-500"
+                style={{
+                  width: `${Math.round(((currentIdx + 1) / STATUS_ORDER.length) * 100)}%`,
+                  backgroundColor: STATUS_COLORS[project.status] || "#3b82f6",
+                }}
+              />
+            </div>
+
+            {/* Steps */}
+            <div className="flex items-start gap-0 overflow-x-auto pb-1 -mx-1 px-1">
               {STATUS_ORDER.map((status, i) => {
-                const isPast = i <= currentIdx;
+                const isPast = i < currentIdx;
                 const isCurrent = i === currentIdx;
+                const isFuture = i > currentIdx;
                 return (
-                  <div key={status} className="flex items-center gap-0.5 flex-shrink-0">
-                    <div className={`flex flex-col items-center gap-1 ${isCurrent ? "opacity-100" : isPast ? "opacity-80" : "opacity-30"}`}>
+                  <div key={status} className="flex items-start flex-shrink-0" style={{ flex: "1 0 auto", minWidth: "52px", maxWidth: "72px" }}>
+                    <div className="flex flex-col items-center w-full gap-1.5">
                       <div
-                        className={`h-2.5 w-2.5 rounded-full transition-all ${isCurrent ? "ring-2 ring-offset-1 scale-125" : ""}`}
-                        style={{
-                          backgroundColor: isPast ? STATUS_COLORS[status] : "#e2e8f0",
-                          outlineColor: STATUS_COLORS[status],
-                        }}
-                      />
-                      <span className="text-[9px] font-medium text-center leading-tight max-w-[54px] text-muted-foreground">
+                        className={`h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-all border-2 ${
+                          isCurrent
+                            ? "border-transparent text-white shadow-md scale-110"
+                            : isPast
+                            ? "border-transparent text-white"
+                            : "border-border bg-background text-muted-foreground/50"
+                        }`}
+                        style={
+                          isCurrent || isPast
+                            ? { backgroundColor: STATUS_COLORS[status] }
+                            : undefined
+                        }
+                      >
+                        {isPast ? "✓" : i + 1}
+                      </div>
+                      <span
+                        className={`text-[9px] font-medium text-center leading-tight px-0.5 ${
+                          isCurrent
+                            ? "text-foreground font-semibold"
+                            : isPast
+                            ? "text-muted-foreground"
+                            : "text-muted-foreground/40"
+                        }`}
+                      >
                         {STATUS_LABELS[status]}
                       </span>
                     </div>
                     {i < STATUS_ORDER.length - 1 && (
-                      <div className={`h-px w-5 mb-3 flex-shrink-0 ${i < currentIdx ? "bg-primary/60" : "bg-border"}`} />
+                      <div
+                        className="h-px mt-3 flex-shrink-0 transition-all"
+                        style={{
+                          width: "100%",
+                          minWidth: "8px",
+                          backgroundColor: i < currentIdx ? STATUS_COLORS[status] : "hsl(var(--border))",
+                        }}
+                      />
                     )}
                   </div>
                 );

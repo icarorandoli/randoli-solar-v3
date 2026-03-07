@@ -8,10 +8,12 @@ import {
   FolderOpen, Users, CheckCircle, Clock, Zap, AlertCircle,
   XCircle, FileText, ClipboardList, Wrench, Eye, ShieldCheck,
   DollarSign, TrendingUp, BadgeCheck, Hourglass, ChevronRight,
+  KanbanSquare, Plus, Settings,
 } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import type { Project, Client } from "@shared/schema";
 import { useAuth } from "@/contexts/AuthContext";
+import { Link } from "wouter";
 
 interface Stats {
   totalProjects: number;
@@ -165,11 +167,38 @@ export default function DashboardPage() {
     .filter(([s]) => !["orcamento", "homologado", "cancelado"].includes(s))
     .reduce((sum, [, v]) => sum + v, 0);
 
+  const quickActions = [
+    { title: "Novo Projeto", desc: "Cadastrar projeto", href: "/clientes", icon: Plus, color: "text-primary bg-primary/10" },
+    { title: "Kanban", desc: "Ver quadro visual", href: "/kanban", icon: KanbanSquare, color: "text-violet-600 bg-violet-100 dark:text-violet-400 dark:bg-violet-900/30" },
+    { title: "Clientes", desc: "Gerenciar integradores", href: "/clientes", icon: Users, color: "text-blue-600 bg-blue-100 dark:text-blue-400 dark:bg-blue-900/30" },
+    ...(user?.role === "admin" || user?.role === "financeiro" ? [
+      { title: "Configurações", desc: "Ajustar sistema", href: "/configuracoes", icon: Settings, color: "text-gray-600 bg-gray-100 dark:text-gray-400 dark:bg-gray-800" },
+    ] : []),
+  ];
+
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground" data-testid="text-page-title">Dashboard</h1>
-        <p className="text-muted-foreground text-sm mt-1">Acompanhe projetos e homologações em tempo real</p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground" data-testid="text-page-title">Dashboard</h1>
+          <p className="text-muted-foreground text-sm mt-1">Acompanhe projetos e homologações em tempo real</p>
+        </div>
+        {/* Quick Actions */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {quickActions.map(action => (
+            <Link key={action.title} href={action.href}>
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-card hover-elevate cursor-pointer transition-all" data-testid={`button-quick-${action.title.toLowerCase().replace(/\s/g, "-")}`}>
+                <div className={`h-7 w-7 rounded-md flex items-center justify-center flex-shrink-0 ${action.color}`}>
+                  <action.icon className="h-3.5 w-3.5" />
+                </div>
+                <div className="hidden sm:block">
+                  <p className="text-xs font-semibold leading-none">{action.title}</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">{action.desc}</p>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
       </div>
 
       {/* KPI Cards */}

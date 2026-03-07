@@ -9,6 +9,9 @@ import { PortalSidebar } from "@/components/portal-sidebar";
 
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useTheme } from "@/hooks/use-theme";
+import { Moon, Sun } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 import DashboardPage from "@/pages/dashboard";
 import ProjectsPage from "@/pages/projects";
@@ -51,16 +54,32 @@ function LoadingScreen() {
   );
 }
 
+function ThemeToggle() {
+  const { theme, toggleTheme } = useTheme();
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={toggleTheme}
+      className="h-8 w-8 text-muted-foreground hover:text-foreground"
+      data-testid="button-theme-toggle"
+    >
+      {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+    </Button>
+  );
+}
+
 function AdminLayout() {
   return (
     <SidebarProvider style={{ "--sidebar-width": "17rem", "--sidebar-width-icon": "3.5rem" } as React.CSSProperties}>
       <div className="flex h-screen w-full overflow-hidden bg-background">
         <AdminSidebar />
         <div className="flex flex-col flex-1 min-w-0">
-          <header className="flex items-center gap-3 px-4 py-3 border-b border-border/60 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
+          <header className="flex items-center gap-3 px-4 py-2.5 border-b border-border/60 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
             <SidebarTrigger data-testid="button-sidebar-toggle" />
             <div className="flex-1" />
-            <span className="text-xs text-muted-foreground font-medium">Portal Admin</span>
+            <span className="text-xs text-muted-foreground font-medium hidden sm:block">Portal Admin</span>
+            <ThemeToggle />
           </header>
           <main className="flex-1 overflow-auto">
             <Switch>
@@ -98,10 +117,11 @@ function PortalLayout() {
       <div className="flex h-screen w-full overflow-hidden bg-background">
         <PortalSidebar />
         <div className="flex flex-col flex-1 min-w-0">
-          <header className="flex items-center gap-3 px-4 py-3 border-b border-border/60 bg-background/80 backdrop-blur-sm sticky top-0 z-40">
+          <header className="flex items-center gap-3 px-4 py-2.5 border-b border-border/60 bg-background/80 backdrop-blur-sm sticky top-0 z-40">
             <SidebarTrigger data-testid="button-portal-sidebar-toggle" />
             <div className="flex-1" />
-            <span className="text-xs text-muted-foreground font-medium">Portal do Integrador</span>
+            <span className="text-xs text-muted-foreground font-medium hidden sm:block">Portal do Integrador</span>
+            <ThemeToggle />
           </header>
           <main className="flex-1 overflow-auto">
             <Switch>
@@ -162,7 +182,6 @@ function AppRoutes() {
 
   const isAdminRole = ["admin", "engenharia", "financeiro"].includes(user.role);
 
-  // Admin panel routes
   if (isAdminRole) {
     if (location.startsWith("/portal")) {
       return <Redirect to="/" />;
@@ -170,7 +189,6 @@ function AppRoutes() {
     return <AdminLayout />;
   }
 
-  // Integrador routes
   if (!location.startsWith("/portal")) {
     return <Redirect to="/portal" />;
   }

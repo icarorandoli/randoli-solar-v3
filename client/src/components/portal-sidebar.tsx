@@ -4,7 +4,7 @@ import {
   SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
   SidebarHeader, SidebarFooter,
 } from "@/components/ui/sidebar";
-import { LayoutDashboard, FolderOpen, Plus, User, LogOut, Zap, MessageSquare } from "lucide-react";
+import { LayoutDashboard, Plus, User, LogOut, Zap } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
@@ -15,6 +15,27 @@ const navItems = [
   { title: "Novo Projeto", url: "/portal/novo-projeto", icon: Plus },
   { title: "Minha Conta", url: "/portal/conta", icon: User },
 ];
+
+function UserAvatar({ name }: { name?: string }) {
+  const initials = name
+    ? name
+        .split(" ")
+        .slice(0, 2)
+        .map(n => n[0])
+        .join("")
+        .toUpperCase()
+    : "?";
+  return (
+    <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+      <span className="text-xs font-bold text-primary-foreground">{initials}</span>
+    </div>
+  );
+}
+
+const CLIENT_TYPE_LABELS: Record<string, string> = {
+  pf: "Pessoa Física",
+  pj: "Pessoa Jurídica",
+};
 
 export function PortalSidebar() {
   const [location] = useLocation();
@@ -58,7 +79,11 @@ export function PortalSidebar() {
                 const showBadge = item.url === "/portal" && unreadCount > 0;
                 return (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild data-active={isActive} data-testid={`link-portal-${item.title.toLowerCase().replace(/\s/g, "-")}`}>
+                    <SidebarMenuButton
+                      asChild
+                      data-active={isActive}
+                      data-testid={`link-portal-${item.title.toLowerCase().replace(/\s/g, "-")}`}
+                    >
                       <Link href={item.url}>
                         <item.icon className="h-4 w-4" />
                         <span className="flex-1">{item.title}</span>
@@ -78,13 +103,13 @@ export function PortalSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border px-4 py-3 space-y-3">
-        <div className="flex items-center gap-2 px-1">
-          <div className="h-7 w-7 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-            <User className="h-3.5 w-3.5 text-primary" />
-          </div>
+        <div className="flex items-center gap-2.5 px-1">
+          <UserAvatar name={user?.name} />
           <div className="flex flex-col min-w-0 flex-1">
-            <span className="text-xs font-medium truncate">{user?.name}</span>
-            <span className="text-xs text-muted-foreground truncate">{user?.clientType}</span>
+            <span className="text-xs font-semibold truncate">{user?.name}</span>
+            <span className="text-[11px] text-muted-foreground truncate">
+              {user?.clientType ? CLIENT_TYPE_LABELS[user.clientType] ?? user.clientType : "Integrador"}
+            </span>
           </div>
         </div>
         <Button variant="outline" size="sm" className="w-full" onClick={logout} data-testid="button-logout">

@@ -4,9 +4,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Zap, Eye, EyeOff } from "lucide-react";
+import { Zap, Eye, EyeOff, ShieldCheck, Clock, CheckCircle } from "lucide-react";
 import { SiGoogle } from "react-icons/si";
 import { useQuery } from "@tanstack/react-query";
 
@@ -37,144 +36,214 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-accent/10 to-primary/5 flex items-center justify-center p-4">
-      <div className="w-full max-w-sm space-y-6">
+    <div className="min-h-screen flex flex-col lg:flex-row">
+      {/* Left panel — brand */}
+      <div className="hidden lg:flex lg:w-1/2 xl:w-[55%] flex-col bg-gradient-to-br from-[#0c2340] via-[#0e3460] to-[#0d6efd]/70 p-10 relative overflow-hidden">
+        {/* Decorative circles */}
+        <div className="absolute -top-24 -right-24 h-80 w-80 rounded-full bg-primary/20 blur-3xl" />
+        <div className="absolute -bottom-32 -left-16 h-96 w-96 rounded-full bg-sky-400/10 blur-3xl" />
+
         {/* Logo */}
-        <div className="flex flex-col items-center gap-3">
+        <div className="flex items-center gap-3 relative z-10">
           {logoUrl ? (
-            <img src={logoUrl} alt="Logo" className="h-14 object-contain" />
+            <img src={logoUrl} alt="Logo" className="h-10 object-contain" />
           ) : (
-            <div className="h-14 w-14 rounded-xl bg-primary flex items-center justify-center shadow-lg">
-              <Zap className="h-8 w-8 text-primary-foreground" />
+            <div className="h-10 w-10 rounded-xl bg-white/15 backdrop-blur flex items-center justify-center">
+              <Zap className="h-6 w-6 text-white" />
             </div>
           )}
-          <div className="text-center">
-            <h1 className="text-xl font-bold">{companyName}</h1>
-            <p className="text-sm text-muted-foreground">Portal do Integrador Solar</p>
+          <span className="text-white font-bold text-lg tracking-tight">{companyName}</span>
+        </div>
+
+        {/* Tagline */}
+        <div className="flex-1 flex flex-col justify-center relative z-10">
+          <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-3 py-1 text-xs text-sky-200 font-medium w-fit mb-6">
+            <Zap className="h-3 w-3" />
+            Portal SaaS de Homologação
+          </div>
+          <h1 className="text-3xl xl:text-4xl font-bold text-white leading-tight mb-4">
+            Gerencie projetos de<br />
+            <span className="text-sky-300">energia solar</span> de forma<br />
+            simples e eficiente
+          </h1>
+          <p className="text-sky-100/80 text-sm leading-relaxed max-w-sm">
+            Acompanhe cada etapa da homologação fotovoltaica, do orçamento à aprovação final, com total transparência.
+          </p>
+
+          {/* Feature list */}
+          <div className="mt-8 space-y-3">
+            {[
+              { icon: CheckCircle, text: "Acompanhamento em tempo real de cada etapa" },
+              { icon: ShieldCheck, text: "Documentos e ART centralizados no portal" },
+              { icon: Clock, text: "Status atualizado automaticamente pela nossa equipe" },
+            ].map(({ icon: Icon, text }) => (
+              <div key={text} className="flex items-center gap-3">
+                <div className="h-7 w-7 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
+                  <Icon className="h-3.5 w-3.5 text-sky-300" />
+                </div>
+                <span className="text-sm text-sky-100/90">{text}</span>
+              </div>
+            ))}
           </div>
         </div>
 
-        <Card>
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg">Entrar</CardTitle>
-            <CardDescription>Acesse sua conta para gerenciar projetos</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="username">Usuário</Label>
-                <Input
-                  id="username"
-                  value={username}
-                  onChange={e => setUsername(e.target.value)}
-                  placeholder="seu.usuario"
-                  autoComplete="username"
-                  data-testid="input-login-username"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="password">Senha</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPass ? "text" : "password"}
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    autoComplete="current-password"
-                    data-testid="input-login-password"
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
-                    onClick={() => setShowPass(!showPass)}
-                  >
-                    {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-              <Button type="submit" className="w-full" disabled={loading} data-testid="button-login-submit">
-                {loading ? "Entrando..." : "Entrar"}
-              </Button>
-              <div className="text-center">
-                <Link href="/esqueci-senha" className="text-xs text-muted-foreground hover:text-primary transition-colors" data-testid="link-forgot-password">
-                  Esqueceu a senha?
-                </Link>
-              </div>
-
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">ou</span>
-                </div>
-              </div>
-
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full gap-2"
-                disabled
-                data-testid="button-login-google"
-              >
-                <SiGoogle className="h-4 w-4 text-[#4285F4]" />
-                Entrar com Google (em breve)
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        <p className="text-center text-sm text-muted-foreground">
-          Ainda não tem conta?{" "}
-          <Link href="/cadastro" className="text-primary font-medium" data-testid="link-go-register">
-            Cadastre-se
-          </Link>
-        </p>
-
-        {/* Parceiros Carousel */}
+        {/* Partners strip */}
         {settings?.partners_enabled !== "false" && (
-          <div className="pt-8 border-t border-border/40">
-            <p className="text-center text-[10px] uppercase tracking-widest text-muted-foreground mb-4 font-semibold">
+          <div className="relative z-10 pt-8 border-t border-white/10">
+            <p className="text-[10px] uppercase tracking-widest text-white/40 mb-4 font-semibold">
               Empresas que confiam em nosso trabalho
             </p>
-            <div className="relative overflow-hidden group">
-              <div className="flex animate-scroll hover:pause gap-8 items-center py-2">
-                <PartnersList />
-                {/* Duplicate for infinite loop */}
-                <PartnersList />
+            <div className="relative overflow-hidden">
+              <div className="flex animate-scroll gap-8 items-center py-1">
+                <PartnersList dark />
+                <PartnersList dark />
               </div>
-              <div className="absolute inset-y-0 left-0 w-12 bg-gradient-to-r from-background to-transparent z-10" />
-              <div className="absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-background to-transparent z-10" />
+              <div className="absolute inset-y-0 left-0 w-10 bg-gradient-to-r from-[#0e3460] to-transparent z-10" />
+              <div className="absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-[#0e3460] to-transparent z-10" />
             </div>
           </div>
         )}
+      </div>
+
+      {/* Right panel — form */}
+      <div className="flex-1 flex flex-col items-center justify-center p-6 bg-background min-h-screen lg:min-h-0">
+        {/* Mobile logo */}
+        <div className="flex flex-col items-center gap-2 mb-8 lg:hidden">
+          {logoUrl ? (
+            <img src={logoUrl} alt="Logo" className="h-12 object-contain" />
+          ) : (
+            <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center shadow-lg">
+              <Zap className="h-7 w-7 text-primary-foreground" />
+            </div>
+          )}
+          <div className="text-center">
+            <h1 className="text-lg font-bold">{companyName}</h1>
+            <p className="text-xs text-muted-foreground">Portal do Integrador Solar</p>
+          </div>
+        </div>
+
+        <div className="w-full max-w-sm">
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-foreground">Bem-vindo de volta</h2>
+            <p className="text-muted-foreground text-sm mt-1">Entre na sua conta para continuar</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-1.5">
+              <Label htmlFor="username" className="text-sm font-medium">Usuário</Label>
+              <Input
+                id="username"
+                value={username}
+                onChange={e => setUsername(e.target.value)}
+                placeholder="seu.usuario"
+                autoComplete="username"
+                className="h-11"
+                data-testid="input-login-username"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password" className="text-sm font-medium">Senha</Label>
+                <Link href="/esqueci-senha" className="text-xs text-primary hover:underline" data-testid="link-forgot-password">
+                  Esqueceu a senha?
+                </Link>
+              </div>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPass ? "text" : "password"}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                  className="h-11 pr-10"
+                  data-testid="input-login-password"
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={() => setShowPass(!showPass)}
+                >
+                  {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+
+            <Button type="submit" className="w-full h-11 text-sm font-semibold" disabled={loading} data-testid="button-login-submit">
+              {loading ? "Entrando..." : "Entrar"}
+            </Button>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">ou</span>
+              </div>
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full h-11 gap-2"
+              disabled
+              data-testid="button-login-google"
+            >
+              <SiGoogle className="h-4 w-4 text-[#4285F4]" />
+              Entrar com Google (em breve)
+            </Button>
+          </form>
+
+          <p className="text-center text-sm text-muted-foreground mt-6">
+            Ainda não tem conta?{" "}
+            <Link href="/cadastro" className="text-primary font-semibold hover:underline" data-testid="link-go-register">
+              Cadastre-se grátis
+            </Link>
+          </p>
+
+          {/* Mobile partners */}
+          {settings?.partners_enabled !== "false" && (
+            <div className="lg:hidden mt-10 pt-6 border-t border-border/40">
+              <p className="text-center text-[10px] uppercase tracking-widest text-muted-foreground mb-4 font-semibold">
+                Empresas que confiam em nosso trabalho
+              </p>
+              <div className="relative overflow-hidden">
+                <div className="flex animate-scroll gap-8 items-center py-1">
+                  <PartnersList />
+                  <PartnersList />
+                </div>
+                <div className="absolute inset-y-0 left-0 w-10 bg-gradient-to-r from-background to-transparent z-10" />
+                <div className="absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-background to-transparent z-10" />
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
-function PartnersList() {
+function PartnersList({ dark }: { dark?: boolean }) {
   const { data: partners } = useQuery<any[]>({ queryKey: ["/api/partners"] });
-  
+
   if (!partners || partners.length === 0) return null;
 
   return (
     <>
       {partners.map((partner) => (
-        <div 
-          key={partner.id} 
-          className="flex-shrink-0 grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all duration-300"
+        <div
+          key={partner.id}
+          className={`flex-shrink-0 transition-all duration-300 ${dark ? "grayscale brightness-200 opacity-40 hover:opacity-70" : "grayscale opacity-50 hover:grayscale-0 hover:opacity-100"}`}
           title={partner.name}
         >
           {partner.logoUrl ? (
-            <img 
-              src={partner.logoUrl} 
-              alt={partner.name} 
-              className="h-14 w-auto object-contain max-w-[140px]" 
+            <img
+              src={partner.logoUrl}
+              alt={partner.name}
+              className="h-10 w-auto object-contain max-w-[120px]"
             />
           ) : (
-            <span className="text-sm font-bold text-muted-foreground whitespace-nowrap">{partner.name}</span>
+            <span className={`text-sm font-bold whitespace-nowrap ${dark ? "text-white/50" : "text-muted-foreground"}`}>{partner.name}</span>
           )}
         </div>
       ))}

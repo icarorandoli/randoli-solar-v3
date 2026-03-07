@@ -18,43 +18,15 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Plus, Search, Pencil, Trash2, FolderOpen, Zap, Eye,
   MapPin, Cpu, Sun, User, FileText, Activity, Building,
-  ExternalLink, Upload, Hash, CheckCircle2, Archive, RotateCcw, CreditCard, RefreshCw
+  ExternalLink, Upload, Hash, CheckCircle2, Archive, RotateCcw, CreditCard, RefreshCw,
+  LayoutGrid, List
 } from "lucide-react";
 import { useForm, Controller } from "react-hook-form";
-import type { Project, Client, Document, Timeline } from "@shared/schema";
+import type { Project, Client, Document, Timeline, StatusConfig } from "@shared/schema";
 import ChatPanel from "@/components/chat-panel";
 import { useProjectWebSocket } from "@/hooks/use-websocket";
 import { useUpload } from "@/hooks/use-upload";
-
-const STATUS_LABELS: Record<string, string> = {
-  orcamento: "Orçamento",
-  aprovado_pagamento_pendente: "Aprovado / Pag. Pendente",
-  projeto_tecnico: "Projeto Técnico",
-  aguardando_art: "Aguardando ART",
-  protocolado: "Protocolado",
-  parecer_acesso: "Parecer de Acesso",
-  instalacao: "Em Instalação",
-  vistoria: "Aguardando Vistoria",
-  projeto_aprovado: "Projeto Aprovado",
-  homologado: "Homologado",
-  finalizado: "Finalizado",
-  cancelado: "Cancelado",
-};
-
-const STATUS_BADGE_STYLES: Record<string, string> = {
-  orcamento: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
-  aprovado_pagamento_pendente: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300",
-  projeto_tecnico: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
-  aguardando_art: "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300",
-  protocolado: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300",
-  parecer_acesso: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-  instalacao: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300",
-  vistoria: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300",
-  projeto_aprovado: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
-  homologado: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
-  finalizado: "bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-200",
-  cancelado: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
-};
+import { getBadgeClass } from "@/lib/status-colors";
 
 const DOC_TYPE_LABELS: Record<string, string> = {
   rg_cnh: "RG / CNH", cpf_cnpj_doc: "CPF / CNPJ", conta_energia: "Conta de Energia",
@@ -104,6 +76,11 @@ function ProjectDetailSheet({
   const [newValor, setNewValor] = useState("");
 
   useProjectWebSocket(user?.id ?? null, user?.role ?? null, project?.id ?? "");
+
+  const { data: statusConfigs = [] } = useQuery<StatusConfig[]>({ queryKey: ["/api/status-configs"] });
+  const configMap = Object.fromEntries(statusConfigs.map(c => [c.key, c]));
+  const getStatusLabel = (key: string) => configMap[key]?.label ?? key;
+  const getStatusBadge = (key: string) => getBadgeClass(configMap[key]?.color ?? "slate");
 
   const { data: docs = [], isLoading: docsLoading } = useQuery<Document[]>({
     queryKey: ["/api/projects", project?.id, "documents"],
@@ -264,8 +241,8 @@ function ProjectDetailSheet({
                 {project.nomeCliente ? ` · Cliente: ${project.nomeCliente}` : ""}
               </p>
             </div>
-            <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${STATUS_BADGE_STYLES[project.status]}`}>
-              {STATUS_LABELS[project.status]}
+            <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${getStatusBadge(project.status)}`}>
+              {getStatusLabel(project.status)}
             </span>
           </div>
         </SheetHeader>
@@ -282,11 +259,11 @@ function ProjectDetailSheet({
                   <Label className="text-xs">Alterar Status</Label>
                   <Select value={newStatus} onValueChange={setNewStatus}>
                     <SelectTrigger data-testid="select-admin-status">
-                      <SelectValue placeholder={STATUS_LABELS[project.status]} />
+                      <SelectValue placeholder={getStatusLabel(project.status)} />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.entries(STATUS_LABELS).map(([v, l]) => (
-                        <SelectItem key={v} value={v}>{l}</SelectItem>
+                      {statusConfigs.sort((a, b) => a.sortOrder - b.sortOrder).map(c => (
+                        <SelectItem key={c.key} value={c.key}>{c.label}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -623,6 +600,7 @@ export default function ProjectsPage() {
   const [detailProjectId, setDetailProjectId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState("todos");
   const [tab, setTab] = useState("ativos");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const { toast } = useToast();
 
   const { data: projects = [], isLoading } = useQuery<ProjectWithClient[]>({ queryKey: ["/api/projects"] });
@@ -633,6 +611,11 @@ export default function ProjectsPage() {
       return res.json();
     },
   });
+  const { data: statusConfigs = [] } = useQuery<StatusConfig[]>({ queryKey: ["/api/status-configs"] });
+  const configMap = Object.fromEntries(statusConfigs.map(c => [c.key, c]));
+
+  const getStatusLabel = (key: string) => configMap[key]?.label ?? key;
+  const getStatusBadge = (key: string) => getBadgeClass(configMap[key]?.color ?? "slate");
 
   const allProjects = [...projects, ...archived];
   const detailProject = detailProjectId ? allProjects.find(p => p.id === detailProjectId) || null : null;
@@ -704,16 +687,36 @@ export default function ProjectsPage() {
           />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-48" data-testid="select-filter-status">
+          <SelectTrigger className="w-52" data-testid="select-filter-status">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Todos os status</SelectItem>
-            {Object.entries(STATUS_LABELS).map(([v, l]) => (
-              <SelectItem key={v} value={v}>{l}</SelectItem>
+            {statusConfigs.sort((a, b) => a.sortOrder - b.sortOrder).map(c => (
+              <SelectItem key={c.key} value={c.key}>{c.label}</SelectItem>
             ))}
           </SelectContent>
         </Select>
+        <div className="flex rounded-md border border-border overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setViewMode("grid")}
+            className={`p-2 transition-colors ${viewMode === "grid" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted"}`}
+            data-testid="button-view-grid"
+            title="Visualização em grade"
+          >
+            <LayoutGrid className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode("list")}
+            className={`p-2 transition-colors ${viewMode === "list" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted"}`}
+            data-testid="button-view-list"
+            title="Visualização em lista"
+          >
+            <List className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -727,6 +730,87 @@ export default function ProjectsPage() {
           <p className="text-sm mt-1">
             {tab === "arquivados" ? "Projetos finalizados aparecem aqui" : "Ajuste os filtros ou aguarde novos pedidos dos integradores"}
           </p>
+        </div>
+      ) : viewMode === "list" ? (
+        <div className="rounded-lg border border-border overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50">
+              <tr>
+                <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">Projeto</th>
+                <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground hidden sm:table-cell">Integrador</th>
+                <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground hidden md:table-cell">Potência</th>
+                <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground hidden lg:table-cell">Concessionária</th>
+                <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">Status</th>
+                <th className="px-4 py-2.5 text-xs font-medium text-muted-foreground text-right">Ações</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {filtered.map(project => (
+                <tr
+                  key={project.id}
+                  className="hover:bg-muted/30 transition-colors cursor-pointer"
+                  onClick={() => tab !== "arquivados" && setDetailProjectId(project.id)}
+                  data-testid={`row-project-${project.id}`}
+                >
+                  <td className="px-4 py-3">
+                    <div className="flex flex-col gap-0.5 min-w-0">
+                      {project.ticketNumber && (
+                        <span className="text-[10px] font-mono text-primary flex items-center gap-0.5">
+                          <Hash className="h-2.5 w-2.5" />{project.ticketNumber}
+                        </span>
+                      )}
+                      <span className="font-medium text-xs truncate max-w-[220px]">{project.title}</span>
+                      {project.nomeCliente && (
+                        <span className="text-[10px] text-muted-foreground truncate max-w-[220px]">
+                          Cliente: {project.nomeCliente}
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 hidden sm:table-cell">
+                    <span className="text-xs truncate max-w-[160px] block">{project.integrador?.name || project.client?.name || "—"}</span>
+                    {(project.integrador?.cpfCnpj || project.client?.cpfCnpj) && (
+                      <span className="text-[10px] text-muted-foreground">{project.integrador?.cpfCnpj || project.client?.cpfCnpj}</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 hidden md:table-cell">
+                    <span className="text-xs">{project.potencia ? `${project.potencia} kWp` : "—"}</span>
+                  </td>
+                  <td className="px-4 py-3 hidden lg:table-cell">
+                    <span className="text-xs truncate max-w-[140px] block">{project.concessionaria || "—"}</span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium whitespace-nowrap ${getStatusBadge(project.status)}`}>
+                      {getStatusLabel(project.status)}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                    <div className="flex items-center justify-end gap-1">
+                      {tab === "arquivados" ? (
+                        <>
+                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => unarchiveMut.mutate(project.id)} disabled={unarchiveMut.isPending} data-testid={`button-restore-project-${project.id}`}>
+                            <RotateCcw className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { if (confirm("Excluir permanentemente este projeto?")) deleteMut.mutate(project.id); }} disabled={deleteMut.isPending} data-testid={`button-delete-archived-${project.id}`}>
+                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setDetailProjectId(project.id)} data-testid={`button-view-project-${project.id}`}>
+                            <Eye className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { if (confirm("Excluir este projeto?")) deleteMut.mutate(project.id); }} disabled={deleteMut.isPending} data-testid={`button-delete-project-${project.id}`}>
+                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -742,8 +826,8 @@ export default function ProjectsPage() {
                     )}
                     <CardTitle className="text-sm font-semibold leading-tight line-clamp-2">{project.title}</CardTitle>
                   </div>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap flex-shrink-0 ${STATUS_BADGE_STYLES[project.status]}`}>
-                    {STATUS_LABELS[project.status]}
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap flex-shrink-0 ${getStatusBadge(project.status)}`}>
+                    {getStatusLabel(project.status)}
                   </span>
                 </div>
               </CardHeader>

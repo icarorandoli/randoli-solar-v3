@@ -270,6 +270,21 @@ export const chatMessageRelations = relations(chatMessages, ({ one }) => ({
   sender: one(users, { fields: [chatMessages.senderId], references: [users.id] }),
 }));
 
+// ─── STATUS CONFIGS ────────────────────────────────────────────────────
+export const statusConfigs = pgTable("status_configs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  key: varchar("key").notNull().unique(),
+  label: varchar("label").notNull(),
+  color: varchar("color").notNull().default("slate"),
+  showInKanban: boolean("show_in_kanban").notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertStatusConfigSchema = createInsertSchema(statusConfigs).omit({ id: true, updatedAt: true });
+export type InsertStatusConfig = z.infer<typeof insertStatusConfigSchema>;
+export type StatusConfig = typeof statusConfigs.$inferSelect;
+
 // ─── PASSWORD RESET TOKENS ─────────────────────────────────────────────
 export const passwordResetTokens = pgTable("password_reset_tokens", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

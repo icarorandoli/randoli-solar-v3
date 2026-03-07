@@ -1098,6 +1098,40 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
+  // ── STATUS CONFIGS ──────────────────────────────────────────────────
+  const STATUS_SEED_DEFAULTS = [
+    { key: "orcamento",                   label: "Orçamento",                color: "slate",   showInKanban: true,  sortOrder: 0  },
+    { key: "aprovado_pagamento_pendente", label: "Aprovado / Pag. Pendente", color: "yellow",  showInKanban: false, sortOrder: 1  },
+    { key: "projeto_tecnico",             label: "Projeto Técnico",          color: "blue",    showInKanban: true,  sortOrder: 2  },
+    { key: "aguardando_art",              label: "Aguardando ART",           color: "violet",  showInKanban: true,  sortOrder: 3  },
+    { key: "protocolado",                 label: "Protocolado",              color: "purple",  showInKanban: true,  sortOrder: 4  },
+    { key: "parecer_acesso",              label: "Parecer de Acesso",        color: "amber",   showInKanban: true,  sortOrder: 5  },
+    { key: "instalacao",                  label: "Em Instalação",            color: "orange",  showInKanban: false, sortOrder: 6  },
+    { key: "vistoria",                    label: "Aguardando Vistoria",      color: "cyan",    showInKanban: true,  sortOrder: 7  },
+    { key: "projeto_aprovado",            label: "Projeto Aprovado",         color: "teal",    showInKanban: false, sortOrder: 8  },
+    { key: "homologado",                  label: "Homologado",               color: "green",   showInKanban: true,  sortOrder: 9  },
+    { key: "finalizado",                  label: "Finalizado",               color: "emerald", showInKanban: true,  sortOrder: 10 },
+    { key: "cancelado",                   label: "Cancelado",                color: "red",     showInKanban: false, sortOrder: 11 },
+  ];
+
+  app.get("/api/status-configs", async (_req, res) => {
+    try {
+      await storage.seedStatusConfigs(STATUS_SEED_DEFAULTS);
+      const configs = await storage.getStatusConfigs();
+      res.json(configs);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.patch("/api/status-configs/:key", requireAuth, async (req, res) => {
+    try {
+      const user = await getCurrentUser(req);
+      if (user?.role !== "admin") return res.status(403).json({ error: "Apenas administradores podem alterar status" });
+      const { label, color, showInKanban, sortOrder } = req.body;
+      const updated = await storage.upsertStatusConfig(req.params.key as string, { label, color, showInKanban, sortOrder });
+      res.json(updated);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
   // ── SETTINGS ───────────────────────────────────────────────────────
   app.get("/api/settings/public", async (_req, res) => {
     try {

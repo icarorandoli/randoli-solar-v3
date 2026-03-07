@@ -34,6 +34,7 @@ import NovoProjetoPage from "@/pages/portal/novo-projeto";
 import ContaPage from "@/pages/portal/conta";
 import CompletarPerfilPage from "@/pages/completar-perfil";
 import NotFound from "@/pages/not-found";
+import StatusConfigPage from "@/pages/status-config";
 
 import type { ReactNode } from "react";
 
@@ -102,6 +103,9 @@ function AdminLayout() {
               </Route>
               <Route path="/configuracoes">
                 <RoleGuard allow={["admin", "financeiro"]}><SettingsPage /></RoleGuard>
+              </Route>
+              <Route path="/status-config">
+                <RoleGuard allow={["admin"]}><StatusConfigPage /></RoleGuard>
               </Route>
               <Route><Redirect to="/" /></Route>
             </Switch>

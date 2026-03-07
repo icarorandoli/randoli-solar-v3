@@ -28,6 +28,7 @@ Sistema SaaS para gerenciamento de projetos de homologação fotovoltaica. Inclu
 - `chat_messages` — mensagens de chat por projeto (admin ↔ integrador); campos readByAdmin, readByIntegrador
 - `partners` — parceiros para carousel do site
 - `site_settings` — configurações: logo, nome, SMTP, Mercado Pago (mp_access_token, mp_webhook_secret, mp_enabled)
+- `statusConfigs` — configuração dinâmica dos 12 status: label, color (key para preset), showInKanban, sortOrder
 - `pricing_ranges` — faixas de potência com preços (seed: 5 faixas padrão 1-10, 10-15, 15-25, 25-50, 50-75 kWp)
 - `client_pricing` — preços promocionais individuais por cliente
 - `password_reset_tokens` — tokens de redefinição de senha
@@ -72,6 +73,8 @@ Sistema SaaS para gerenciamento de projetos de homologação fotovoltaica. Inclu
 - `GET/POST/DELETE /api/client-pricing` — preços promocionais por cliente
 - `GET/POST /api/projects/:id/chat` — mensagens de chat por projeto
 - `GET /api/chat/unread` — contagem de mensagens não lidas para o usuário logado
+- `GET /api/status-configs` — lista configurações dos 12 status (faz seed automático se vazio)
+- `PATCH /api/status-configs/:key` — atualiza configuração de um status (somente admin)
 - WebSocket em `/ws` — autenticação por mensagem `{type:"auth",userId,role}`, eventos: `chat_message`, `project_updated`, `status_changed`, `document_added`, `timeline_added`
 
 ### Frontend
@@ -80,7 +83,8 @@ Sistema SaaS para gerenciamento de projetos de homologação fotovoltaica. Inclu
 - `/planos` — Tabela de preços pública (sem autenticação)
 - `/` — Dashboard admin (KPIs + gráficos + fluxo + stats financeiras para admin/financeiro)
 - `/projetos` — Gerenciamento de projetos (admin) com abas Ativos/Arquivados
-- `/kanban` — Kanban de projetos com drag-and-drop por etapa (admin)
+- `/kanban` — Kanban de projetos com drag-and-drop por etapa (admin); colunas dinâmicas via status configs
+- `/status-config` — Configuração de status: nome, cor (13 presets), visibilidade no Kanban, ordem (somente admin)
 - `/clientes` — Gerenciamento de clientes (admin)
 - `/precos` — Gestão de tabela de preços e preços promocionais (admin)
 - `/parceiros` — Carousel de parceiros (admin)

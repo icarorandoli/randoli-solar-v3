@@ -1,6 +1,6 @@
 import {
   users, clients, projects, partners, siteSettings, documents, timeline,
-  pricingRanges, clientPricing, chatMessages,
+  pricingRanges, clientPricing, chatMessages, statusConfigs,
   type User, type InsertUser,
   type Client, type InsertClient,
   type Project, type InsertProject,
@@ -11,6 +11,7 @@ import {
   type PricingRange, type InsertPricingRange,
   type ClientPricing, type InsertClientPricing,
   type ChatMessage, type InsertChatMessage,
+  type StatusConfig,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, count, isNull, not, gte, lte, and } from "drizzle-orm";
@@ -390,6 +391,34 @@ export class DatabaseStorage implements IStorage {
     } else {
       await db.update(chatMessages).set({ readByIntegrador: true })
         .where(eq(chatMessages.projectId, projectId));
+    }
+  }
+
+  async getStatusConfigs(): Promise<StatusConfig[]> {
+    return db.select().from(statusConfigs).orderBy(statusConfigs.sortOrder);
+  }
+
+  async upsertStatusConfig(key: string, data: Partial<{ label: string; color: string; showInKanban: boolean; sortOrder: number }>): Promise<StatusConfig> {
+    const existing = await db.select().from(statusConfigs).where(eq(statusConfigs.key, key));
+    if (existing.length > 0) {
+      const [updated] = await db.update(statusConfigs)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(statusConfigs.key, key))
+        .returning();
+      return updated;
+    } else {
+      const [inserted] = await db.insert(statusConfigs)
+        .values({ key, label: data.label ?? key, color: data.color ?? "slate", showInKanban: data.showInKanban ?? true, sortOrder: data.sortOrder ?? 0 })
+        .returning();
+      return inserted;
+    }
+  }
+
+  async seedStatusConfigs(defaults: { key: string; label: string; color: string; showInKanban: boolean; sortOrder: number }[]): Promise<void> {
+    const existing = await db.select().from(statusConfigs);
+    if (existing.length > 0) return;
+    for (const d of defaults) {
+      await db.insert(statusConfigs).values(d).onConflictDoNothing();
     }
   }
 

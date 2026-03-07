@@ -24,6 +24,7 @@ import {
   KanbanSquare,
   DollarSign,
   BarChart3,
+  Settings2,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
@@ -44,6 +45,7 @@ const SECTION_FINANCEIRO = [
 
 const SECTION_ADMIN = [
   { title: "Parceiros", url: "/parceiros", icon: Star, roles: ["admin", "financeiro"] },
+  { title: "Status", url: "/status-config", icon: Settings2, roles: ["admin"] },
   { title: "Usuários", url: "/usuarios", icon: UserCog, roles: ["admin"] },
   { title: "Configurações", url: "/configuracoes", icon: Settings, roles: ["admin", "financeiro"] },
 ];

@@ -97,6 +97,7 @@ function ProjectDetailSheet({
   const { toast } = useToast();
   const { user } = useAuth();
   const canDeleteDocs = ["admin", "engenharia"].includes(user?.role || "");
+  const canEditValor = ["admin", "financeiro"].includes(user?.role || "");
   const [timelineNote, setTimelineNote] = useState("");
   const [newStatus, setNewStatus] = useState("");
   const [newProtocolo, setNewProtocolo] = useState("");
@@ -300,6 +301,7 @@ function ProjectDetailSheet({
                   />
                 </div>
               </div>
+              {canEditValor && (
               <div className="space-y-1.5">
                 <Label className="text-xs">Valor do Projeto (R$)</Label>
                 <Input
@@ -356,6 +358,7 @@ function ProjectDetailSheet({
                   </Button>
                 )}
               </div>
+              )}
               <Button size="sm" disabled={updateMut.isPending} onClick={handleUpdateStatus} data-testid="button-admin-update-project">
                 <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
                 {updateMut.isPending ? "Salvando..." : "Salvar Alterações"}

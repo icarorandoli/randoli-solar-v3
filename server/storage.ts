@@ -399,7 +399,9 @@ export class DatabaseStorage implements IStorage {
     if (isAdmin) {
       return allMessages.filter(m => !m.readByAdmin && m.senderRole !== "admin" && m.senderRole !== "engenharia" && m.senderRole !== "financeiro").length;
     } else {
-      const userProjects = await db.select().from(projects).where(eq(projects.userId, userId));
+      const [client] = await db.select().from(clients).where(eq(clients.userId, userId));
+      if (!client) return 0;
+      const userProjects = await db.select().from(projects).where(eq(projects.clientId, client.id));
       const projectIds = userProjects.map(p => p.id);
       return allMessages.filter(m => projectIds.includes(m.projectId) && !m.readByIntegrador && ["admin", "engenharia", "financeiro"].includes(m.senderRole)).length;
     }

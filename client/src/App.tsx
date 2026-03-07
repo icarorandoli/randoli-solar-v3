@@ -161,7 +161,7 @@ function AppRoutes() {
   if (isPublicPath) {
     if (user) {
       if (user.needsProfileCompletion) return <Redirect to="/completar-perfil" />;
-      const isAdminRole = ["admin", "engenharia", "financeiro"].includes(user.role);
+      const isAdminRole = ["admin", "engenharia", "financeiro", "tecnico"].includes(user.role);
       return <Redirect to={isAdminRole ? "/" : "/portal"} />;
     }
     return (
@@ -182,7 +182,7 @@ function AppRoutes() {
     return <Redirect to="/completar-perfil" />;
   }
 
-  const isAdminRole = ["admin", "engenharia", "financeiro"].includes(user.role);
+  const isAdminRole = ["admin", "engenharia", "financeiro", "tecnico"].includes(user.role);
 
   if (isAdminRole) {
     if (location.startsWith("/portal")) {

@@ -542,6 +542,11 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const current = await storage.getProject(req.params.id);
       if (!current) return res.status(404).json({ error: "Não encontrado" });
 
+      // engenharia and tecnico cannot modify financial fields
+      if (user && ["engenharia", "tecnico"].includes(user.role)) {
+        delete req.body.valor;
+      }
+
       // Auto-archive when finalizado
       if (req.body.status === "finalizado") {
         req.body.archived = true;

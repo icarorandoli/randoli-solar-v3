@@ -200,6 +200,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       if (!valid) return res.status(401).json({ error: "Credenciais inválidas" });
 
       req.session.userId = user.id;
+      await new Promise<void>((resolve, reject) => req.session.save(e => e ? reject(e) : resolve()));
       const { password: _, ...safeUser } = user;
       res.json(safeUser);
     } catch (err) {

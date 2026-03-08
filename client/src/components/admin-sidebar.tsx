@@ -27,6 +27,10 @@ import {
   Settings2,
   TrendingUp,
   Shield,
+  Calculator,
+  Database,
+  LineChart,
+  FileText,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
@@ -44,6 +48,13 @@ const SECTION_FINANCEIRO = [
   { title: "Preços", url: "/precos", icon: DollarSign, roles: ["admin", "financeiro"] },
   { title: "Relatórios", url: "/relatorios", icon: BarChart3, roles: ["admin", "financeiro"] },
   { title: "Analytics", url: "/analytics", icon: TrendingUp, roles: ["admin", "financeiro", "engenharia"] },
+];
+
+const SECTION_AI = [
+  { title: "Calculadora Solar", url: "/ai-calculator", icon: Calculator, roles: ["admin", "engenharia"] },
+  { title: "Simulador", url: "/production-simulator", icon: LineChart, roles: ["admin", "engenharia"] },
+  { title: "Equipamentos", url: "/equipment-db", icon: Database, roles: ["admin", "engenharia"] },
+  { title: "Rel. Engenharia", url: "/engineering-report", icon: FileText, roles: ["admin", "engenharia"] },
 ];
 
 const SECTION_ADMIN = [
@@ -182,6 +193,23 @@ export function AdminSidebar() {
               <SidebarGroupContent>
                 <NavSection
                   items={SECTION_FINANCEIRO}
+                  location={location}
+                  userRole={userRole}
+                  unreadCount={unreadCount}
+                />
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </>
+        )}
+
+        {["admin", "engenharia"].includes(userRole) && (
+          <>
+            <SidebarSeparator />
+            <SidebarGroup>
+              <SidebarGroupLabel>IA Solar</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <NavSection
+                  items={SECTION_AI}
                   location={location}
                   userRole={userRole}
                   unreadCount={unreadCount}

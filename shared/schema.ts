@@ -337,6 +337,48 @@ export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({ id: tru
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
 export type AuditLog = typeof auditLogs.$inferSelect;
 
+// ─── AI — SOLAR IRRADIATION ────────────────────────────────────────────
+export const solarIrradiation = pgTable("solar_irradiation", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  city: text("city").notNull(),
+  state: text("state").notNull(),
+  irradiationKwhM2Day: numeric("irradiation_kwh_m2_day", { precision: 5, scale: 2 }).notNull(),
+});
+export const insertSolarIrradiationSchema = createInsertSchema(solarIrradiation).omit({ id: true });
+export type InsertSolarIrradiation = z.infer<typeof insertSolarIrradiationSchema>;
+export type SolarIrradiation = typeof solarIrradiation.$inferSelect;
+
+// ─── AI — SOLAR PANELS ────────────────────────────────────────────────
+export const solarPanels = pgTable("solar_panels", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  brand: text("brand").notNull(),
+  model: text("model").notNull(),
+  powerW: integer("power_w").notNull(),
+  efficiencyPct: numeric("efficiency_pct", { precision: 5, scale: 2 }).notNull(),
+  voltageVoc: numeric("voltage_voc", { precision: 6, scale: 2 }),
+  currentIsc: numeric("current_isc", { precision: 6, scale: 2 }),
+  active: boolean("active").notNull().default(true),
+});
+export const insertSolarPanelSchema = createInsertSchema(solarPanels).omit({ id: true });
+export type InsertSolarPanel = z.infer<typeof insertSolarPanelSchema>;
+export type SolarPanel = typeof solarPanels.$inferSelect;
+
+// ─── AI — SOLAR INVERTERS ─────────────────────────────────────────────
+export const solarInverters = pgTable("solar_inverters", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  brand: text("brand").notNull(),
+  model: text("model").notNull(),
+  powerKw: numeric("power_kw", { precision: 6, scale: 2 }).notNull(),
+  phases: integer("phases").notNull().default(1),
+  mpptCount: integer("mppt_count").notNull().default(1),
+  minMpptVoltage: integer("min_mppt_voltage"),
+  maxMpptVoltage: integer("max_mppt_voltage"),
+  active: boolean("active").notNull().default(true),
+});
+export const insertSolarInverterSchema = createInsertSchema(solarInverters).omit({ id: true });
+export type InsertSolarInverter = z.infer<typeof insertSolarInverterSchema>;
+export type SolarInverter = typeof solarInverters.$inferSelect;
+
 // ─── PASSWORD RESET TOKENS ─────────────────────────────────────────────
 export const passwordResetTokens = pgTable("password_reset_tokens", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

@@ -14,8 +14,14 @@ import {
 } from "@shared/schema";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { sendStatusEmail, sendTestEmail, sendPasswordResetEmail, sendDocumentEmail, sendTimelineEmail, type EmailConfig } from "./email";
-import { createPaymentPreference, createPixPayment, getPaymentInfo, verifyWebhookSignature } from "./mercadopago";
+import { createPaymentPreference, createPixPayment, getPaymentInfo, getMerchantOrder, verifyWebhookSignature } from "./mercadopago";
 import { registerUploadRoutes } from "./upload";
+import { calculateSystemSize, phaseFromConsumption } from "./ai/solar-calculator";
+import { dimensionSystem } from "./ai/solar-dimensioning";
+import { analyzeEnergyBill } from "./ai/energy-analysis";
+import { simulateProduction } from "./ai/production-simulation";
+import { generateMemorial } from "./ai/memorial-generator";
+import { generateUnifilarSvg } from "./ai/unifilar-generator";
 import path from "path";
 import fs from "fs";
 import { randomBytes } from "crypto";
@@ -400,7 +406,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const { name, email, phone, username, cpfCnpj, clientType, company, rua, numero, bairro, cep, cidade, estado, role } = req.body;
       const updateData: any = { name, email, phone, username, cpfCnpj, clientType, company, rua, numero, bairro, cep, cidade, estado };
       if (user?.role === "admin" && role) updateData.role = role;
-      const updated = await storage.updateUser(req.params.id, updateData);
+      const updated = await storage.updateUser((req.params.id as string), updateData);
       if (!updated) return res.status(404).json({ error: "Usuário não encontrado" });
       const { password: _, ...safeUser } = updated;
       res.json(safeUser);
@@ -414,7 +420,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const { newPassword } = req.body;
       if (!newPassword || newPassword.length < 6) return res.status(400).json({ error: "Senha deve ter pelo menos 6 caracteres" });
       const hashed = await hashPassword(newPassword);
-      const updated = await storage.updateUser(req.params.id, { password: hashed });
+      const updated = await storage.updateUser((req.params.id as string), { password: hashed });
       if (!updated) return res.status(404).json({ error: "Usuário não encontrado" });
       res.json({ success: true });
     } catch (err: any) { res.status(500).json({ error: err.message }); }
@@ -424,8 +430,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     try {
       const user = await getCurrentUser(req);
       if (user?.role !== "admin") return res.status(403).json({ error: "Sem permissão" });
-      if (req.params.id === user.id) return res.status(400).json({ error: "Não é possível excluir sua própria conta" });
-      await storage.deleteUser(req.params.id);
+      if ((req.params.id as string) === user.id) return res.status(400).json({ error: "Não é possível excluir sua própria conta" });
+      await storage.deleteUser((req.params.id as string));
       res.json({ success: true });
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
@@ -438,7 +444,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   });
 
   app.get("/api/clients/:id", requireAuth, async (req, res) => {
-    const c = await storage.getClient(req.params.id);
+    const c = await storage.getClient((req.params.id as string));
     if (!c) return res.status(404).json({ error: "Não encontrado" });
     res.json(c);
   });
@@ -453,7 +459,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.patch("/api/clients/:id", requireAuth, async (req, res) => {
     try {
       const data = insertClientSchema.partial().parse(req.body);
-      const c = await storage.updateClient(req.params.id, data);
+      const c = await storage.updateClient((req.params.id as string), data);
       if (!c) return res.status(404).json({ error: "Não encontrado" });
       res.json(c);
     } catch (err: any) { res.status(400).json({ error: err.message }); }
@@ -461,7 +467,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
   app.delete("/api/clients/:id", requireAuth, async (req, res) => {
     try {
-      await storage.deleteClient(req.params.id);
+      await storage.deleteClient((req.params.id as string));
       res.status(204).send();
     } catch { res.status(500).json({ error: "Erro ao deletar" }); }
   });
@@ -495,7 +501,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.get("/api/projects/:id", requireAuth, async (req, res) => {
     try {
       const user = await getCurrentUser(req);
-      const p = await storage.getProject(req.params.id);
+      const p = await storage.getProject((req.params.id as string));
       if (!p) return res.status(404).json({ error: "Não encontrado" });
 
       // Internal roles can see all projects; integrators only see their own
@@ -550,7 +556,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.patch("/api/projects/:id", requireAuth, async (req, res) => {
     try {
       const user = await getCurrentUser(req);
-      const current = await storage.getProject(req.params.id);
+      const current = await storage.getProject((req.params.id as string));
       if (!current) return res.status(404).json({ error: "Não encontrado" });
 
       // engenharia and tecnico cannot modify financial fields
@@ -564,7 +570,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       }
 
       const data = insertProjectSchema.partial().parse(req.body);
-      const updated = await storage.updateProject(req.params.id, data);
+      const updated = await storage.updateProject((req.params.id as string), data);
 
       // If status changed, add timeline entry + send email notification
       if (data.status && data.status !== current.status && user) {
@@ -583,7 +589,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           cancelado: "Projeto Cancelado",
         };
         await storage.addTimelineEntry({
-          projectId: req.params.id,
+          projectId: (req.params.id as string),
           event: `Status atualizado: ${statusLabels[data.status] || data.status}`,
           details: `Status alterado de "${statusLabels[current.status]}" para "${statusLabels[data.status]}"`,
           createdByRole: user.role,
@@ -595,7 +601,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           userRole: user.role,
           action: "project.status_change",
           entityType: "project",
-          entityId: req.params.id,
+          entityId: (req.params.id as string),
           entityLabel: `${current.ticketNumber || ""} ${current.title}`.trim(),
           payload: JSON.stringify({ from: current.status, to: data.status }),
         }).catch(() => {});
@@ -613,7 +619,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
               const intName = current.integrador?.name || current.client?.name;
               const paymentArgs = {
                 accessToken: mpToken,
-                projectId: req.params.id,
+                projectId: (req.params.id as string),
                 projectTitle: current.title,
                 ticketNumber: current.ticketNumber,
                 valor: updated?.valor || current.valor || "0",
@@ -633,18 +639,18 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
                 updatePayment.pixQrCode = pix.qrCode;
                 updatePayment.pixQrCodeBase64 = pix.qrCodeBase64;
                 updatePayment.pixPaymentId = pix.paymentId;
-                console.log(`[mercadopago] ✓ PIX criado para projeto ${req.params.id}`);
+                console.log(`[mercadopago] ✓ PIX criado para projeto ${(req.params.id as string)}`);
               } catch (pixErr) {
                 console.error("[mercadopago] Erro ao criar PIX (continuando sem):", pixErr);
               }
-              await storage.updateProject(req.params.id, updatePayment);
+              await storage.updateProject((req.params.id as string), updatePayment);
               await storage.addTimelineEntry({
-                projectId: req.params.id,
+                projectId: (req.params.id as string),
                 event: "Link de pagamento gerado",
                 details: "Pagamento via Mercado Pago e PIX criados automaticamente.",
                 createdByRole: "admin",
               });
-              console.log(`[mercadopago] ✓ Preferência criada para projeto ${req.params.id}`);
+              console.log(`[mercadopago] ✓ Preferência criada para projeto ${(req.params.id as string)}`);
             } else {
               console.log("[mercadopago] Access token não configurado — pagamento não gerado");
             }
@@ -658,11 +664,11 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         const integradorName = current.integrador?.name || current.client?.name || "Integrador";
         if (integradorEmail) {
           getEmailConfig().then(emailConfig => sendStatusEmail({
-            to: integradorEmail,
+            to: integradorEmail as string,
             integradorName,
             projectTitle: current.title,
             ticketNumber: current.ticketNumber,
-            newStatus: data.status,
+            newStatus: data.status as string,
             paymentLink,
             config: emailConfig,
           })).catch(err => console.error("[email] Falha ao enviar:", err));
@@ -681,7 +687,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             const intName = current.integrador?.name || current.client?.name;
             const paymentArgs = {
               accessToken: mpToken,
-              projectId: req.params.id,
+              projectId: (req.params.id as string),
               projectTitle: current.title,
               ticketNumber: current.ticketNumber,
               valor: data.valor,
@@ -703,14 +709,14 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             } catch (pixErr) {
               console.error("[mercadopago] Erro ao criar PIX na atualização de valor:", pixErr);
             }
-            await storage.updateProject(req.params.id, updatePayment);
+            await storage.updateProject((req.params.id as string), updatePayment);
             await storage.addTimelineEntry({
-              projectId: req.params.id,
+              projectId: (req.params.id as string),
               event: "Pagamento atualizado",
               details: `Valor alterado para R$ ${data.valor}. Novo link de pagamento gerado.`,
               createdByRole: "admin",
             });
-            console.log(`[mercadopago] ✓ Pagamento regenerado para projeto ${req.params.id} com novo valor R$ ${data.valor}`);
+            console.log(`[mercadopago] ✓ Pagamento regenerado para projeto ${(req.params.id as string)} com novo valor R$ ${data.valor}`);
           }
         } catch (err) {
           console.error("[mercadopago] Erro ao regenerar pagamento:", err);
@@ -718,7 +724,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       }
 
       // Re-fetch project with updated payment info
-      const finalProject = await storage.getProject(req.params.id);
+      const finalProject = await storage.getProject((req.params.id as string));
       res.json(finalProject || updated);
     } catch (err: any) { res.status(400).json({ error: err.message }); }
   });
@@ -728,7 +734,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const user = await getCurrentUser(req);
       if (user?.role !== "admin") return res.status(403).json({ error: "Sem permissão" });
 
-      const project = await storage.getProject(req.params.id);
+      const project = await storage.getProject((req.params.id as string));
       if (!project) return res.status(404).json({ error: "Projeto não encontrado" });
       if (project.status !== "aprovado_pagamento_pendente") {
         return res.status(400).json({ error: "Projeto não está com pagamento pendente" });
@@ -750,7 +756,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
       const paymentArgs = {
         accessToken: mpToken,
-        projectId: req.params.id,
+        projectId: (req.params.id as string),
         projectTitle: project.title,
         ticketNumber: project.ticketNumber,
         valor: project.valor,
@@ -772,22 +778,22 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         updateData.pixQrCode = pix.qrCode;
         updateData.pixQrCodeBase64 = pix.qrCodeBase64;
         updateData.pixPaymentId = pix.paymentId;
-        console.log(`[mercadopago] ✓ PIX criado para projeto ${req.params.id}`);
+        console.log(`[mercadopago] ✓ PIX criado para projeto ${(req.params.id as string)}`);
       } catch (pixErr) {
         console.error("[mercadopago] Erro ao criar PIX (continuando sem PIX):", pixErr);
       }
 
-      await storage.updateProject(req.params.id, updateData);
+      await storage.updateProject((req.params.id as string), updateData);
 
       await storage.addTimelineEntry({
-        projectId: req.params.id,
+        projectId: (req.params.id as string),
         event: "Link de pagamento gerado",
         details: "Pagamento via Mercado Pago e PIX criados pelo administrador.",
         createdByRole: "admin",
       });
 
-      console.log(`[mercadopago] ✓ Preferência criada manualmente para projeto ${req.params.id}`);
-      const finalProject = await storage.getProject(req.params.id);
+      console.log(`[mercadopago] ✓ Preferência criada manualmente para projeto ${(req.params.id as string)}`);
+      const finalProject = await storage.getProject((req.params.id as string));
       res.json(finalProject);
     } catch (err: any) {
       console.error("[mercadopago] Erro ao gerar pagamento:", err);
@@ -797,14 +803,14 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
   app.delete("/api/projects/:id", requireAuth, async (req, res) => {
     try {
-      await storage.deleteProject(req.params.id);
+      await storage.deleteProject((req.params.id as string));
       res.status(204).send();
     } catch { res.status(500).json({ error: "Erro ao deletar" }); }
   });
 
   // ── DOCUMENTS ──────────────────────────────────────────────────────
   app.get("/api/projects/:id/documents", requireAuth, async (req, res) => {
-    res.json(await storage.getDocumentsByProject(req.params.id));
+    res.json(await storage.getDocumentsByProject((req.params.id as string)));
   });
 
   app.post("/api/projects/:id/documents", requireAuth, async (req, res) => {
@@ -812,7 +818,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const user = await getCurrentUser(req);
       const data = insertDocumentSchema.parse({
         ...req.body,
-        projectId: req.params.id,
+        projectId: (req.params.id as string),
         uploadedByRole: user?.role || "integrador",
         uploadedById: user?.id,
       });
@@ -820,7 +826,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
       // Auto timeline
       await storage.addTimelineEntry({
-        projectId: req.params.id,
+        projectId: (req.params.id as string),
         event: `Documento enviado: ${doc.name}`,
         details: `Arquivo "${doc.name}" foi enviado por ${user?.role === "admin" ? "Randoli Engenharia" : "integrador"}.`,
         createdByRole: user?.role || "integrador",
@@ -834,13 +840,13 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         entityType: "document",
         entityId: doc.id,
         entityLabel: doc.name,
-        payload: JSON.stringify({ projectId: req.params.id, docType: doc.docType }),
+        payload: JSON.stringify({ projectId: (req.params.id as string), docType: doc.docType }),
       }).catch(() => {});
 
       // Notification for admin when integrador uploads document
       const isAdminUpload = user && ["admin", "engenharia", "financeiro"].includes(user.role);
       if (!isAdminUpload) {
-        const proj = await storage.getProject(req.params.id);
+        const proj = await storage.getProject((req.params.id as string));
         if (proj) {
           storage.createNotification({
             type: "document",
@@ -855,7 +861,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
       // Email notification to integrador when admin uploads a document
       if (isAdminUpload) {
-        const project = await storage.getProject(req.params.id);
+        const project = await storage.getProject((req.params.id as string));
         if (project) {
           const integradorEmail = project.integrador?.email || project.client?.email;
           const integradorName = project.integrador?.name || project.client?.name || "Integrador";
@@ -879,21 +885,21 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
   app.delete("/api/projects/:projectId/documents/:docId", requireAuth, async (req, res) => {
     try {
-      await storage.deleteDocument(req.params.docId);
+      await storage.deleteDocument((req.params.docId as string));
       res.status(204).send();
     } catch { res.status(500).json({ error: "Erro ao deletar documento" }); }
   });
 
   // ── TIMELINE ───────────────────────────────────────────────────────
   app.get("/api/projects/:id/timeline", requireAuth, async (req, res) => {
-    res.json(await storage.getTimelineByProject(req.params.id));
+    res.json(await storage.getTimelineByProject((req.params.id as string)));
   });
 
   app.post("/api/projects/:id/timeline", requireAuth, async (req, res) => {
     try {
       const user = await getCurrentUser(req);
       const entry = await storage.addTimelineEntry({
-        projectId: req.params.id,
+        projectId: (req.params.id as string),
         event: req.body.event,
         details: req.body.details,
         createdByRole: user?.role || "admin",
@@ -902,7 +908,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       // Email notification to integrador when admin adds a timeline note
       const isAdminAction = user && ["admin", "engenharia", "financeiro"].includes(user.role);
       if (isAdminAction) {
-        const project = await storage.getProject(req.params.id);
+        const project = await storage.getProject((req.params.id as string));
         if (project) {
           const integradorEmail = project.integrador?.email || project.client?.email;
           const integradorName = project.integrador?.name || project.client?.name || "Integrador";
@@ -939,7 +945,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.patch("/api/partners/:id", requireAuth, async (req, res) => {
     try {
       const data = insertPartnerSchema.partial().parse(req.body);
-      const p = await storage.updatePartner(req.params.id, data);
+      const p = await storage.updatePartner((req.params.id as string), data);
       if (!p) return res.status(404).json({ error: "Não encontrado" });
       res.json(p);
     } catch (err: any) { res.status(400).json({ error: err.message }); }
@@ -947,7 +953,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
   app.delete("/api/partners/:id", requireAuth, async (req, res) => {
     try {
-      await storage.deletePartner(req.params.id);
+      await storage.deletePartner((req.params.id as string));
       res.status(204).send();
     } catch { res.status(500).json({ error: "Erro ao deletar" }); }
   });
@@ -1090,7 +1096,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const user = await getCurrentUser(req);
       if (user?.role !== "admin") return res.status(403).json({ error: "Sem permissão" });
 
-      const project = await storage.getProject(req.params.id);
+      const project = await storage.getProject((req.params.id as string));
       if (!project) return res.status(404).json({ error: "Projeto não encontrado" });
 
       const settingsMap = await getSettingsMap();
@@ -1158,7 +1164,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         }
       }
 
-      const updatedProject = await storage.getProject(req.params.id);
+      const updatedProject = await storage.getProject((req.params.id as string));
       res.json({ payments: results, project: updatedProject });
     } catch (err: any) {
       console.error("[mercadopago] Erro ao verificar pagamento:", err);
@@ -1275,7 +1281,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
   app.patch("/api/notifications/:id/read", requireAuth, async (req, res) => {
     try {
-      await storage.markNotificationRead(req.params.id);
+      await storage.markNotificationRead((req.params.id as string));
       res.json({ ok: true });
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
@@ -1424,7 +1430,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     try {
       const user = await getCurrentUser(req);
       if (!["admin", "financeiro"].includes(user?.role ?? "")) return res.status(403).json({ error: "Sem permissão" });
-      const range = await storage.updatePricingRange(req.params.id, req.body);
+      const range = await storage.updatePricingRange((req.params.id as string), req.body);
       if (!range) return res.status(404).json({ error: "Faixa não encontrada" });
       res.json(range);
     } catch (err: any) { res.status(500).json({ error: err.message }); }
@@ -1434,7 +1440,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     try {
       const user = await getCurrentUser(req);
       if (!["admin", "financeiro"].includes(user?.role ?? "")) return res.status(403).json({ error: "Sem permissão" });
-      await storage.deletePricingRange(req.params.id);
+      await storage.deletePricingRange((req.params.id as string));
       res.json({ ok: true });
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
@@ -1451,7 +1457,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
   app.get("/api/client-pricing/:clientId", requireAuth, async (req, res) => {
     try {
-      const cp = await storage.getClientPricing(req.params.clientId);
+      const cp = await storage.getClientPricing((req.params.clientId as string));
       res.json(cp || null);
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
@@ -1469,7 +1475,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     try {
       const user = await getCurrentUser(req);
       if (!["admin", "financeiro"].includes(user?.role ?? "")) return res.status(403).json({ error: "Sem permissão" });
-      await storage.deleteClientPricing(req.params.id);
+      await storage.deleteClientPricing((req.params.id as string));
       res.json({ ok: true });
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
@@ -1499,9 +1505,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.get("/api/projects/:id/chat", requireAuth, async (req, res) => {
     const user = await getCurrentUser(req);
     if (!user) return res.status(401).json({ error: "Não autenticado" });
-    const messages = await storage.getChatMessages(req.params.id);
+    const messages = await storage.getChatMessages((req.params.id as string));
     const isAdmin = ["admin", "engenharia", "financeiro"].includes(user.role);
-    await storage.markChatMessagesRead(req.params.id, isAdmin ? "admin" : "integrador");
+    await storage.markChatMessagesRead((req.params.id as string), isAdmin ? "admin" : "integrador");
     res.json(messages);
   });
 
@@ -1511,7 +1517,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const { content } = req.body;
     if (!content?.trim()) return res.status(400).json({ error: "Mensagem vazia" });
 
-    const project = await storage.getProject(req.params.id);
+    const project = await storage.getProject((req.params.id as string));
     if (!project) return res.status(404).json({ error: "Projeto não encontrado" });
 
     const isAdmin = ["admin", "engenharia", "financeiro"].includes(user.role);
@@ -1521,7 +1527,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
 
     const msg = await storage.createChatMessage({
-      projectId: req.params.id,
+      projectId: (req.params.id as string),
       senderId: user.id,
       senderName: user.name || user.username,
       senderRole: user.role,
@@ -1530,7 +1536,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       readByIntegrador: !isAdmin,
     });
 
-    const wsEvent = { type: "chat_message", projectId: req.params.id, message: msg };
+    const wsEvent = { type: "chat_message", projectId: (req.params.id as string), message: msg };
     if (projectIntegradorId) {
       broadcastToProjectParticipants(projectIntegradorId, wsEvent);
     } else {
@@ -1557,6 +1563,184 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     if (!user) return res.status(401).json({ error: "Não autenticado" });
     const count = await storage.getUnreadChatCount(user.id, user.role);
     res.json({ count });
+  });
+
+  // ── AI — SOLAR ENGINEERING ─────────────────────────────────────────
+
+  // GET /api/ai/equipment — lista painéis e inversores
+  app.get("/api/ai/equipment", requireAuth, async (_req, res) => {
+    const [panels, inverters] = await Promise.all([
+      storage.getSolarPanels(),
+      storage.getSolarInverters(),
+    ]);
+    res.json({ panels, inverters });
+  });
+
+  // GET /api/ai/irradiation — lista de irradiação
+  app.get("/api/ai/irradiation", requireAuth, async (_req, res) => {
+    res.json(await storage.getSolarIrradiation());
+  });
+
+  // POST /api/ai/analyze-bill — análise de consumo e dimensionamento
+  app.post("/api/ai/analyze-bill", requireAuth, async (req, res) => {
+    try {
+      const result = analyzeEnergyBill(req.body);
+      res.json(result);
+    } catch (err: any) { res.status(400).json({ error: err.message }); }
+  });
+
+  // POST /api/ai/size-system — dimensionar sistema dado consumo e localização
+  app.post("/api/ai/size-system", requireAuth, async (req, res) => {
+    try {
+      const { monthlyConsumptionKwh, city, state, panelPowerW } = req.body;
+      if (!monthlyConsumptionKwh) return res.status(400).json({ error: "monthlyConsumptionKwh é obrigatório" });
+      const [irradiationData, panels, inverters] = await Promise.all([
+        storage.getSolarIrradiation(),
+        storage.getSolarPanels(),
+        storage.getSolarInverters(),
+      ]);
+      const result = dimensionSystem({
+        monthlyConsumptionKwh: Number(monthlyConsumptionKwh),
+        city: city ?? "",
+        state: state ?? "",
+        irradiationData,
+        availablePanels: panels,
+        availableInverters: inverters,
+      });
+      res.json(result);
+    } catch (err: any) { res.status(400).json({ error: err.message }); }
+  });
+
+  // GET /api/ai/simulate-production — simulação mensal
+  app.get("/api/ai/simulate-production", requireAuth, (req, res) => {
+    try {
+      const kwp = parseFloat(req.query.kwp as string || "5");
+      const irr = parseFloat(req.query.irradiation as string || "4.5");
+      const eff = parseFloat(req.query.efficiency as string || "0.78");
+      const result = simulateProduction({ systemKwp: kwp, irradiationKwhM2Day: irr, systemEfficiency: eff });
+      res.json(result);
+    } catch (err: any) { res.status(400).json({ error: err.message }); }
+  });
+
+  // POST /api/ai/generate-memorial — gera memorial descritivo
+  app.post("/api/ai/generate-memorial", requireAuth, async (req, res) => {
+    try {
+      const { projectId, format = "text", ...extra } = req.body;
+      if (!projectId) return res.status(400).json({ error: "projectId é obrigatório" });
+      const project = await storage.getProject(projectId as string);
+      if (!project) return res.status(404).json({ error: "Projeto não encontrado" });
+      const result = generateMemorial({ project, ...extra });
+      if (format === "html") {
+        res.setHeader("Content-Type", "text/html; charset=utf-8");
+        return res.send(result.html);
+      }
+      res.json(result);
+    } catch (err: any) { res.status(400).json({ error: err.message }); }
+  });
+
+  // POST /api/ai/generate-unifilar — gera SVG do diagrama unifilar
+  app.post("/api/ai/generate-unifilar", requireAuth, (req, res) => {
+    try {
+      const result = generateUnifilarSvg(req.body);
+      if (req.body.format === "svg") {
+        res.setHeader("Content-Type", "image/svg+xml");
+        return res.send(result.svg);
+      }
+      res.json(result);
+    } catch (err: any) { res.status(400).json({ error: err.message }); }
+  });
+
+  // POST /api/ai/smart-create — pipeline completo após criar projeto
+  app.post("/api/ai/smart-create", requireAuth, async (req, res) => {
+    try {
+      const { projectId } = req.body;
+      if (!projectId) return res.status(400).json({ error: "projectId é obrigatório" });
+      const project = await storage.getProject(projectId as string);
+      if (!project) return res.status(404).json({ error: "Projeto não encontrado" });
+      const [irradiationData, panels, inverters] = await Promise.all([
+        storage.getSolarIrradiation(),
+        storage.getSolarPanels(),
+        storage.getSolarInverters(),
+      ]);
+      const city = project.cidade ?? "";
+      const state = project.estado ?? "";
+      const kwp = parseFloat(String(project.potencia ?? 0));
+      const monthlyKwh = kwp > 0 ? Math.round(kwp * 4.5 * 30 * 0.78) : 400;
+      const dimensioning = dimensionSystem({
+        monthlyConsumptionKwh: monthlyKwh,
+        city,
+        state,
+        irradiationData,
+        availablePanels: panels,
+        availableInverters: inverters,
+      });
+      const memorial = generateMemorial({
+        project,
+        panelBrand: dimensioning.suggestedPanel?.brand,
+        panelModel: dimensioning.suggestedPanel?.model,
+        panelPowerW: dimensioning.suggestedPanel?.powerW,
+        panelsCount: dimensioning.panelsNeeded,
+        inverterBrand: dimensioning.suggestedInverter?.brand,
+        inverterModel: dimensioning.suggestedInverter?.model,
+        inverterPowerKw: dimensioning.suggestedInverter ? parseFloat(String(dimensioning.suggestedInverter.powerKw)) : undefined,
+        systemKwp: dimensioning.kwp,
+        monthlyGenerationKwh: dimensioning.monthlyGenerationKwh,
+        annualGenerationKwh: dimensioning.annualGenerationKwh,
+        irradiationKwhM2Day: dimensioning.irradiationUsed,
+        phase: dimensioning.phase,
+      });
+      const unifilar = generateUnifilarSvg({
+        panelsCount: dimensioning.panelsNeeded,
+        inverterModel: dimensioning.suggestedInverter?.model,
+        inverterPowerKw: dimensioning.suggestedInverter ? parseFloat(String(dimensioning.suggestedInverter.powerKw)) : undefined,
+        phases: dimensioning.phase === "mono" ? 1 : dimensioning.phase === "bi" ? 2 : 3,
+        projectTitle: project.title,
+        ticketNumber: project.ticketNumber ?? undefined,
+      });
+      res.json({ dimensioning, memorial, unifilar });
+    } catch (err: any) { res.status(400).json({ error: err.message }); }
+  });
+
+  // CRUD painéis (admin)
+  app.post("/api/ai/panels", requireAuth, async (req, res) => {
+    const user = await getCurrentUser(req);
+    if (user?.role !== "admin") return res.status(403).json({ error: "Sem permissão" });
+    const panel = await storage.createSolarPanel(req.body);
+    res.status(201).json(panel);
+  });
+  app.patch("/api/ai/panels/:id", requireAuth, async (req, res) => {
+    const user = await getCurrentUser(req);
+    if (user?.role !== "admin") return res.status(403).json({ error: "Sem permissão" });
+    const p = await storage.updateSolarPanel((req.params.id as string), req.body);
+    if (!p) return res.status(404).json({ error: "Não encontrado" });
+    res.json(p);
+  });
+  app.delete("/api/ai/panels/:id", requireAuth, async (req, res) => {
+    const user = await getCurrentUser(req);
+    if (user?.role !== "admin") return res.status(403).json({ error: "Sem permissão" });
+    await storage.deleteSolarPanel((req.params.id as string));
+    res.status(204).send();
+  });
+
+  // CRUD inversores (admin)
+  app.post("/api/ai/inverters", requireAuth, async (req, res) => {
+    const user = await getCurrentUser(req);
+    if (user?.role !== "admin") return res.status(403).json({ error: "Sem permissão" });
+    const inv = await storage.createSolarInverter(req.body);
+    res.status(201).json(inv);
+  });
+  app.patch("/api/ai/inverters/:id", requireAuth, async (req, res) => {
+    const user = await getCurrentUser(req);
+    if (user?.role !== "admin") return res.status(403).json({ error: "Sem permissão" });
+    const i = await storage.updateSolarInverter((req.params.id as string), req.body);
+    if (!i) return res.status(404).json({ error: "Não encontrado" });
+    res.json(i);
+  });
+  app.delete("/api/ai/inverters/:id", requireAuth, async (req, res) => {
+    const user = await getCurrentUser(req);
+    if (user?.role !== "admin") return res.status(403).json({ error: "Sem permissão" });
+    await storage.deleteSolarInverter((req.params.id as string));
+    res.status(204).send();
   });
 
   // ── DOWNLOAD TEMPORÁRIO ────────────────────────────────────────────

@@ -57,7 +57,7 @@ export function setupWebSocket(httpServer: Server) {
 }
 
 export function broadcastToAdmins(event: object) {
-  for (const [, client] of clients) {
+  for (const [, client] of Array.from(clients)) {
     if (["admin", "engenharia", "financeiro"].includes(client.role)) {
       trySend(client.ws, event);
     }

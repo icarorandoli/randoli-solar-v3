@@ -37,6 +37,10 @@ import NotFound from "@/pages/not-found";
 import StatusConfigPage from "@/pages/status-config";
 import AuditLogPage from "@/pages/audit-log";
 import AnalyticsPage from "@/pages/analytics";
+import AiCalculatorPage from "@/pages/ai-calculator";
+import EquipmentDbPage from "@/pages/equipment-db";
+import ProductionSimulatorPage from "@/pages/production-simulator";
+import EngineeringReportPage from "@/pages/engineering-report";
 import { NotificationBell } from "@/components/notification-bell";
 import { GlobalSearch } from "@/components/global-search";
 
@@ -118,6 +122,18 @@ function AdminLayout() {
               </Route>
               <Route path="/analytics">
                 <RoleGuard allow={["admin", "financeiro", "engenharia"]}><AnalyticsPage /></RoleGuard>
+              </Route>
+              <Route path="/ai-calculator">
+                <RoleGuard allow={["admin", "engenharia"]}><AiCalculatorPage /></RoleGuard>
+              </Route>
+              <Route path="/equipment-db">
+                <RoleGuard allow={["admin", "engenharia"]}><EquipmentDbPage /></RoleGuard>
+              </Route>
+              <Route path="/production-simulator">
+                <RoleGuard allow={["admin", "engenharia"]}><ProductionSimulatorPage /></RoleGuard>
+              </Route>
+              <Route path="/engineering-report">
+                <RoleGuard allow={["admin", "engenharia"]}><EngineeringReportPage /></RoleGuard>
               </Route>
               <Route><Redirect to="/" /></Route>
             </Switch>

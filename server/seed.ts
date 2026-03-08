@@ -158,6 +158,83 @@ export async function seedDatabase() {
     await storage.setSiteSetting("company_name", "Randoli Engenharia Solar");
     await storage.setSiteSetting("logo_url", "");
 
+    // AI — Solar Irradiation (cidades brasileiras principais)
+    const irradiationData = [
+      { city: "São Paulo", state: "SP", irradiationKwhM2Day: "4.50" },
+      { city: "Campinas", state: "SP", irradiationKwhM2Day: "4.60" },
+      { city: "Ribeirão Preto", state: "SP", irradiationKwhM2Day: "4.80" },
+      { city: "Rio de Janeiro", state: "RJ", irradiationKwhM2Day: "4.80" },
+      { city: "Niterói", state: "RJ", irradiationKwhM2Day: "4.75" },
+      { city: "Belo Horizonte", state: "MG", irradiationKwhM2Day: "5.00" },
+      { city: "Uberlândia", state: "MG", irradiationKwhM2Day: "5.10" },
+      { city: "Brasília", state: "DF", irradiationKwhM2Day: "5.50" },
+      { city: "Curitiba", state: "PR", irradiationKwhM2Day: "4.20" },
+      { city: "Londrina", state: "PR", irradiationKwhM2Day: "4.50" },
+      { city: "Porto Alegre", state: "RS", irradiationKwhM2Day: "4.00" },
+      { city: "Caxias do Sul", state: "RS", irradiationKwhM2Day: "3.90" },
+      { city: "Florianópolis", state: "SC", irradiationKwhM2Day: "4.30" },
+      { city: "Joinville", state: "SC", irradiationKwhM2Day: "4.20" },
+      { city: "Salvador", state: "BA", irradiationKwhM2Day: "5.50" },
+      { city: "Feira de Santana", state: "BA", irradiationKwhM2Day: "5.60" },
+      { city: "Fortaleza", state: "CE", irradiationKwhM2Day: "5.80" },
+      { city: "Recife", state: "PE", irradiationKwhM2Day: "5.60" },
+      { city: "Natal", state: "RN", irradiationKwhM2Day: "5.90" },
+      { city: "João Pessoa", state: "PB", irradiationKwhM2Day: "5.80" },
+      { city: "Maceió", state: "AL", irradiationKwhM2Day: "5.70" },
+      { city: "Aracaju", state: "SE", irradiationKwhM2Day: "5.60" },
+      { city: "Manaus", state: "AM", irradiationKwhM2Day: "4.50" },
+      { city: "Belém", state: "PA", irradiationKwhM2Day: "4.60" },
+      { city: "Goiânia", state: "GO", irradiationKwhM2Day: "5.40" },
+      { city: "Cuiabá", state: "MT", irradiationKwhM2Day: "5.20" },
+      { city: "Campo Grande", state: "MS", irradiationKwhM2Day: "5.00" },
+      { city: "Teresina", state: "PI", irradiationKwhM2Day: "5.70" },
+      { city: "São Luís", state: "MA", irradiationKwhM2Day: "5.30" },
+      { city: "Porto Velho", state: "RO", irradiationKwhM2Day: "4.40" },
+    ];
+    const existingIrr = await storage.getSolarIrradiation();
+    if (existingIrr.length === 0) {
+      for (const d of irradiationData) await storage.createSolarIrradiation(d);
+      console.log("[seed] Irradiação solar: 30 cidades inseridas.");
+    }
+
+    // AI — Solar Panels
+    const panelData = [
+      { brand: "Canadian Solar", model: "CS6L-455MS", powerW: 455, efficiencyPct: "20.50", voltageVoc: "49.40", currentIsc: "11.58" },
+      { brand: "Canadian Solar", model: "CS3W-400P", powerW: 400, efficiencyPct: "19.80", voltageVoc: "48.00", currentIsc: "10.50" },
+      { brand: "JA Solar", model: "JAM72S30-540/MR", powerW: 540, efficiencyPct: "21.00", voltageVoc: "51.70", currentIsc: "13.18" },
+      { brand: "LONGi", model: "LR5-72HIH-545M", powerW: 545, efficiencyPct: "21.30", voltageVoc: "51.40", currentIsc: "13.30" },
+      { brand: "BYD", model: "P3HB-144-550W", powerW: 550, efficiencyPct: "21.30", voltageVoc: "50.80", currentIsc: "13.60" },
+      { brand: "Risen Energy", model: "RSM144-7-550M", powerW: 550, efficiencyPct: "21.00", voltageVoc: "51.10", currentIsc: "13.44" },
+      { brand: "Trina Solar", model: "TSM-DE17M(II)-410", powerW: 410, efficiencyPct: "21.00", voltageVoc: "49.20", currentIsc: "10.54" },
+      { brand: "Jinko Solar", model: "JKM455M-60HL4-V", powerW: 455, efficiencyPct: "21.00", voltageVoc: "49.60", currentIsc: "11.62" },
+      { brand: "Astronergy", model: "CHSM72M-540", powerW: 540, efficiencyPct: "20.80", voltageVoc: "50.40", currentIsc: "13.50" },
+      { brand: "Intelbras", model: "IFP108N-440", powerW: 440, efficiencyPct: "20.40", voltageVoc: "49.80", currentIsc: "11.20" },
+    ];
+    const existingPanels = await storage.getSolarPanels();
+    if (existingPanels.length === 0) {
+      for (const p of panelData) await storage.createSolarPanel(p);
+      console.log("[seed] Painéis solares: 10 modelos inseridos.");
+    }
+
+    // AI — Solar Inverters
+    const inverterData = [
+      { brand: "Growatt", model: "MIN 3000TL-X", powerKw: "3.00", phases: 1, mpptCount: 2, minMpptVoltage: 80, maxMpptVoltage: 500 },
+      { brand: "Growatt", model: "MID 5000TL3-X", powerKw: "5.00", phases: 3, mpptCount: 2, minMpptVoltage: 90, maxMpptVoltage: 560 },
+      { brand: "Growatt", model: "MAX 15000TL3-X", powerKw: "15.00", phases: 3, mpptCount: 3, minMpptVoltage: 90, maxMpptVoltage: 800 },
+      { brand: "Fronius", model: "Primo 3.6-1", powerKw: "3.60", phases: 1, mpptCount: 2, minMpptVoltage: 80, maxMpptVoltage: 600 },
+      { brand: "Fronius", model: "Symo 6.0-3-M", powerKw: "6.00", phases: 3, mpptCount: 2, minMpptVoltage: 150, maxMpptVoltage: 800 },
+      { brand: "SMA", model: "Sunny Boy 5.0", powerKw: "5.00", phases: 1, mpptCount: 2, minMpptVoltage: 125, maxMpptVoltage: 600 },
+      { brand: "SMA", model: "Sunny Tripower 10.0", powerKw: "10.00", phases: 3, mpptCount: 2, minMpptVoltage: 150, maxMpptVoltage: 800 },
+      { brand: "Huawei", model: "SUN2000-5KTL-L1", powerKw: "5.00", phases: 1, mpptCount: 2, minMpptVoltage: 80, maxMpptVoltage: 560 },
+      { brand: "Huawei", model: "SUN2000-20KTL-M3", powerKw: "20.00", phases: 3, mpptCount: 4, minMpptVoltage: 160, maxMpptVoltage: 1000 },
+      { brand: "WEG", model: "SIW300H M020", powerKw: "20.00", phases: 3, mpptCount: 2, minMpptVoltage: 200, maxMpptVoltage: 800 },
+    ];
+    const existingInverters = await storage.getSolarInverters();
+    if (existingInverters.length === 0) {
+      for (const inv of inverterData) await storage.createSolarInverter(inv);
+      console.log("[seed] Inversores solares: 10 modelos inseridos.");
+    }
+
     console.log("[seed] Dados de exemplo inseridos com sucesso!");
     console.log("[seed] Logins de teste:");
     console.log("[seed]   Admin: admin / admin123");

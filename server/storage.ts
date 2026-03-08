@@ -1,6 +1,7 @@
 import {
   users, clients, projects, partners, siteSettings, documents, timeline,
   pricingRanges, clientPricing, chatMessages, statusConfigs, notifications, auditLogs,
+  solarIrradiation, solarPanels, solarInverters,
   type User, type InsertUser,
   type Client, type InsertClient,
   type Project, type InsertProject,
@@ -14,6 +15,9 @@ import {
   type StatusConfig,
   type Notification, type InsertNotification,
   type AuditLog, type InsertAuditLog,
+  type SolarIrradiation, type InsertSolarIrradiation,
+  type SolarPanel, type InsertSolarPanel,
+  type SolarInverter, type InsertSolarInverter,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, count, isNull, not, gte, lte, and, or, ilike } from "drizzle-orm";
@@ -107,6 +111,19 @@ export interface IStorage {
 
   // Search
   searchAll(q: string): Promise<{ projects: any[]; clients: any[] }>;
+
+  // AI — Solar Equipment & Irradiation
+  getSolarIrradiation(): Promise<SolarIrradiation[]>;
+  getSolarIrradiationByCity(city: string, state: string): Promise<SolarIrradiation | undefined>;
+  createSolarIrradiation(data: InsertSolarIrradiation): Promise<SolarIrradiation>;
+  getSolarPanels(): Promise<SolarPanel[]>;
+  createSolarPanel(data: InsertSolarPanel): Promise<SolarPanel>;
+  updateSolarPanel(id: string, data: Partial<InsertSolarPanel>): Promise<SolarPanel | undefined>;
+  deleteSolarPanel(id: string): Promise<void>;
+  getSolarInverters(): Promise<SolarInverter[]>;
+  createSolarInverter(data: InsertSolarInverter): Promise<SolarInverter>;
+  updateSolarInverter(id: string, data: Partial<InsertSolarInverter>): Promise<SolarInverter | undefined>;
+  deleteSolarInverter(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -537,6 +554,52 @@ export class DatabaseStorage implements IStorage {
         .limit(10),
     ]);
     return { projects: matchedProjects, clients: matchedClients };
+  }
+
+  // ── AI — Solar Irradiation ──
+  async getSolarIrradiation(): Promise<SolarIrradiation[]> {
+    return db.select().from(solarIrradiation).orderBy(solarIrradiation.state, solarIrradiation.city);
+  }
+  async getSolarIrradiationByCity(city: string, state: string): Promise<SolarIrradiation | undefined> {
+    const [r] = await db.select().from(solarIrradiation)
+      .where(and(ilike(solarIrradiation.city, city), ilike(solarIrradiation.state, state)));
+    return r;
+  }
+  async createSolarIrradiation(data: InsertSolarIrradiation): Promise<SolarIrradiation> {
+    const [r] = await db.insert(solarIrradiation).values(data).returning();
+    return r;
+  }
+
+  // ── AI — Solar Panels ──
+  async getSolarPanels(): Promise<SolarPanel[]> {
+    return db.select().from(solarPanels).orderBy(desc(solarPanels.powerW));
+  }
+  async createSolarPanel(data: InsertSolarPanel): Promise<SolarPanel> {
+    const [r] = await db.insert(solarPanels).values(data).returning();
+    return r;
+  }
+  async updateSolarPanel(id: string, data: Partial<InsertSolarPanel>): Promise<SolarPanel | undefined> {
+    const [r] = await db.update(solarPanels).set(data).where(eq(solarPanels.id, id)).returning();
+    return r;
+  }
+  async deleteSolarPanel(id: string): Promise<void> {
+    await db.delete(solarPanels).where(eq(solarPanels.id, id));
+  }
+
+  // ── AI — Solar Inverters ──
+  async getSolarInverters(): Promise<SolarInverter[]> {
+    return db.select().from(solarInverters).orderBy(solarInverters.powerKw);
+  }
+  async createSolarInverter(data: InsertSolarInverter): Promise<SolarInverter> {
+    const [r] = await db.insert(solarInverters).values(data).returning();
+    return r;
+  }
+  async updateSolarInverter(id: string, data: Partial<InsertSolarInverter>): Promise<SolarInverter | undefined> {
+    const [r] = await db.update(solarInverters).set(data).where(eq(solarInverters.id, id)).returning();
+    return r;
+  }
+  async deleteSolarInverter(id: string): Promise<void> {
+    await db.delete(solarInverters).where(eq(solarInverters.id, id));
   }
 }
 

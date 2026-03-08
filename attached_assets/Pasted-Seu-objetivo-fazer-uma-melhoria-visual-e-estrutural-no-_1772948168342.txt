@@ -1,0 +1,348 @@
+Seu objetivo é fazer uma melhoria visual e estrutural no FRONT-END, deixando o sistema mais moderno, profissional, intuitivo e com aparência de software premium.
+
+IMPORTANTE:
+- NÃO alterar endpoints do backend
+- NÃO quebrar integração existente
+- NÃO mudar contratos JSON da API
+- NÃO remover funcionalidades atuais
+- NÃO refatorar backend
+- Trabalhar apenas no front-end e na organização visual dos componentes
+
+====================================================
+OBJETIVO GERAL
+====================================================
+
+Melhorar a experiência visual e usabilidade do sistema inteiro, com foco em:
+
+- aparência moderna de SaaS profissional
+- melhor organização visual
+- cards mais bonitos
+- dashboards mais claros
+- navegação mais intuitiva
+- melhor responsividade
+- melhor hierarquia visual
+- telas com mais sensação de produto premium
+
+====================================================
+1. MELHORAR LAYOUT GERAL DO SISTEMA
+====================================================
+
+Revisar o layout do painel admin e do portal do integrador.
+
+Objetivos:
+
+- sidebar mais elegante
+- header mais limpo
+- melhor espaçamento
+- alinhamentos consistentes
+- tipografia mais profissional
+- padronização de tamanhos de cards, inputs e botões
+- aparência mais moderna estilo SaaS premium
+
+Melhorar:
+- largura e comportamento da sidebar
+- estados hover e active dos menus
+- cabeçalho com identidade mais forte
+- breadcrumbs ou indicação de localização da página
+- melhor uso de ícones
+
+====================================================
+2. MELHORAR DESIGN SYSTEM
+====================================================
+
+Padronizar visualmente:
+
+- botões
+- inputs
+- selects
+- tabelas
+- badges
+- cards
+- modais
+- abas
+- dropdowns
+- toasts
+
+Criar consistência entre todas as páginas.
+
+Usar variações visuais para:
+- ações principais
+- ações secundárias
+- sucesso
+- alerta
+- erro
+- informação
+
+Criar aparência visual mais refinada com:
+- bordas suaves
+- sombras leves
+- melhor contraste
+- espaçamento consistente
+- melhor leitura no modo claro e escuro
+
+====================================================
+3. DASHBOARD MAIS PROFISSIONAL
+====================================================
+
+Melhorar a página dashboard.
+
+Adicionar visual mais moderno para:
+
+- KPIs
+- cards de resumo
+- gráficos
+- status dos projetos
+- atalhos rápidos
+
+Os KPIs devem parecer mais premium, com:
+- ícone
+- título
+- valor em destaque
+- subtítulo opcional
+- cores sutis por categoria
+
+Melhorar visual dos gráficos existentes e da seção analytics.
+
+====================================================
+4. MELHORAR TELA DE PROJETOS
+====================================================
+
+Na listagem de projetos:
+
+- melhorar visual da tabela ou lista
+- melhorar filtros
+- destacar status com badges melhores
+- melhorar leitura de ticket, cliente, potência, valor e status
+- adicionar sensação de CRM moderno
+
+Melhorar:
+- campo de busca
+- filtros por status
+- filtros por cliente
+- filtros por data
+- ordenação visual
+
+Cada linha ou card de projeto deve ficar mais clara e escaneável.
+
+====================================================
+5. MELHORAR PÁGINA DE DETALHE DO PROJETO
+====================================================
+
+A página de detalhe do projeto deve ficar mais profissional.
+
+Organizar em blocos visuais bem definidos:
+
+- resumo do projeto
+- dados do cliente
+- dados técnicos
+- documentos
+- timeline
+- chat
+- pagamentos
+- IA / engenharia
+
+Melhorar visual com:
+- cards separados por seção
+- títulos claros
+- grids mais bem distribuídos
+- blocos colapsáveis onde fizer sentido
+- melhor leitura das informações técnicas
+
+====================================================
+6. MELHORAR KANBAN
+====================================================
+
+Melhorar a tela kanban para parecer um sistema profissional.
+
+Melhorias:
+- colunas mais bonitas
+- cartões mais organizados
+- badges de status melhores
+- destaque para ticket, cliente e potência
+- melhor arraste visual
+- melhor responsividade
+- colunas com cabeçalhos mais elegantes
+
+====================================================
+7. MELHORAR TELA DE USUÁRIOS, CLIENTES E PARCEIROS
+====================================================
+
+Padronizar as telas administrativas:
+
+- usuários
+- clientes
+- parceiros
+- preços
+- configurações
+
+Melhorar:
+- formulários
+- tabelas
+- cabeçalhos
+- ações
+- botões de editar/excluir
+- estados vazios
+- mensagens de confirmação
+
+====================================================
+8. MELHORAR MÓDULO DE IA
+====================================================
+
+As telas e blocos da IA precisam parecer recursos premium.
+
+Criar boa interface para:
+
+- análise de conta
+- dimensionamento solar
+- simulação de geração
+- memorial descritivo
+- diagrama unifilar
+- equipamentos
+- smart create
+
+Objetivo:
+parecer um módulo avançado de engenharia, não apenas formulários simples.
+
+Adicionar:
+- cards explicativos
+- blocos de resultado bem apresentados
+- indicadores visuais de potência, geração, quantidade de módulos e inversor recomendado
+- visual técnico elegante
+
+====================================================
+9. MELHORAR CHAT E TIMELINE
+====================================================
+
+Melhorar muito a experiência visual do chat e timeline.
+
+Chat:
+- mensagens com visual mais moderno
+- diferenciação clara entre admin e integrador
+- timestamps mais elegantes
+- área de digitação melhor
+- melhor espaçamento
+
+Timeline:
+- eventos mais legíveis
+- ícones por tipo de evento
+- estrutura vertical mais bonita
+- melhor destaque para mudança de status, upload, pagamento e observações
+
+====================================================
+10. MELHORAR FORMULÁRIOS
+====================================================
+
+Todos os formulários do sistema devem ficar mais modernos.
+
+Aplicar:
+- melhor espaçamento
+- labels consistentes
+- mensagens de erro elegantes
+- placeholders melhores
+- agrupamento lógico de campos
+- grids responsivos
+- seções bem separadas
+
+Especial atenção para:
+- cadastro
+- login
+- completar perfil
+- novo projeto
+- edição de usuário
+- configurações
+
+====================================================
+11. MELHORAR LOGIN E CADASTRO
+====================================================
+
+As telas de login, cadastro e recuperação de senha devem parecer profissionais.
+
+Objetivos:
+- visual mais premium
+- melhor branding
+- melhor composição
+- área institucional ao lado do formulário
+- destaque para benefícios do sistema
+- visual limpo e confiável
+
+Se possível:
+- usar cards modernos
+- fundos suaves
+- melhor composição com logo
+- manter compatibilidade com dark mode
+
+====================================================
+12. CRIAR ESTADOS VAZIOS E LOADING MELHORES
+====================================================
+
+Melhorar UX para:
+- loading
+- sem resultados
+- erro de carregamento
+- listas vazias
+
+Adicionar:
+- skeletons mais bonitos
+- empty states com texto amigável
+- visual consistente
+- loaders elegantes
+
+====================================================
+13. RESPONSIVIDADE
+====================================================
+
+Garantir boa responsividade em:
+- desktop
+- notebook
+- tablet
+- celular
+
+Melhorar principalmente:
+- sidebar colapsável
+- tabelas
+- cards
+- formulários
+- kanban
+- dashboard
+
+====================================================
+14. PADRONIZAÇÃO VISUAL DA MARCA
+====================================================
+
+Manter identidade visual profissional do sistema.
+
+Aplicar um visual consistente usando:
+- tons modernos
+- contraste equilibrado
+- aparência premium de software B2B
+
+Não exagerar nas cores.
+Focar em aparência limpa, moderna e confiável.
+
+====================================================
+15. QUALIDADE DE CÓDIGO FRONT-END
+====================================================
+
+Organizar melhor componentes visuais.
+
+Se necessário:
+- criar componentes reutilizáveis
+- extrair cards padrão
+- extrair headers padrão
+- extrair blocos de KPIs
+- extrair componentes de estado vazio/loading
+- evitar código duplicado
+
+====================================================
+16. REGRAS IMPORTANTES
+====================================================
+
+- Não alterar rotas da API
+- Não quebrar páginas existentes
+- Não remover funcionalidades
+- Melhorar apenas front-end/UX/UI
+- Preservar compatibilidade total com backend atual
+
+====================================================
+17. VALIDAÇÃO FINAL
+==================================

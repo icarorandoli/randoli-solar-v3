@@ -1,6 +1,6 @@
 import {
   users, clients, projects, partners, siteSettings, documents, timeline,
-  pricingRanges, clientPricing, chatMessages, statusConfigs, notifications,
+  pricingRanges, clientPricing, chatMessages, statusConfigs, notifications, auditLogs,
   type User, type InsertUser,
   type Client, type InsertClient,
   type Project, type InsertProject,
@@ -13,9 +13,10 @@ import {
   type ChatMessage, type InsertChatMessage,
   type StatusConfig,
   type Notification, type InsertNotification,
+  type AuditLog, type InsertAuditLog,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, count, isNull, not, gte, lte, and } from "drizzle-orm";
+import { eq, desc, count, isNull, not, gte, lte, and, or, ilike } from "drizzle-orm";
 
 export type ProjectWithIntegrador = Project & {
   client: Client | null;
@@ -99,6 +100,13 @@ export interface IStorage {
   createNotification(data: InsertNotification): Promise<Notification>;
   markNotificationRead(id: string): Promise<void>;
   markAllNotificationsRead(): Promise<void>;
+
+  // Audit Logs
+  createAuditLog(data: InsertAuditLog): Promise<AuditLog>;
+  getAuditLogs(limit?: number, entityType?: string): Promise<AuditLog[]>;
+
+  // Search
+  searchAll(q: string): Promise<{ projects: any[]; clients: any[] }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -465,6 +473,70 @@ export class DatabaseStorage implements IStorage {
 
   async markAllNotificationsRead(): Promise<void> {
     await db.update(notifications).set({ readAt: new Date() }).where(isNull(notifications.readAt));
+  }
+
+  // ── Audit Logs ──
+  async createAuditLog(data: InsertAuditLog): Promise<AuditLog> {
+    const [log] = await db.insert(auditLogs).values(data).returning();
+    return log;
+  }
+
+  async getAuditLogs(limit = 100, entityType?: string): Promise<AuditLog[]> {
+    const q = db.select().from(auditLogs);
+    if (entityType) {
+      return q.where(eq(auditLogs.entityType, entityType)).orderBy(desc(auditLogs.createdAt)).limit(limit);
+    }
+    return q.orderBy(desc(auditLogs.createdAt)).limit(limit);
+  }
+
+  // ── Search ──
+  async searchAll(q: string): Promise<{ projects: any[]; clients: any[] }> {
+    const term = `%${q}%`;
+    const [matchedProjects, matchedClients] = await Promise.all([
+      db.select({
+        id: projects.id,
+        ticketNumber: projects.ticketNumber,
+        title: projects.title,
+        status: projects.status,
+        clientId: projects.clientId,
+        potencia: projects.potencia,
+        numeroInstalacao: projects.numeroInstalacao,
+        createdAt: projects.createdAt,
+      })
+        .from(projects)
+        .where(
+          and(
+            eq(projects.archived, false),
+            or(
+              ilike(projects.title, term),
+              ilike(projects.ticketNumber, term),
+              ilike(projects.numeroInstalacao, term),
+              ilike(projects.nomeCliente, term),
+              ilike(projects.cpfCnpjCliente, term),
+            )
+          )
+        )
+        .limit(10),
+      db.select({
+        id: clients.id,
+        name: clients.name,
+        email: clients.email,
+        cpfCnpj: clients.cpfCnpj,
+        company: clients.company,
+        type: clients.type,
+      })
+        .from(clients)
+        .where(
+          or(
+            ilike(clients.name, term),
+            ilike(clients.email, term),
+            ilike(clients.cpfCnpj, term),
+            ilike(clients.company, term),
+          )
+        )
+        .limit(10),
+    ]);
+    return { projects: matchedProjects, clients: matchedClients };
   }
 }
 

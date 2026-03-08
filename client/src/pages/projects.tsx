@@ -75,10 +75,17 @@ function ProjectDetailSheet({
   const [newStatus, setNewStatus] = useState("");
   const [newProtocolo, setNewProtocolo] = useState("");
   const [newValor, setNewValor] = useState("");
+  const [assignEngineerId, setAssignEngineerId] = useState<string>("");
+  const [assignInstallerId, setAssignInstallerId] = useState<string>("");
+  const [assignManagerId, setAssignManagerId] = useState<string>("");
 
   useProjectWebSocket(user?.id ?? null, user?.role ?? null, project?.id ?? "");
 
   const { data: statusConfigs = [] } = useQuery<StatusConfig[]>({ queryKey: ["/api/status-configs"] });
+  const { data: internalUsers = [] } = useQuery<{ id: string; name: string; role: string }[]>({
+    queryKey: ["/api/users"],
+    select: (users: any[]) => users.filter((u: any) => ["admin", "engenharia", "financeiro", "tecnico"].includes(u.role)),
+  });
   const configMap = Object.fromEntries(statusConfigs.map(c => [c.key, c]));
   const getStatusLabel = (key: string) => configMap[key]?.label ?? key;
   const getStatusBadge = (key: string) => getBadgeClass(configMap[key]?.color ?? "slate");
@@ -215,6 +222,9 @@ function ProjectDetailSheet({
     if (newStatus) payload.status = newStatus;
     if (newProtocolo) payload.numeroProtocolo = newProtocolo;
     if (newValor) payload.valor = newValor;
+    if (assignEngineerId) payload.assignedEngineerId = assignEngineerId === "__none__" ? null : assignEngineerId;
+    if (assignInstallerId) payload.assignedInstallerId = assignInstallerId === "__none__" ? null : assignInstallerId;
+    if (assignManagerId) payload.assignedManagerId = assignManagerId === "__none__" ? null : assignManagerId;
     if (Object.keys(payload).length === 0) return;
     updateMut.mutate(payload);
   };
@@ -337,6 +347,48 @@ function ProjectDetailSheet({
                 )}
               </div>
               )}
+              {/* Assignment */}
+              {internalUsers.length > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Engenheiro responsável</Label>
+                    <Select value={assignEngineerId} onValueChange={setAssignEngineerId}>
+                      <SelectTrigger className="h-8 text-xs" data-testid="select-assign-engineer">
+                        <SelectValue placeholder={(project as any).assignedEngineerId ? internalUsers.find(u => u.id === (project as any).assignedEngineerId)?.name ?? "Atribuído" : "Nenhum"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">Nenhum</SelectItem>
+                        {internalUsers.map(u => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Instalador</Label>
+                    <Select value={assignInstallerId} onValueChange={setAssignInstallerId}>
+                      <SelectTrigger className="h-8 text-xs" data-testid="select-assign-installer">
+                        <SelectValue placeholder={(project as any).assignedInstallerId ? internalUsers.find(u => u.id === (project as any).assignedInstallerId)?.name ?? "Atribuído" : "Nenhum"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">Nenhum</SelectItem>
+                        {internalUsers.map(u => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Gerente</Label>
+                    <Select value={assignManagerId} onValueChange={setAssignManagerId}>
+                      <SelectTrigger className="h-8 text-xs" data-testid="select-assign-manager">
+                        <SelectValue placeholder={(project as any).assignedManagerId ? internalUsers.find(u => u.id === (project as any).assignedManagerId)?.name ?? "Atribuído" : "Nenhum"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">Nenhum</SelectItem>
+                        {internalUsers.map(u => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+
               <Button size="sm" disabled={updateMut.isPending} onClick={handleUpdateStatus} data-testid="button-admin-update-project">
                 <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
                 {updateMut.isPending ? "Salvando..." : "Salvar Alterações"}

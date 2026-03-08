@@ -79,6 +79,9 @@ Sistema SaaS para gerenciamento de projetos de homologação fotovoltaica. Inclu
 - `GET /api/notifications/count` — contagem de notificações não lidas
 - `PATCH /api/notifications/:id/read` — marca uma notificação como lida
 - `PATCH /api/notifications/read-all` — marca todas como lidas
+- `GET /api/search?q=` — busca global em projetos e clientes (admin)
+- `GET /api/audit-logs` — histórico de auditoria (admin apenas)
+- `GET /api/analytics` — métricas mensais: projetos/mês, receita/mês, projetos por status
 - WebSocket em `/ws` — autenticação por mensagem `{type:"auth",userId,role}`, eventos: `chat_message`, `project_updated`, `status_changed`, `document_added`, `timeline_added`
 
 ### Frontend
@@ -89,6 +92,8 @@ Sistema SaaS para gerenciamento de projetos de homologação fotovoltaica. Inclu
 - `/projetos` — Gerenciamento de projetos (admin) com abas Ativos/Arquivados
 - `/kanban` — Kanban de projetos com drag-and-drop por etapa (admin); colunas dinâmicas via status configs
 - `/status-config` — Configuração de status: nome, cor (13 presets), visibilidade no Kanban, ordem (somente admin)
+- `/analytics` — Analytics: gráficos de projetos/mês, receita/mês, cards por status (admin/financeiro/engenharia)
+- `/audit-log` — Log de auditoria: histórico de ações (project.create, status_change, document.upload, payment.approved) com filtro e detalhes (admin)
 - `/clientes` — Gerenciamento de clientes (admin)
 - `/precos` — Gestão de tabela de preços e preços promocionais (admin)
 - `/parceiros` — Carousel de parceiros (admin)

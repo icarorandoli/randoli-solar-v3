@@ -35,7 +35,10 @@ import ContaPage from "@/pages/portal/conta";
 import CompletarPerfilPage from "@/pages/completar-perfil";
 import NotFound from "@/pages/not-found";
 import StatusConfigPage from "@/pages/status-config";
+import AuditLogPage from "@/pages/audit-log";
+import AnalyticsPage from "@/pages/analytics";
 import { NotificationBell } from "@/components/notification-bell";
+import { GlobalSearch } from "@/components/global-search";
 
 import type { ReactNode } from "react";
 
@@ -81,6 +84,7 @@ function AdminLayout() {
           <header className="flex items-center gap-3 px-4 py-2.5 border-b border-border/60 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
             <SidebarTrigger data-testid="button-sidebar-toggle" />
             <div className="flex-1" />
+            <GlobalSearch />
             <span className="text-xs text-muted-foreground font-medium hidden sm:block">Portal Admin</span>
             <NotificationBell />
             <ThemeToggle />
@@ -108,6 +112,12 @@ function AdminLayout() {
               </Route>
               <Route path="/status-config">
                 <RoleGuard allow={["admin"]}><StatusConfigPage /></RoleGuard>
+              </Route>
+              <Route path="/audit-log">
+                <RoleGuard allow={["admin"]}><AuditLogPage /></RoleGuard>
+              </Route>
+              <Route path="/analytics">
+                <RoleGuard allow={["admin", "financeiro", "engenharia"]}><AnalyticsPage /></RoleGuard>
               </Route>
               <Route><Redirect to="/" /></Route>
             </Switch>

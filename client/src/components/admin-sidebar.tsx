@@ -25,6 +25,8 @@ import {
   DollarSign,
   BarChart3,
   Settings2,
+  TrendingUp,
+  Shield,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
@@ -41,12 +43,14 @@ const SECTION_OPERACIONAL = [
 const SECTION_FINANCEIRO = [
   { title: "Preços", url: "/precos", icon: DollarSign, roles: ["admin", "financeiro"] },
   { title: "Relatórios", url: "/relatorios", icon: BarChart3, roles: ["admin", "financeiro"] },
+  { title: "Analytics", url: "/analytics", icon: TrendingUp, roles: ["admin", "financeiro", "engenharia"] },
 ];
 
 const SECTION_ADMIN = [
   { title: "Parceiros", url: "/parceiros", icon: Star, roles: ["admin", "financeiro"] },
   { title: "Status", url: "/status-config", icon: Settings2, roles: ["admin"] },
   { title: "Usuários", url: "/usuarios", icon: UserCog, roles: ["admin"] },
+  { title: "Auditoria", url: "/audit-log", icon: Shield, roles: ["admin"] },
   { title: "Configurações", url: "/configuracoes", icon: Settings, roles: ["admin", "financeiro"] },
 ];
 

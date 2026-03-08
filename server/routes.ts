@@ -532,6 +532,17 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         createdByRole: user?.role || "integrador",
       });
 
+      storage.createAuditLog({
+        userId: user?.id,
+        userName: user?.name || user?.username,
+        userRole: user?.role,
+        action: "project.create",
+        entityType: "project",
+        entityId: project.id,
+        entityLabel: `${project.ticketNumber || ""} ${project.title}`.trim(),
+        payload: JSON.stringify({ title: project.title, clientId: project.clientId }),
+      }).catch(() => {});
+
       res.status(201).json(project);
     } catch (err: any) { res.status(400).json({ error: err.message }); }
   });
@@ -577,6 +588,17 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           details: `Status alterado de "${statusLabels[current.status]}" para "${statusLabels[data.status]}"`,
           createdByRole: user.role,
         });
+
+        storage.createAuditLog({
+          userId: user.id,
+          userName: user.name || user.username,
+          userRole: user.role,
+          action: "project.status_change",
+          entityType: "project",
+          entityId: req.params.id,
+          entityLabel: `${current.ticketNumber || ""} ${current.title}`.trim(),
+          payload: JSON.stringify({ from: current.status, to: data.status }),
+        }).catch(() => {});
 
         // Auto-create Mercado Pago payment when status changes to aprovado_pagamento_pendente
         let paymentLink: string | undefined;
@@ -804,6 +826,17 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         createdByRole: user?.role || "integrador",
       });
 
+      storage.createAuditLog({
+        userId: user?.id,
+        userName: user?.name || user?.username,
+        userRole: user?.role,
+        action: "document.upload",
+        entityType: "document",
+        entityId: doc.id,
+        entityLabel: doc.name,
+        payload: JSON.stringify({ projectId: req.params.id, docType: doc.docType }),
+      }).catch(() => {});
+
       // Notification for admin when integrador uploads document
       const isAdminUpload = user && ["admin", "engenharia", "financeiro"].includes(user.role);
       if (!isAdminUpload) {
@@ -970,6 +1003,17 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         projectId,
         projectTitle: project.title,
         ticketNumber: project.ticketNumber,
+      }).catch(() => {});
+
+      storage.createAuditLog({
+        userId: null,
+        userName: "Mercado Pago",
+        userRole: "system",
+        action: "payment.approved",
+        entityType: "project",
+        entityId: projectId,
+        entityLabel: `${project.ticketNumber || ""} ${project.title}`.trim(),
+        payload: JSON.stringify({ paymentId, amount: paidValue }),
       }).catch(() => {});
 
       const integradorEmail = project.integrador?.email || project.client?.email;
@@ -1153,6 +1197,60 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const { label, color, showInKanban, sortOrder } = req.body;
       const updated = await storage.upsertStatusConfig(req.params.key as string, { label, color, showInKanban, sortOrder });
       res.json(updated);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // ── SEARCH ───────────────────────────────────────────────────────────
+  app.get("/api/search", requireAuth, async (req, res) => {
+    try {
+      const q = (req.query.q as string || "").trim();
+      if (!q || q.length < 2) return res.json({ projects: [], clients: [] });
+      const results = await storage.searchAll(q);
+      res.json(results);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // ── AUDIT LOGS ──────────────────────────────────────────────────────
+  app.get("/api/audit-logs", requireAuth, async (req, res) => {
+    try {
+      const user = await getCurrentUser(req);
+      if (!user || user.role !== "admin") return res.status(403).json({ error: "Apenas administradores" });
+      const entityType = req.query.entityType as string | undefined;
+      const logs = await storage.getAuditLogs(200, entityType);
+      res.json(logs);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // ── ANALYTICS ────────────────────────────────────────────────────────
+  app.get("/api/analytics", requireAuth, async (req, res) => {
+    try {
+      const user = await getCurrentUser(req);
+      if (!user || !["admin", "financeiro", "engenharia"].includes(user.role)) return res.status(403).json({ error: "Sem permissão" });
+      const allProjects = await storage.getProjects();
+      // Projects per month (last 6 months)
+      const now = new Date();
+      const months: { month: string; count: number; revenue: number }[] = [];
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const next = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+        const label = d.toLocaleDateString("pt-BR", { month: "short", year: "2-digit" });
+        const inMonth = allProjects.filter(p => {
+          const c = new Date(p.createdAt!);
+          return c >= d && c < next;
+        });
+        const revenue = inMonth.reduce((sum, p) => {
+          if (!p.valor) return sum;
+          const v = parseFloat(p.valor.replace(/\./g, "").replace(",", "."));
+          return sum + (isNaN(v) ? 0 : v);
+        }, 0);
+        months.push({ month: label, count: inMonth.length, revenue });
+      }
+      // By status
+      const byStatus: Record<string, number> = {};
+      for (const p of allProjects) {
+        byStatus[p.status] = (byStatus[p.status] || 0) + 1;
+      }
+      res.json({ months, byStatus, totalProjects: allProjects.length });
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 

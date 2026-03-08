@@ -1,5 +1,5 @@
 import { sql, relations } from "drizzle-orm";
-import { pgTable, text, varchar, integer, timestamp, pgEnum, boolean, numeric } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, timestamp, pgEnum, boolean, numeric, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -137,9 +137,17 @@ export const projects = pgTable("projects", {
   pixQrCodeBase64: text("pix_qr_code_base64"),
   pixPaymentId: text("pix_payment_id"),
 
+  // Responsáveis internos
+  assignedEngineerId: varchar("assigned_engineer_id").references(() => users.id),
+  assignedInstallerId: varchar("assigned_installer_id").references(() => users.id),
+  assignedManagerId: varchar("assigned_manager_id").references(() => users.id),
+
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => ({
+  clientIdIdx: index("projects_client_id_idx").on(table.clientId),
+  statusIdx: index("projects_status_idx").on(table.status),
+}));
 
 export const insertProjectSchema = createInsertSchema(projects).omit({ id: true, ticketNumber: true, createdAt: true, updatedAt: true });
 export type InsertProject = z.infer<typeof insertProjectSchema>;
@@ -172,7 +180,9 @@ export const documents = pgTable("documents", {
   uploadedByRole: text("uploaded_by_role").notNull().default("integrador"),
   uploadedById: varchar("uploaded_by_id"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => ({
+  projectIdIdx: index("documents_project_id_idx").on(table.projectId),
+}));
 
 export const insertDocumentSchema = createInsertSchema(documents).omit({ id: true, createdAt: true });
 export type InsertDocument = z.infer<typeof insertDocumentSchema>;
@@ -259,7 +269,9 @@ export const chatMessages = pgTable("chat_messages", {
   readByAdmin: boolean("read_by_admin").notNull().default(false),
   readByIntegrador: boolean("read_by_integrador").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => ({
+  projectIdIdx: index("chat_messages_project_id_idx").on(table.projectId),
+}));
 
 export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({ id: true, createdAt: true });
 export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
@@ -303,6 +315,27 @@ export const notifications = pgTable("notifications", {
 export const insertNotificationSchema = createInsertSchema(notifications).omit({ id: true, createdAt: true, readAt: true });
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type Notification = typeof notifications.$inferSelect;
+
+// ─── AUDIT LOGS ────────────────────────────────────────────────────────
+export const auditLogs = pgTable("audit_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id),
+  userName: text("user_name"),
+  userRole: text("user_role"),
+  action: text("action").notNull(),
+  entityType: text("entity_type").notNull(),
+  entityId: varchar("entity_id"),
+  entityLabel: text("entity_label"),
+  payload: text("payload"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  entityTypeIdx: index("audit_logs_entity_type_idx").on(table.entityType),
+  createdAtIdx: index("audit_logs_created_at_idx").on(table.createdAt),
+}));
+
+export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({ id: true, createdAt: true });
+export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
+export type AuditLog = typeof auditLogs.$inferSelect;
 
 // ─── PASSWORD RESET TOKENS ─────────────────────────────────────────────
 export const passwordResetTokens = pgTable("password_reset_tokens", {

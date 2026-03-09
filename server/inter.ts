@@ -325,13 +325,34 @@ async function createBolepix(
   pagadorNome: string,
   pagadorCpfCnpj: string,
   projectTitle: string,
-  ticket: string
+  ticket: string,
+  pagadorAddress?: {
+    endereco?: string;
+    numero?: string;
+    bairro?: string;
+    cidade?: string;
+    uf?: string;
+    cep?: string;
+  }
 ): Promise<InterPixResult> {
   const baseUrl = BASE_URLS[config.environment];
+
+  // Inter BolePIX minimum is R$ 2.50
+  if (numericValue < 2.5) {
+    throw new Error(`Valor mínimo para cobrança Banco Inter é R$ 2,50 (recebido: R$ ${numericValue.toFixed(2)})`);
+  }
 
   // Determine tipoPessoa from CPF/CNPJ length (CPF=11 digits, CNPJ=14 digits)
   const digits = pagadorCpfCnpj.replace(/\D/g, "");
   const tipoPessoa = digits.length <= 11 ? "FISICA" : "JURIDICA";
+
+  // Address fields are required by Inter API (non-null)
+  const endereco = pagadorAddress?.endereco || "Nao informado";
+  const numero = pagadorAddress?.numero || "SN";
+  const bairro = pagadorAddress?.bairro || "Centro";
+  const cidade = pagadorAddress?.cidade || "Nao informado";
+  const uf = pagadorAddress?.uf || "SP";
+  const cep = (pagadorAddress?.cep || "00000000").replace(/\D/g, "").padEnd(8, "0").slice(0, 8);
 
   const cobBody = JSON.stringify({
     seuNumero,
@@ -342,6 +363,12 @@ async function createBolepix(
       cpfCnpj: digits,
       tipoPessoa,
       nome: pagadorNome.slice(0, 100),
+      endereco,
+      numero,
+      bairro,
+      cidade,
+      uf: uf.slice(0, 2).toUpperCase(),
+      cep,
     },
     mensagem: {
       linha1: `Projeto Solar: ${projectTitle}`.slice(0, 70),

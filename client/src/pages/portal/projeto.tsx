@@ -597,8 +597,10 @@ export default function PortalProjetoPage() {
     },
   });
 
-  // Silent auto-refresh — does not show error toast (avoids alarming the user on page load)
+  const interScopeErrorRef = useRef(false);
+
   const silentInterRefresh = async () => {
+    if (interScopeErrorRef.current) return;
     try {
       const data = await apiRequest("POST", `/api/projects/${id}/inter-refresh-pix`);
       queryClient.setQueryData(["/api/projects", id], data);
@@ -606,12 +608,14 @@ export default function PortalProjetoPage() {
         toast({ title: "Pagamento confirmado!", description: "Seu projeto foi avançado automaticamente." });
         queryClient.invalidateQueries({ queryKey: ["/api/projects", id, "timeline"] });
       }
-    } catch {
-      // silent — user can manually click to see the error
+    } catch (err: any) {
+      const msg = err?.message || "";
+      if (msg.includes("scope") || msg.includes("401")) {
+        interScopeErrorRef.current = true;
+      }
     }
   };
 
-  // Auto-refresh Inter if txid exists but linhaDigitavel or copiaECola are missing
   useEffect(() => {
     if (!project) return;
     const hasLinha = !!(project as any).interBoletoLinhaDigitavel;
@@ -620,11 +624,11 @@ export default function PortalProjetoPage() {
     }
   }, [project?.id, project?.interPixTxid, project?.interPixCopiaECola, (project as any)?.interBoletoLinhaDigitavel]);
 
-  // Poll for payment status every 30s while payment is pending
   useEffect(() => {
     if (!project || project.status !== "aprovado_pagamento_pendente") return;
     if (!project.interPixTxid && !project.paymentLink && !project.pixQrCode) return;
     const interval = setInterval(() => {
+      if (interScopeErrorRef.current) return;
       if (project.interPixTxid) {
         silentInterRefresh();
       } else {

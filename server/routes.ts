@@ -1425,47 +1425,21 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
       const settingsMap = await getSettingsMap();
 
-      // Verificação por certificado mTLS
-      const webhookCertPem = settingsMap["inter_webhook_cert"] || process.env.INTER_WEBHOOK_CERT;
-      if (webhookCertPem) {
-        const crypto = await import("crypto");
-        // Compute fingerprint from stored Inter webhook certificate
-        const certDer = webhookCertPem
-          .replace(/-----BEGIN CERTIFICATE-----/g, "")
-          .replace(/-----END CERTIFICATE-----/g, "")
-          .replace(/\s+/g, "");
-        const storedFingerprint = crypto
-          .createHash("sha256")
-          .update(Buffer.from(certDer, "base64"))
-          .digest("hex")
-          .toUpperCase()
-          .match(/.{2}/g)!
-          .join(":");
-
-        // Try to get peer cert from TLS socket (direct connection, no proxy)
-        const socket = req.socket as any;
-        const peerCert = socket.getPeerCertificate?.();
-        const peerFingerprint = peerCert?.fingerprint256 || peerCert?.fingerprint;
-
-        // Or from Nginx header (proxy scenario: ssl_client_fingerprint or x-ssl-fingerprint)
-        const nginxFingerprint = (
-          (req.headers["x-ssl-client-fingerprint"] as string) ||
-          (req.headers["x-ssl-fingerprint"] as string) ||
-          (req.headers["ssl-client-fingerprint"] as string)
-        )?.toUpperCase();
-
-        const incomingFingerprint = peerFingerprint || nginxFingerprint;
-
-        if (incomingFingerprint) {
-          const normalizedIncoming = incomingFingerprint.replace(/:/g, "").toUpperCase();
-          const normalizedStored = storedFingerprint.replace(/:/g, "").toUpperCase();
-          if (normalizedIncoming !== normalizedStored) {
-            console.warn(`[inter] Webhook: certificado inválido. Recebido: ${incomingFingerprint}, Esperado: ${storedFingerprint}`);
+      // Verificação mTLS via Nginx (ssl_verify_client + ssl_client_certificate)
+      // Nginx passa o resultado da verificação no header X-SSL-Client-Verify
+      const webhookCertConfigured = !!(settingsMap["inter_webhook_cert"] || process.env.INTER_WEBHOOK_CERT);
+      if (webhookCertConfigured) {
+        const sslVerify = req.headers["x-ssl-client-verify"] as string | undefined;
+        if (sslVerify !== undefined) {
+          // Nginx está passando o header — verificação mTLS ativa
+          if (sslVerify !== "SUCCESS") {
+            console.warn(`[inter] Webhook: certificado do cliente inválido (${sslVerify}). Requisição rejeitada.`);
             return;
           }
-          console.log("[inter] Webhook: certificado verificado com sucesso");
+          console.log("[inter] Webhook: certificado mTLS verificado pelo Nginx com sucesso");
         } else {
-          console.log("[inter] Webhook: certificado configurado mas não verificável nesta conexão (proxy sem header SSL). Processando mesmo assim.");
+          // Nginx não está configurado com mTLS ainda — aceitar mas avisar
+          console.log("[inter] Webhook: CA configurada mas Nginx sem mTLS ainda (x-ssl-client-verify ausente). Processando.");
         }
       }
 
@@ -1545,6 +1519,22 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       console.log(`[inter] ✓ Projeto ${project.id} avançado para projeto_tecnico via PIX ${txid}`);
     } catch (err) {
       console.error("[inter] Erro no webhook:", err);
+    }
+  });
+
+  // ── INTER WEBHOOK CA CERT DOWNLOAD ───────────────────────────────
+  app.get("/api/inter/webhook-ca.pem", requireAuth, async (req, res) => {
+    try {
+      const user = await getCurrentUser(req);
+      if (user?.role !== "admin") return res.status(403).json({ error: "Sem permissão" });
+      const settingsMap = await getSettingsMap();
+      const cert = settingsMap["inter_webhook_cert"] || process.env.INTER_WEBHOOK_CERT;
+      if (!cert) return res.status(404).json({ error: "Certificado Webhook do Inter não configurado" });
+      res.setHeader("Content-Type", "application/x-pem-file");
+      res.setHeader("Content-Disposition", "attachment; filename=inter_webhook_ca.pem");
+      res.send(cert);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
     }
   });
 

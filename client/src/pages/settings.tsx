@@ -772,21 +772,34 @@ export default function SettingsPage() {
                       <div className="space-y-2">
                         <Label className="flex items-center gap-1.5">
                           <ShieldCheck className="h-3.5 w-3.5 text-orange-500" />
-                          Certificado Webhook do Inter (.pem) — Conteúdo PEM
+                          Certificado CA do Webhook Inter (.pem)
                         </Label>
-                        <div className="relative">
+                        <div className="flex items-center gap-2">
                           <Textarea
                             value={showInterWebhookCert ? interWebhookCert : (interWebhookCert && interWebhookCert !== "••••••••" ? "••••••••" : interWebhookCert)}
                             onChange={e => setInterWebhookCert(e.target.value)}
                             onFocus={() => setShowInterWebhookCert(true)}
                             placeholder={"-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----"}
-                            rows={4}
-                            className="font-mono text-xs resize-none"
+                            rows={3}
+                            className="font-mono text-xs resize-none flex-1"
                             data-testid="textarea-inter-webhook-cert"
                           />
+                          {interWebhookCert ? (
+                            <a
+                              href="/api/inter/webhook-ca.pem"
+                              download="inter_webhook_ca.pem"
+                              className="flex-shrink-0"
+                              data-testid="link-download-webhook-cert"
+                            >
+                              <Button type="button" variant="outline" size="sm" className="gap-1.5 whitespace-nowrap">
+                                <ArrowRight className="h-3.5 w-3.5 rotate-90" />
+                                Baixar .pem
+                              </Button>
+                            </a>
+                          ) : null}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          Clique em <strong>"Certificado Webhook"</strong> no portal do Inter (developers.inter.co → Minhas Integrações) e cole o conteúdo do arquivo .pem baixado aqui. Este certificado autentica as chamadas do Inter para o nosso servidor.
+                          Baixe no portal do Inter: <strong>developers.inter.co → Minhas Integrações → Certificado Webhook</strong>. Cole o conteúdo do arquivo <code>.pem</code> acima. Após configurar o VPS, baixe este arquivo com o botão ao lado para usá-lo no Nginx.
                         </p>
                       </div>
 

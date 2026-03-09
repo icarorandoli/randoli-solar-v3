@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import {
   ArrowLeft, Upload, FileText, Trash2, Activity,
   MapPin, Hash, Zap, Cpu, Sun, User, ExternalLink, Building, DollarSign, AlertCircle, CreditCard, Loader2,
-  QrCode, Copy, Check, Lock
+  QrCode, Copy, Check, Lock, RefreshCw, CheckCircle2
 } from "lucide-react";
 import { Link } from "wouter";
 import type { Project, Client, Document, Timeline, StatusConfig } from "@shared/schema";
@@ -538,6 +538,43 @@ export default function PortalProjetoPage() {
     },
   });
 
+  const interRefreshMut = useMutation({
+    mutationFn: () => apiRequest("POST", `/api/projects/${id}/inter-refresh-pix`),
+    onSuccess: (data: any) => {
+      queryClient.setQueryData(["/api/projects", id], data);
+      if (data?.interPixCopiaECola) {
+        toast({ title: "QR Code Inter carregado com sucesso" });
+      }
+      if (data?.status === "projeto_tecnico") {
+        toast({ title: "Pagamento confirmado!", description: "Seu projeto foi avançado automaticamente." });
+        queryClient.invalidateQueries({ queryKey: ["/api/projects", id, "timeline"] });
+      }
+    },
+    onError: () => {},
+  });
+
+  // Auto-refresh Inter PIX QR code if txid exists but no copiaECola yet
+  useEffect(() => {
+    if (!project) return;
+    if (project.interPixTxid && !project.interPixCopiaECola && project.status === "aprovado_pagamento_pendente") {
+      interRefreshMut.mutate();
+    }
+  }, [project?.id, project?.interPixTxid, project?.interPixCopiaECola]);
+
+  // Poll for payment status every 30s while payment is pending
+  useEffect(() => {
+    if (!project || project.status !== "aprovado_pagamento_pendente") return;
+    if (!project.interPixTxid && !project.paymentLink && !project.pixQrCode) return;
+    const interval = setInterval(() => {
+      if (project.interPixTxid) {
+        interRefreshMut.mutate();
+      } else {
+        queryClient.invalidateQueries({ queryKey: ["/api/projects", id] });
+      }
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [project?.status, project?.interPixTxid, project?.paymentLink, id]);
+
   // Use status configs from DB (same as Kanban), sorted by sortOrder
   // Fall back to DEFAULT_STATUS_CONFIGS while loading
   const statusSteps = (statusConfigsRaw.length > 0 ? statusConfigsRaw : DEFAULT_STATUS_CONFIGS as any[])
@@ -737,10 +774,39 @@ export default function PortalProjetoPage() {
 
                     {!project.interPixCopiaECola && !project.pixQrCode && !project.paymentLink && (
                       <div className="flex flex-col items-center justify-center py-8 text-center bg-muted/30 rounded-2xl border border-dashed border-border/60">
-                        <AlertCircle className="h-8 w-8 text-muted-foreground mb-3" />
-                        <p className="text-sm font-bold">Aguardando geração da cobrança</p>
-                        <p className="text-xs text-muted-foreground mt-1">Nossa equipe financeira está processando seu pedido.</p>
+                        {project.interPixTxid || interRefreshMut.isPending ? (
+                          <>
+                            <Loader2 className="h-8 w-8 text-orange-500 animate-spin mb-3" />
+                            <p className="text-sm font-bold">Carregando dados do pagamento...</p>
+                            <p className="text-xs text-muted-foreground mt-1">Buscando QR Code no Banco Inter.</p>
+                          </>
+                        ) : (
+                          <>
+                            <AlertCircle className="h-8 w-8 text-muted-foreground mb-3" />
+                            <p className="text-sm font-bold">Aguardando geração da cobrança</p>
+                            <p className="text-xs text-muted-foreground mt-1">Nossa equipe financeira está processando seu pedido.</p>
+                          </>
+                        )}
                       </div>
+                    )}
+
+                    {/* Manual status check button for Inter */}
+                    {project.interPixCopiaECola && project.status === "aprovado_pagamento_pendente" && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full mt-2 text-xs text-muted-foreground"
+                        onClick={() => interRefreshMut.mutate()}
+                        disabled={interRefreshMut.isPending}
+                        data-testid="button-inter-check-status"
+                      >
+                        {interRefreshMut.isPending ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+                        ) : (
+                          <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                        )}
+                        Já paguei — verificar pagamento
+                      </Button>
                     )}
                   </div>
                 </div>

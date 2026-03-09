@@ -1,6 +1,6 @@
 import { Switch, Route, Redirect, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useTheme } from "@/hooks/use-theme";
 import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useEffect } from "react";
 
 import DashboardPage from "@/pages/dashboard";
 import ProjectsPage from "@/pages/projects";
@@ -45,6 +46,19 @@ import { NotificationBell } from "@/components/notification-bell";
 import { GlobalSearch } from "@/components/global-search";
 
 import type { ReactNode } from "react";
+
+function FaviconUpdater() {
+  const { data: settings } = useQuery<Record<string, string>>({ queryKey: ["/api/settings"] });
+  useEffect(() => {
+    const url = settings?.favicon_url;
+    if (!url) return;
+    const link = document.querySelector<HTMLLinkElement>("link[rel='icon']");
+    if (link) link.href = url;
+    const apple = document.querySelector<HTMLLinkElement>("link[rel='apple-touch-icon']");
+    if (apple) apple.href = url;
+  }, [settings?.favicon_url]);
+  return null;
+}
 
 function RoleGuard({ allow, children }: { allow: string[]; children: ReactNode }) {
   const { user } = useAuth();
@@ -234,6 +248,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <AuthProvider>
+          <FaviconUpdater />
           <AppRoutes />
           <Toaster />
         </AuthProvider>

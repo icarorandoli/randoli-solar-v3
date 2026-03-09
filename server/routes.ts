@@ -1416,6 +1416,102 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
+  // ── INTER PIX WEBHOOK ─────────────────────────────────────────────
+  app.post("/api/inter/webhook", async (req, res) => {
+    try {
+      res.sendStatus(200);
+      const body = req.body;
+      console.log("[inter] Webhook recebido:", JSON.stringify(body).slice(0, 500));
+
+      const settingsMap = await getSettingsMap();
+      const webhookKey = settingsMap["inter_webhook_key"] || process.env.INTER_WEBHOOK_KEY;
+      if (webhookKey) {
+        const apiKey = req.headers["x-api-key"] as string | undefined;
+        if (apiKey !== webhookKey) {
+          console.warn("[inter] Webhook: chave inválida, ignorado");
+          return;
+        }
+      }
+
+      let txid: string | null = null;
+
+      if (body?.pix && Array.isArray(body.pix) && body.pix.length > 0) {
+        txid = body.pix[0]?.txid || null;
+      } else if (body?.txid) {
+        txid = body.txid;
+      }
+
+      if (!txid) {
+        console.log("[inter] Webhook: txid não encontrado no body");
+        return;
+      }
+
+      const projects = await storage.getProjects();
+      const project = projects.find((p: any) => p.interPixTxid === txid);
+      if (!project) {
+        console.log(`[inter] Webhook: projeto com txid ${txid} não encontrado`);
+        return;
+      }
+
+      if (project.status !== "aprovado_pagamento_pendente") {
+        console.log(`[inter] Webhook: projeto ${project.id} já avançado (${project.status}), ignorado`);
+        return;
+      }
+
+      const paidValue = parseFloat(body.pix?.[0]?.valor || body.valor || "0");
+
+      await storage.updateProject(project.id, {
+        status: "projeto_tecnico",
+        interPixStatus: "CONCLUIDA",
+        paymentStatus: "approved",
+      } as any);
+
+      await storage.addTimelineEntry({
+        projectId: project.id,
+        event: "Pagamento PIX confirmado via Banco Inter",
+        details: `PIX ${txid} recebido${paidValue ? ` (R$ ${paidValue.toFixed(2).replace(".", ",")})` : ""}. Status avançado automaticamente para Projeto Técnico.`,
+        createdByRole: "admin",
+      });
+
+      storage.createNotification({
+        type: "payment",
+        title: "PIX Inter recebido",
+        body: `Pagamento PIX${paidValue ? ` de R$ ${paidValue.toFixed(2).replace(".", ",")}` : ""} confirmado pelo Banco Inter no projeto ${project.ticketNumber || project.title}.`,
+        projectId: project.id,
+        projectTitle: project.title,
+        ticketNumber: project.ticketNumber,
+      }).catch(() => {});
+
+      storage.createAuditLog({
+        userId: null,
+        userName: "Banco Inter",
+        userRole: "system",
+        action: "payment.approved",
+        entityType: "project",
+        entityId: project.id,
+        entityLabel: `${project.ticketNumber || ""} ${project.title}`.trim(),
+        payload: JSON.stringify({ txid, amount: paidValue }),
+      }).catch(() => {});
+
+      const integradorEmail = project.integrador?.email || project.client?.email;
+      const integradorName = project.integrador?.name || project.client?.name || "Integrador";
+      if (integradorEmail) {
+        getEmailConfig().then(emailConfig => sendStatusEmail({
+          to: integradorEmail,
+          integradorName,
+          projectTitle: project.title,
+          ticketNumber: project.ticketNumber,
+          newStatus: "projeto_tecnico",
+          config: emailConfig,
+        })).catch(err => console.error("[email] Falha ao enviar:", err));
+      }
+
+      console.log(`[inter] ✓ Projeto ${project.id} avançado para projeto_tecnico via PIX ${txid}`);
+    } catch (err) {
+      console.error("[inter] Erro no webhook:", err);
+    }
+  });
+
   // ── EMAIL TEST ──────────────────────────────────────────────────────
   app.post("/api/email/test", requireAuth, async (req, res) => {
     try {

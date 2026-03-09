@@ -274,9 +274,11 @@ export default function SettingsPage() {
   const [loginBgImage, setLoginBgImage] = useState("");
   const [uploadingBg, setUploadingBg] = useState(false);
 
+  const [faviconUrl, setFaviconUrl] = useState("");
   const [initialized, setInitialized] = useState(false);
 
   if (settings && !initialized) {
+    setFaviconUrl(settings.favicon_url || "");
     setCompanyName(settings.company_name || "Randoli Engenharia");
     setLogoUrl(settings.logo_url || "");
     setPrimaryColor(settings.primary_color || "#0ea5e9");
@@ -352,6 +354,7 @@ export default function SettingsPage() {
       if (interWebhookKey && interWebhookKey !== "••••••••") {
         pairs.push({ key: "inter_webhook_key", value: interWebhookKey });
       }
+      pairs.push({ key: "favicon_url", value: faviconUrl });
       pairs.push(
         { key: "login_badge_text", value: loginBadgeText },
         { key: "login_headline", value: loginHeadline },
@@ -499,6 +502,34 @@ export default function SettingsPage() {
                   </CardHeader>
                   <CardContent>
                     <LogoUploadSection currentLogoUrl={logoUrl} onLogoUrlChange={setLogoUrl} />
+                  </CardContent>
+                </Card>
+
+                <Card className="border-muted/40 shadow-sm">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Ícone da Aba (Favicon)</CardTitle>
+                    <CardDescription>URL da imagem exibida no ícone da aba do navegador. Use PNG ou ICO de 32×32px ou 64×64px.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center gap-4">
+                      <div className="h-16 w-16 border border-border rounded-lg bg-muted/40 flex items-center justify-center flex-shrink-0">
+                        {faviconUrl ? (
+                          <img src={faviconUrl} alt="Favicon preview" className="h-10 w-10 object-contain" data-testid="img-favicon-preview" />
+                        ) : (
+                          <div className="text-muted-foreground text-xs text-center leading-tight px-1">Sem<br/>ícone</div>
+                        )}
+                      </div>
+                      <div className="space-y-2 flex-1">
+                        <Label>URL do Favicon</Label>
+                        <Input
+                          value={faviconUrl}
+                          onChange={e => setFaviconUrl(e.target.value)}
+                          placeholder="https://... ou /favicon.png"
+                          data-testid="input-favicon-url"
+                        />
+                        <p className="text-xs text-muted-foreground">Salve e recarregue a página para ver o novo ícone na aba.</p>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
 

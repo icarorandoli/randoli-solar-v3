@@ -826,6 +826,35 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     } catch (err: any) { res.status(400).json({ error: err.message }); }
   });
 
+  // ── CANCEL PAYMENT ──────────────────────────────────────────────
+  app.post("/api/projects/:id/cancel-payment", requireAuth, async (req, res) => {
+    try {
+      const user = await getCurrentUser(req);
+      if (user?.role !== "admin") return res.status(403).json({ error: "Sem permissão" });
+      const project = await storage.getProject((req.params.id as string));
+      if (!project) return res.status(404).json({ error: "Projeto não encontrado" });
+      if (project.paymentStatus === "approved") {
+        return res.status(400).json({ error: "Pagamento já aprovado não pode ser cancelado" });
+      }
+      await storage.updateProject((req.params.id as string), {
+        paymentLink: null, paymentId: null, paymentStatus: null,
+        pixQrCode: null, pixQrCodeBase64: null, pixPaymentId: null,
+        interPixTxid: null, interPixCopiaECola: null,
+        interPixQrCodeBase64: null, interPixStatus: null,
+      } as any);
+      await storage.addTimelineEntry({
+        projectId: (req.params.id as string),
+        event: "Cobrança cancelada",
+        details: "Cobrança cancelada pelo administrador para geração de novo método de pagamento.",
+        createdByRole: "admin",
+      });
+      const finalProject = await storage.getProject((req.params.id as string));
+      res.json(finalProject);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "Erro ao cancelar cobrança" });
+    }
+  });
+
   app.post("/api/projects/:id/generate-payment", requireAuth, async (req, res) => {
     try {
       const user = await getCurrentUser(req);
@@ -848,13 +877,22 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         return res.status(400).json({ error: "Nenhuma forma de pagamento configurada (Mercado Pago ou Banco Inter)" });
       }
 
+      // method: 'inter' | 'mp' | 'both' — defaults to 'both' if not specified
+      const method = (req.body?.method as string) || "both";
+      const useInter = interCfg && (method === "inter" || method === "both");
+      const useMp = mpToken && (method === "mp" || method === "both");
+
       const intEmail = (project as any).integrador?.email || (project as any).client?.email;
       const intName = (project as any).integrador?.name || (project as any).client?.name;
       const updateData: any = {};
       const methods: string[] = [];
 
+      if (!useMp && !useInter) {
+        return res.status(400).json({ error: `Método "${method}" não está configurado` });
+      }
+
       // ── Mercado Pago ─────────────────────────────────────────────
-      if (mpToken) {
+      if (useMp && mpToken) {
         try {
           const portalUrl = settingsMap["email_portal_url"] || "https://projetos.randolisolar.com.br";
           const webhookUrl = `${portalUrl}/api/mercadopago/webhook`;
@@ -879,18 +917,17 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             updateData.pixQrCodeBase64 = pix.qrCodeBase64;
             updateData.pixPaymentId = pix.paymentId;
             methods.push("PIX Mercado Pago");
-            console.log(`[mercadopago] ✓ PIX criado para projeto ${(req.params.id as string)}`);
           } catch (pixErr) {
             console.error("[mercadopago] Erro ao criar PIX (continuando):", pixErr);
           }
-          console.log(`[mercadopago] ✓ Preferência criada para projeto ${(req.params.id as string)}`);
-        } catch (mpErr) {
+        } catch (mpErr: any) {
           console.error("[mercadopago] Erro ao gerar pagamento MP:", mpErr);
+          if (!useInter) return res.status(500).json({ error: mpErr.message || "Erro ao gerar cobrança Mercado Pago" });
         }
       }
 
       // ── Banco Inter PIX ──────────────────────────────────────────
-      if (interCfg) {
+      if (useInter && interCfg) {
         try {
           const interPix = await createInterPixCharge({
             config: interCfg,
@@ -905,12 +942,10 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           updateData.interPixQrCodeBase64 = interPix.qrCodeBase64;
           updateData.interPixStatus = interPix.status;
           methods.push("PIX Banco Inter");
-          console.log(`[inter] ✓ PIX Inter criado manualmente para projeto ${(req.params.id as string)}`);
+          console.log(`[inter] ✓ PIX Inter criado para projeto ${(req.params.id as string)}`);
         } catch (interErr: any) {
           console.error("[inter] Erro ao gerar PIX Inter:", interErr);
-          if (!mpToken) {
-            return res.status(500).json({ error: interErr.message || "Erro ao gerar cobrança Inter" });
-          }
+          if (!useMp) return res.status(500).json({ error: interErr.message || "Erro ao gerar cobrança Inter" });
         }
       }
 

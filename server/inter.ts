@@ -397,7 +397,15 @@ async function createBolepix(
 
   if (cobRes.status !== 200 && cobRes.status !== 201) {
     console.error("[inter] Bolepix error:", cobRes.status, cobRes.data);
-    throw new Error(`Inter cobrança falhou: ${cobRes.status} — ${JSON.stringify(cobRes.data)}`);
+    // Detect Inter's duplicate charge prevention error and give a friendlier message
+    const errDetail: string = cobRes.data?.detail || cobRes.data?.message || JSON.stringify(cobRes.data);
+    if (cobRes.status === 400 && errDetail.includes("cobrança emitida há poucos minutos")) {
+      throw new Error(
+        "O Banco Inter bloqueou a geração porque já existe uma cobrança recente para este integrador. " +
+        "Aguarde 10 minutos e tente novamente, ou cancele a cobrança anterior antes de gerar uma nova."
+      );
+    }
+    throw new Error(`Inter cobrança falhou: ${cobRes.status} — ${errDetail}`);
   }
 
   const d = cobRes.data;
@@ -468,7 +476,11 @@ export async function createInterPixCharge({
 
   const { token, scope } = await getAccessTokenWithScope(config);
   const ticket = ticketNumber || projectId.slice(0, 8).toUpperCase();
-  const seuNumero = ticket.replace(/[^a-zA-Z0-9]/g, "").slice(0, 15);
+  // Add timestamp suffix so each charge attempt gets a unique seuNumero,
+  // even if the same integrador has multiple open projects simultaneously
+  const ticketBase = ticket.replace(/[^a-zA-Z0-9]/g, "").slice(0, 9);
+  const timeSuffix = Date.now().toString(36).slice(-5).toUpperCase();
+  const seuNumero = `${ticketBase}${timeSuffix}`.slice(0, 15);
   const txid = generateTxid();
   const description = `Projeto Solar: ${projectTitle} | Ticket: ${ticket}`;
   const pagadorNome = integradorName || "Integrador Solar";

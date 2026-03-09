@@ -1372,7 +1372,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         "mp_public_key", "mp_enabled", "company_name", "logo_url", "primary_color",
         "login_badge_text", "login_headline", "login_headline_highlight",
         "login_description", "login_feature_1", "login_feature_2", "login_feature_3",
-        "login_bg_type", "login_bg_image",
+        "login_bg_type", "login_bg_image", "login_headline_size", "login_description_size",
+        "support_title", "support_description", "support_button_text", "support_whatsapp_url",
       ];
       for (const s of settings) {
         if (!s.value) continue;

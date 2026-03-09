@@ -15,7 +15,7 @@ const BASE_URLS = {
   sandbox: "https://cdpj-sandbox.partners.uatinter.co",
 };
 
-const BOLEPIX_SCOPES = "boleto-cobranca.write boleto-cobranca.read";
+const BOLEPIX_SCOPES = "boleto-cobranca.write";
 
 interface TokenCache {
   token: string;

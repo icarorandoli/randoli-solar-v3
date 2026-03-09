@@ -158,6 +158,13 @@ async function getAccessTokenWithScope(
     }
     const errMsg = JSON.stringify(result.data);
     console.warn(`[inter] Scope "${scope}" não disponível: ${result.status} — ${errMsg}`);
+    if (result.status === 429) {
+      // Rate limited — no point trying other scopes, all will 429
+      throw new Error(
+        `Limite de requisições atingido no Banco Inter (HTTP 429). ` +
+        `Aguarde 5 a 15 minutos antes de tentar novamente.`
+      );
+    }
     errors.push(`${scope}: ${result.status}`);
   }
 
@@ -458,10 +465,23 @@ export async function testInterConnection(
   config: InterConfig
 ): Promise<{ ok: boolean; message: string; scope?: string }> {
   try {
-    // Clear all cached tokens for this client
     const baseKey = `${config.environment}:${config.clientId}`;
+    const now = Date.now();
+
+    // Check if we already have valid cached tokens — avoid unnecessary OAuth requests (rate limit)
+    const cachedWorking: string[] = [];
     for (const scope of SCOPE_PRIORITY) {
-      tokenCache.delete(`${baseKey}:${scope}`);
+      const cached = tokenCache.get(`${baseKey}:${scope}`);
+      if (cached && cached.expiresAt > now + 60_000) {
+        cachedWorking.push(scope);
+      }
+    }
+    if (cachedWorking.length > 0) {
+      return {
+        ok: true,
+        message: `Conexão com Banco Inter OK (token em cache). Escopos ativos: ${cachedWorking.join(", ")}`,
+        scope: cachedWorking[0],
+      };
     }
 
     const errors: string[] = [];
@@ -477,6 +497,11 @@ export async function testInterConnection(
           expiresAt: Date.now() + expiresIn * 1000,
           scope,
         });
+      } else if (result.status === 429) {
+        return {
+          ok: false,
+          message: `Limite de requisições atingido no Banco Inter (HTTP 429). Aguarde 5 a 15 minutos e tente novamente.`,
+        };
       } else {
         errors.push(`${scope} (${result.status})`);
       }
@@ -517,23 +542,30 @@ export async function diagnoseInterApi(config: InterConfig): Promise<InterDiagno
   const baseUrl = BASE_URLS[config.environment];
   const baseKey = `${config.environment}:${config.clientId}`;
 
-  // Clear token cache for fresh test
-  for (const scope of SCOPE_PRIORITY) {
-    tokenCache.delete(`${baseKey}:${scope}`);
-  }
-
+  const now = Date.now();
   const oauthTests: InterDiagnosticResult["oauthTests"] = [];
   let workingScope: string | null = null;
   let workingToken: string | null = null;
 
   for (const scope of SCOPE_PRIORITY) {
+    // Use cached token if still valid — avoids hammering Inter and getting rate-limited
+    const cached = tokenCache.get(`${baseKey}:${scope}`);
+    if (cached && cached.expiresAt > now + 60_000) {
+      oauthTests.push({ scope, status: 200, ok: true, error: undefined });
+      if (!workingScope) {
+        workingScope = scope;
+        workingToken = cached.token;
+      }
+      continue;
+    }
+
     const result = await requestToken(config, scope);
     const ok = result.status === 200 && !!result.data.access_token;
     oauthTests.push({
       scope,
       status: result.status,
       ok,
-      error: ok ? undefined : JSON.stringify(result.data).slice(0, 200),
+      error: ok ? undefined : (result.status === 429 ? "Rate limit: aguarde 5-15 minutos" : JSON.stringify(result.data).slice(0, 200)),
     });
     if (ok && !workingScope) {
       workingScope = scope;
@@ -544,6 +576,8 @@ export async function diagnoseInterApi(config: InterConfig): Promise<InterDiagno
         scope,
       });
     }
+    // If rate limited, skip remaining scopes
+    if (result.status === 429) break;
   }
 
   const pathTests: InterDiagnosticResult["pathTests"] = [];
@@ -579,7 +613,10 @@ export async function diagnoseInterApi(config: InterConfig): Promise<InterDiagno
 
   // Build recommendation
   let recommendation = "";
-  if (!workingScope) {
+  const rateLimited = oauthTests.some(t => t.status === 429);
+  if (!workingScope && rateLimited) {
+    recommendation = "Limite de requisições atingido (HTTP 429). A API do Inter bloqueou temporariamente. Aguarde 5 a 15 minutos e tente o diagnóstico novamente.";
+  } else if (!workingScope) {
     recommendation = "Nenhum escopo OAuth funcionou. Verifique as credenciais (clientId, clientSecret, certificado, chave privada) e os escopos registrados em developers.inter.co.";
   } else {
     const working = pathTests.filter(p => p.status !== 404 && p.status !== 0);

@@ -323,27 +323,36 @@ async function createBolepix(
   seuNumero: string,
   numericValue: number,
   pagadorNome: string,
+  pagadorCpfCnpj: string,
   projectTitle: string,
   ticket: string
 ): Promise<InterPixResult> {
   const baseUrl = BASE_URLS[config.environment];
 
+  // Determine tipoPessoa from CPF/CNPJ length (CPF=11 digits, CNPJ=14 digits)
+  const digits = pagadorCpfCnpj.replace(/\D/g, "");
+  const tipoPessoa = digits.length <= 11 ? "FISICA" : "JURIDICA";
+
   const cobBody = JSON.stringify({
     seuNumero,
     valorNominal: numericValue,
     dataVencimento: futureDateISO(30),
-    pagador: { nome: pagadorNome.slice(0, 100) },
+    numDiasAgenda: 60,
+    pagador: {
+      cpfCnpj: digits,
+      tipoPessoa,
+      nome: pagadorNome.slice(0, 100),
+    },
     mensagem: {
       linha1: `Projeto Solar: ${projectTitle}`.slice(0, 70),
       linha2: `Ticket: ${ticket}`.slice(0, 70),
     },
   });
 
-  // Try paths in order: new API path first, legacy as fallback
+  // Correct path confirmed by diagnostic: /cobranca/v3/cobrancas (ASCII, no special chars)
   const paths = [
-    "/cobranca/v3/cobran\u00E7as",   // /cobranca/v3/cobranças
+    "/cobranca/v3/cobrancas",
     "/cobranca-bolepix/v3/cobrancas",
-    "/banking/v2/billet",
   ];
 
   let cobRes = { status: 0, data: {} as any };
@@ -404,13 +413,15 @@ export async function createInterPixCharge({
   const txid = generateTxid();
   const description = `Projeto Solar: ${projectTitle} | Ticket: ${ticket}`;
   const pagadorNome = integradorName || "Integrador Solar";
+  // CPF/CNPJ is required by Inter BolePIX API; use integrador's or a placeholder
+  const pagadorCpfCnpj = integradorCpfCnpj || "00000000000";
 
   if (scope === "cob.write") {
     return createPixCob(config, token, txid, numericValue, description);
   } else if (scope === "cobv.write") {
     return createPixCobv(config, token, txid, numericValue, description);
   } else {
-    return createBolepix(config, token, seuNumero, numericValue, pagadorNome, projectTitle, ticket);
+    return createBolepix(config, token, seuNumero, numericValue, pagadorNome, pagadorCpfCnpj, projectTitle, ticket);
   }
 }
 
@@ -427,9 +438,9 @@ export async function getInterPixStatus(
   } else if (scope === "cobv.write") {
     res = await httpsRequest(baseUrl, `/pix/v2/cobv/${txid}`, "GET", config.certificate, config.privateKey, { Authorization: `Bearer ${token}` });
   } else {
-    // Try multiple paths for bolepix
+    // Use confirmed working path (ASCII, no special chars)
     const statusPaths = [
-      `/cobranca/v3/cobran\u00E7as/${txid}`,
+      `/cobranca/v3/cobrancas/${txid}`,
       `/cobranca-bolepix/v3/cobrancas/${txid}`,
     ];
     for (const p of statusPaths) {

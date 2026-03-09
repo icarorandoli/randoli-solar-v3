@@ -650,6 +650,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           const settingsMap = await getSettingsMap();
           const intEmail = current.integrador?.email || current.client?.email;
           const intName = current.integrador?.name || current.client?.name;
+          const intCpfCnpjAuto = current.integrador?.cpfCnpj || current.client?.cpfCnpj || (current as any).cpfCnpjCliente || undefined;
           const valorStr = updated?.valor || current.valor || "0";
 
           // ── Mercado Pago ──────────────────────────────────────────
@@ -702,6 +703,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
                 ticketNumber: current.ticketNumber,
                 valor: valorStr,
                 integradorName: intName || undefined,
+                integradorCpfCnpj: intCpfCnpjAuto || undefined,
               });
               await storage.updateProject((req.params.id as string), {
                 interPixTxid: interPix.txid,
@@ -753,6 +755,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           const interCfg2 = getInterConfig(settingsMap2);
           const intEmail2 = current.integrador?.email || current.client?.email;
           const intName2 = current.integrador?.name || current.client?.name;
+          const intCpfCnpj2 = current.integrador?.cpfCnpj || current.client?.cpfCnpj || (current as any).cpfCnpjCliente || undefined;
           const regenUpdate: any = {};
 
           if (mpToken2) {
@@ -795,6 +798,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
                 ticketNumber: current.ticketNumber,
                 valor: data.valor,
                 integradorName: intName2 || undefined,
+                integradorCpfCnpj: intCpfCnpj2 || undefined,
               });
               regenUpdate.interPixTxid = interPix2.txid;
               regenUpdate.interPixCopiaECola = interPix2.pixCopiaECola;
@@ -884,6 +888,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
       const intEmail = (project as any).integrador?.email || (project as any).client?.email;
       const intName = (project as any).integrador?.name || (project as any).client?.name;
+      const intCpfCnpj = (project as any).integrador?.cpfCnpj || (project as any).client?.cpfCnpj || (project as any).cpfCnpjCliente || undefined;
       const updateData: any = {};
       const methods: string[] = [];
 
@@ -936,6 +941,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             ticketNumber: project.ticketNumber,
             valor: project.valor,
             integradorName: intName || undefined,
+            integradorCpfCnpj: intCpfCnpj || undefined,
           });
           updateData.interPixTxid = interPix.txid;
           updateData.interPixCopiaECola = interPix.pixCopiaECola;

@@ -1588,15 +1588,36 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
       if (isZip) {
         const entries = extractZipEntries(buf);
-        let cert = "";
+        let entityCert = "";
+        let caCert = "";
         let key = "";
+        const filesFound: string[] = [];
         for (const [name, content] of Object.entries(entries)) {
           const n = name.toLowerCase();
-          if (n.endsWith(".crt") || n.endsWith(".pem") && content.includes("CERTIFICATE")) cert = content.trim();
-          else if (n.endsWith(".key") || n.endsWith(".pem") && content.includes("PRIVATE KEY")) key = content.trim();
+          const baseName = n.split("/").pop() || n;
+          filesFound.push(baseName);
+          if (n.endsWith(".key") || (n.endsWith(".pem") && content.includes("PRIVATE KEY"))) {
+            key = content.trim();
+          } else if (n.endsWith(".crt") || (n.endsWith(".pem") && content.includes("CERTIFICATE"))) {
+            // Distinguish entity cert from Inter CA cert by filename
+            // CA cert is typically named "inter-ca.crt", "ca.crt", or contains "-ca"
+            const isCA = baseName.includes("inter-ca") || baseName === "ca.crt" ||
+                         baseName.startsWith("ca-") || baseName.endsWith("-ca.crt");
+            if (isCA) {
+              caCert = content.trim();
+            } else {
+              entityCert = content.trim();
+            }
+          }
         }
-        if (!cert && !key) return res.status(422).json({ error: "Nenhum certificado ou chave encontrado no ZIP. Verifique se é o arquivo correto do Banco Inter." });
-        return res.json({ certificate: cert || null, privateKey: key || null, source: "zip" });
+        // Fallback: if only one cert found, it's the entity cert
+        if (!entityCert && caCert) {
+          entityCert = caCert;
+          caCert = "";
+        }
+        if (!entityCert && !key) return res.status(422).json({ error: "Nenhum certificado ou chave encontrado no ZIP. Verifique se é o arquivo correto do Banco Inter." });
+        console.log("[inter] ZIP extracted files:", filesFound);
+        return res.json({ certificate: entityCert || null, webhookCert: caCert || null, privateKey: key || null, source: "zip", filesFound });
       }
 
       // Handle individual .crt or .key file

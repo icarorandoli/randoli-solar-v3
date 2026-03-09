@@ -440,11 +440,13 @@ export default function SettingsPage() {
       if (!res.ok) { toast({ title: data.error || "Erro ao processar arquivo", variant: "destructive" }); return; }
       if (data.certificate) { setInterCertificate(data.certificate); setShowInterCert(false); }
       if (data.privateKey) { setInterPrivateKey(data.privateKey); setShowInterKey(false); }
+      if (data.webhookCert) { setInterWebhookCert(data.webhookCert); }
       if (data.source === "zip") {
         const parts = [];
-        if (data.certificate) parts.push("certificado (.crt)");
+        if (data.certificate) parts.push("certificado da empresa (.crt)");
         if (data.privateKey) parts.push("chave privada (.key)");
-        toast({ title: "ZIP extraído com sucesso!", description: `Encontrado: ${parts.join(" e ")}. Clique em Salvar para confirmar.` });
+        if (data.webhookCert) parts.push("CA do Inter (webhook)");
+        toast({ title: "ZIP extraído com sucesso!", description: `Encontrado: ${parts.join(", ")}. Clique em Salvar para confirmar.` });
       } else {
         toast({ title: "Arquivo carregado!", description: "Clique em Salvar para confirmar." });
       }

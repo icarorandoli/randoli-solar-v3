@@ -12,15 +12,26 @@ export interface InterConfig {
 
 const BASE_URLS = {
   production: "https://cdpj.partners.bancointer.com.br",
-  sandbox: "https://cdpj-sandbox.partners.bancointer.com.br",
+  sandbox: "https://cdpj-sandbox.partners.uatinter.co",
 };
+
+const PIX_SCOPES = "cob.write cob.read pix.read";
 
 interface TokenCache {
   token: string;
   expiresAt: number;
+  scope: string;
 }
 
 const tokenCache = new Map<string, TokenCache>();
+
+function cleanPem(pem: string): string {
+  const lines = pem.split("\n");
+  const cleaned = lines
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0);
+  return cleaned.join("\n") + "\n";
+}
 
 function httpsRequest(
   baseUrl: string,
@@ -38,8 +49,8 @@ function httpsRequest(
       port: 443,
       path: parsed.pathname + parsed.search,
       method,
-      cert,
-      key,
+      cert: cleanPem(cert),
+      key: cleanPem(key),
       rejectUnauthorized: true,
       headers: {
         "Content-Type": "application/json",
@@ -66,29 +77,30 @@ function httpsRequest(
   });
 }
 
-async function getAccessToken(config: InterConfig): Promise<string> {
-  const cacheKey = `${config.environment}:${config.clientId}`;
-  const cached = tokenCache.get(cacheKey);
-  if (cached && Date.now() < cached.expiresAt - 30_000) {
-    return cached.token;
-  }
-
+async function requestToken(
+  config: InterConfig,
+  scope: string
+): Promise<{ status: number; data: any }> {
   const baseUrl = BASE_URLS[config.environment];
   const body = new URLSearchParams({
     client_id: config.clientId,
     client_secret: config.clientSecret,
     grant_type: "client_credentials",
+    scope,
   }).toString();
 
+  const cert = cleanPem(config.certificate);
+  const key = cleanPem(config.privateKey);
   const parsed = new URL(baseUrl + "/oauth/v2/token");
-  const result = await new Promise<{ status: number; data: any }>((resolve, reject) => {
+
+  return new Promise((resolve, reject) => {
     const options: https.RequestOptions = {
       hostname: parsed.hostname,
       port: 443,
       path: parsed.pathname,
       method: "POST",
-      cert: config.certificate,
-      key: config.privateKey,
+      cert,
+      key,
       rejectUnauthorized: true,
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
@@ -112,18 +124,34 @@ async function getAccessToken(config: InterConfig): Promise<string> {
     req.write(body);
     req.end();
   });
+}
+
+async function getAccessToken(config: InterConfig, requiredScope?: string): Promise<string> {
+  const cacheKey = `${config.environment}:${config.clientId}:${requiredScope || "pix"}`;
+  const cached = tokenCache.get(cacheKey);
+  if (cached && Date.now() < cached.expiresAt - 30_000) {
+    return cached.token;
+  }
+
+  const scope = requiredScope || PIX_SCOPES;
+  let result = await requestToken(config, scope);
 
   if (result.status !== 200 || !result.data.access_token) {
-    console.error("[inter] Token error:", result.status, result.data);
-    throw new Error(`Inter OAuth falhou: ${result.status} — ${JSON.stringify(result.data)}`);
+    console.error("[inter] Token error with scope:", result.status, result.data);
+    throw new Error(
+      `Inter OAuth falhou (scope="${scope}"): ${result.status} — ${JSON.stringify(result.data)}\n` +
+      `Verifique se os escopos "${scope}" estão habilitados na sua aplicação em developers.inter.co.`
+    );
   }
 
   const expiresIn = result.data.expires_in || 3600;
   tokenCache.set(cacheKey, {
     token: result.data.access_token,
     expiresAt: Date.now() + expiresIn * 1000,
+    scope: result.data.scope || scope,
   });
 
+  console.log("[inter] Token obtained. Scope:", result.data.scope);
   return result.data.access_token;
 }
 
@@ -154,7 +182,7 @@ export async function createInterPixCharge({
     throw new Error("Valor inválido para PIX Inter");
   }
 
-  const token = await getAccessToken(config);
+  const token = await getAccessToken(config, PIX_SCOPES);
   const baseUrl = BASE_URLS[config.environment];
   const ticket = ticketNumber || projectId.slice(0, 8);
   const txid = `RANDOLI${projectId.replace(/-/g, "").slice(0, 26).toUpperCase()}`;
@@ -164,7 +192,7 @@ export async function createInterPixCharge({
     devedor: integradorName ? { nome: integradorName } : undefined,
     valor: { original: numericValue.toFixed(2) },
     chave: config.pixKey,
-    solicitacaoPagador: `Projeto Solar ${ticket} — ${projectTitle}`.slice(0, 140),
+    solicitacaoPagador: `Projeto Solar ${ticket} - ${projectTitle}`.slice(0, 140),
   });
 
   const cobRes = await httpsRequest(
@@ -217,7 +245,7 @@ export async function getInterPixStatus(
   config: InterConfig,
   txid: string
 ): Promise<{ status: string; paidAt?: string }> {
-  const token = await getAccessToken(config);
+  const token = await getAccessToken(config, PIX_SCOPES);
   const baseUrl = BASE_URLS[config.environment];
 
   const res = await httpsRequest(
@@ -239,10 +267,59 @@ export async function getInterPixStatus(
   };
 }
 
-export async function testInterConnection(config: InterConfig): Promise<{ ok: boolean; message: string }> {
+export async function testInterConnection(
+  config: InterConfig
+): Promise<{ ok: boolean; message: string; scope?: string }> {
   try {
-    await getAccessToken(config);
-    return { ok: true, message: "Conexão com Banco Inter estabelecida com sucesso." };
+    const cacheKey = `${config.environment}:${config.clientId}:pix`;
+    tokenCache.delete(cacheKey);
+
+    const result = await requestToken(config, PIX_SCOPES);
+
+    if (result.status !== 200 || !result.data.access_token) {
+      const errBody = JSON.stringify(result.data);
+      if (
+        result.status === 403 ||
+        (result.status === 401 && errBody.includes("scope"))
+      ) {
+        return {
+          ok: false,
+          message:
+            `Certificado OK, mas os escopos PIX não estão habilitados na sua aplicação Inter.\n` +
+            `Acesse developers.inter.co → sua aplicação → habilite os escopos: ${PIX_SCOPES}`,
+        };
+      }
+      return {
+        ok: false,
+        message: `Inter OAuth falhou: ${result.status} — ${errBody}`,
+      };
+    }
+
+    const scope: string = result.data.scope || "";
+    const hasCobWrite = scope.includes("cob.write");
+
+    if (!hasCobWrite) {
+      return {
+        ok: false,
+        message:
+          `Autenticação ok (scope: "${scope}"), mas o escopo "cob.write" é necessário para emitir PIX.\n` +
+          `Acesse developers.inter.co → sua aplicação → habilite: ${PIX_SCOPES}`,
+        scope,
+      };
+    }
+
+    const expiresIn = result.data.expires_in || 3600;
+    tokenCache.set(cacheKey, {
+      token: result.data.access_token,
+      expiresAt: Date.now() + expiresIn * 1000,
+      scope,
+    });
+
+    return {
+      ok: true,
+      message: `Conexão com Banco Inter estabelecida. Escopos: ${scope}`,
+      scope,
+    };
   } catch (err: any) {
     return { ok: false, message: err.message || "Falha na conexão com o Banco Inter." };
   }

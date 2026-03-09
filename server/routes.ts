@@ -26,6 +26,36 @@ import { generateUnifilarSvg } from "./ai/unifilar-generator";
 import path from "path";
 import fs from "fs";
 import { randomBytes } from "crypto";
+import multer from "multer";
+import zlib from "zlib";
+
+// Memory-storage multer for certificate uploads (max 2MB)
+const memUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024 } });
+
+// Minimal ZIP parser using built-in zlib — supports STORED (0) and DEFLATED (8) entries
+function extractZipEntries(buf: Buffer): Record<string, string> {
+  const files: Record<string, string> = {};
+  let offset = 0;
+  while (offset + 30 < buf.length) {
+    if (buf.readUInt32LE(offset) !== 0x04034b50) break;
+    const compression = buf.readUInt16LE(offset + 8);
+    const compressedSize = buf.readUInt32LE(offset + 18);
+    const fnLen = buf.readUInt16LE(offset + 26);
+    const extraLen = buf.readUInt16LE(offset + 28);
+    const filename = buf.subarray(offset + 30, offset + 30 + fnLen).toString("utf8");
+    const dataStart = offset + 30 + fnLen + extraLen;
+    const compData = buf.subarray(dataStart, dataStart + compressedSize);
+    try {
+      if (compression === 0) {
+        files[filename] = compData.toString("utf8");
+      } else if (compression === 8) {
+        files[filename] = zlib.inflateRawSync(compData).toString("utf8");
+      }
+    } catch { /* skip unreadable entry */ }
+    offset = dataStart + compressedSize;
+  }
+  return files;
+}
 
 const PgSession = connectPgSimple(session);
 
@@ -1533,6 +1563,52 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       res.setHeader("Content-Type", "application/x-pem-file");
       res.setHeader("Content-Disposition", "attachment; filename=inter_webhook_ca.pem");
       res.send(cert);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ── INTER CERTIFICATE ZIP UPLOAD ────────────────────────────────────
+  // Accepts the ZIP file downloaded from the Inter developer portal and
+  // extracts the .crt and .key file contents, returning them as plain text.
+  app.post("/api/inter/upload-cert", requireAuth, memUpload.single("file"), async (req, res) => {
+    try {
+      const user = await getCurrentUser(req);
+      if (user?.role !== "admin") return res.status(403).json({ error: "Sem permissão" });
+      if (!req.file) return res.status(400).json({ error: "Nenhum arquivo enviado" });
+
+      const buf = req.file.buffer;
+      const mime = req.file.mimetype;
+      const originalName = req.file.originalname.toLowerCase();
+
+      // Handle ZIP file — extract .crt and .key entries
+      const isZip = mime === "application/zip" || mime === "application/x-zip-compressed" ||
+                    mime === "application/octet-stream" && originalName.endsWith(".zip") ||
+                    buf.readUInt32LE(0) === 0x04034b50;
+
+      if (isZip) {
+        const entries = extractZipEntries(buf);
+        let cert = "";
+        let key = "";
+        for (const [name, content] of Object.entries(entries)) {
+          const n = name.toLowerCase();
+          if (n.endsWith(".crt") || n.endsWith(".pem") && content.includes("CERTIFICATE")) cert = content.trim();
+          else if (n.endsWith(".key") || n.endsWith(".pem") && content.includes("PRIVATE KEY")) key = content.trim();
+        }
+        if (!cert && !key) return res.status(422).json({ error: "Nenhum certificado ou chave encontrado no ZIP. Verifique se é o arquivo correto do Banco Inter." });
+        return res.json({ certificate: cert || null, privateKey: key || null, source: "zip" });
+      }
+
+      // Handle individual .crt or .key file
+      const content = buf.toString("utf8").trim();
+      if (content.includes("BEGIN CERTIFICATE")) {
+        return res.json({ certificate: content, privateKey: null, source: "crt" });
+      }
+      if (content.includes("BEGIN") && content.includes("KEY")) {
+        return res.json({ certificate: null, privateKey: content, source: "key" });
+      }
+
+      return res.status(422).json({ error: "Arquivo não reconhecido. Envie o ZIP do Banco Inter, um arquivo .crt ou um arquivo .key" });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }

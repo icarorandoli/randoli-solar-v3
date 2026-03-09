@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Save, Upload, Zap, Building2, ImageOff, Mail, Send, Eye, EyeOff,
   CreditCard, MonitorPlay, Image, Settings2, Globe, ShieldCheck, Palette, ArrowRight,
-  CheckCircle2, XCircle, Loader2
+  CheckCircle2, XCircle, Loader2, FolderOpen, FileKey, FileBadge
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -265,6 +265,10 @@ export default function SettingsPage() {
   const [showInterCert, setShowInterCert] = useState(false);
   const [showInterKey, setShowInterKey] = useState(false);
   const [showInterWebhookCert, setShowInterWebhookCert] = useState(false);
+  const [certUploadLoading, setCertUploadLoading] = useState(false);
+  const zipFileRef = useRef<HTMLInputElement>(null);
+  const certFileRef = useRef<HTMLInputElement>(null);
+  const keyFileRef = useRef<HTMLInputElement>(null);
 
   const [loginBadgeText, setLoginBadgeText] = useState("Portal SaaS de Homologação");
   const [loginHeadline, setLoginHeadline] = useState("Gerencie projetos de energia solar de forma simples e eficiente");
@@ -418,6 +422,39 @@ export default function SettingsPage() {
     },
     onError: () => toast({ title: "Erro ao testar conexão Inter", variant: "destructive" }),
   });
+
+  // Handler for ZIP / .crt / .key file upload
+  const handleCertFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCertUploadLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/inter/upload-cert", {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) { toast({ title: data.error || "Erro ao processar arquivo", variant: "destructive" }); return; }
+      if (data.certificate) { setInterCertificate(data.certificate); setShowInterCert(false); }
+      if (data.privateKey) { setInterPrivateKey(data.privateKey); setShowInterKey(false); }
+      if (data.source === "zip") {
+        const parts = [];
+        if (data.certificate) parts.push("certificado (.crt)");
+        if (data.privateKey) parts.push("chave privada (.key)");
+        toast({ title: "ZIP extraído com sucesso!", description: `Encontrado: ${parts.join(" e ")}. Clique em Salvar para confirmar.` });
+      } else {
+        toast({ title: "Arquivo carregado!", description: "Clique em Salvar para confirmar." });
+      }
+    } catch {
+      toast({ title: "Erro ao enviar arquivo", variant: "destructive" });
+    } finally {
+      setCertUploadLoading(false);
+      e.target.value = "";
+    }
+  };
 
   return (
     <div className="p-6 space-y-6 max-w-5xl mx-auto">
@@ -700,37 +737,101 @@ export default function SettingsPage() {
                       </div>
                     </div>
 
+                    {/* ── CERTIFICADO mTLS INTER ── */}
                     <div className="space-y-4 pt-4 border-t border-muted/40">
-                      <div className="space-y-2">
-                        <Label>Certificado (.crt / .pem)</Label>
-                        <div className="relative">
-                          <Textarea
-                            value={interCertificate}
-                            onChange={e => setInterCertificate(e.target.value)}
-                            placeholder="-----BEGIN CERTIFICATE----- ..."
-                            className="font-mono text-[10px] min-h-[100px]"
-                            data-testid="textarea-inter-cert"
-                          />
-                          <button type="button" className="absolute right-3 top-2 text-muted-foreground" onClick={() => setShowInterCert(!showInterCert)}>
-                            {showInterCert ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </button>
+                      <Label className="flex items-center gap-2 text-sm font-bold">
+                        <ShieldCheck className="h-4 w-4 text-orange-500" />
+                        Certificado mTLS do Banco Inter
+                      </Label>
+
+                      {/* Upload card */}
+                      <div className="p-4 rounded-xl border-2 border-dashed border-orange-200 dark:border-orange-700/40 bg-orange-50/50 dark:bg-orange-900/10 space-y-3">
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          Baixe o arquivo <strong>ZIP</strong> no portal do Inter (<code className="bg-muted px-1 rounded text-[10px]">developers.inter.co → Minhas Integrações</code>) e clique em <strong>Selecionar arquivo</strong>. O sistema extrai o certificado e a chave automaticamente.
+                        </p>
+
+                        {/* Status badges */}
+                        <div className="flex flex-wrap gap-2">
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${interCertificate ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-muted text-muted-foreground"}`}>
+                            <FileBadge className="h-3 w-3" />
+                            Certificado (.crt): {interCertificate ? "Configurado ✓" : "Não configurado"}
+                          </span>
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${interPrivateKey ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-muted text-muted-foreground"}`}>
+                            <FileKey className="h-3 w-3" />
+                            Chave Privada (.key): {interPrivateKey ? "Configurada ✓" : "Não configurada"}
+                          </span>
+                        </div>
+
+                        {/* Hidden file inputs */}
+                        <input ref={zipFileRef} type="file" accept=".zip,application/zip,application/x-zip-compressed,application/octet-stream" className="hidden" onChange={handleCertFileUpload} data-testid="input-inter-cert-zip" />
+                        <input ref={certFileRef} type="file" accept=".crt,.pem,application/x-pem-file" className="hidden" onChange={handleCertFileUpload} data-testid="input-inter-cert-file" />
+                        <input ref={keyFileRef} type="file" accept=".key,.pem,application/x-pem-file" className="hidden" onChange={handleCertFileUpload} data-testid="input-inter-key-file" />
+
+                        {/* Primary button */}
+                        <Button
+                          type="button"
+                          variant="default"
+                          disabled={certUploadLoading}
+                          onClick={() => zipFileRef.current?.click()}
+                          className="w-full gap-2 bg-orange-600 hover:bg-orange-700 text-white h-10"
+                          data-testid="button-upload-inter-zip"
+                        >
+                          {certUploadLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FolderOpen className="h-4 w-4" />}
+                          {certUploadLoading ? "Processando arquivo..." : "Selecionar arquivo (ZIP, .crt ou .key)"}
+                        </Button>
+
+                        {/* Individual file buttons */}
+                        <div className="flex gap-2">
+                          <Button type="button" variant="outline" size="sm" disabled={certUploadLoading} onClick={() => certFileRef.current?.click()} className="gap-1.5 flex-1 text-xs" data-testid="button-upload-inter-crt">
+                            <FileBadge className="h-3.5 w-3.5 text-orange-500" /> Somente .crt
+                          </Button>
+                          <Button type="button" variant="outline" size="sm" disabled={certUploadLoading} onClick={() => keyFileRef.current?.click()} className="gap-1.5 flex-1 text-xs" data-testid="button-upload-inter-key">
+                            <FileKey className="h-3.5 w-3.5 text-orange-500" /> Somente .key
+                          </Button>
                         </div>
                       </div>
-                      <div className="space-y-2">
-                        <Label>Chave Privada (.key)</Label>
-                        <div className="relative">
-                          <Textarea
-                            value={interPrivateKey}
-                            onChange={e => setInterPrivateKey(e.target.value)}
-                            placeholder="-----BEGIN PRIVATE KEY----- ..."
-                            className="font-mono text-[10px] min-h-[100px]"
-                            data-testid="textarea-inter-key"
-                          />
-                          <button type="button" className="absolute right-3 top-2 text-muted-foreground" onClick={() => setShowInterKey(!showInterKey)}>
-                            {showInterKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </button>
+
+                      {/* Manual paste fallback */}
+                      <details className="group">
+                        <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground select-none flex items-center gap-1">
+                          <span className="group-open:rotate-90 transition-transform inline-block">▶</span>
+                          Colar manualmente (alternativa ao upload)
+                        </summary>
+                        <div className="space-y-3 mt-3">
+                          <div className="space-y-1.5">
+                            <Label className="text-xs text-muted-foreground">Conteúdo do Certificado (.crt)</Label>
+                            <div className="relative">
+                              <Textarea
+                                value={showInterCert ? interCertificate : (interCertificate && interCertificate !== "••••••••" ? "••••••••" : interCertificate)}
+                                onChange={e => setInterCertificate(e.target.value)}
+                                onFocus={() => setShowInterCert(true)}
+                                placeholder="-----BEGIN CERTIFICATE----- ..."
+                                className="font-mono text-[10px] min-h-[80px]"
+                                data-testid="textarea-inter-cert"
+                              />
+                              <button type="button" className="absolute right-3 top-2 text-muted-foreground" onClick={() => setShowInterCert(!showInterCert)}>
+                                {showInterCert ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                              </button>
+                            </div>
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs text-muted-foreground">Conteúdo da Chave Privada (.key)</Label>
+                            <div className="relative">
+                              <Textarea
+                                value={showInterKey ? interPrivateKey : (interPrivateKey && interPrivateKey !== "••••••••" ? "••••••••" : interPrivateKey)}
+                                onChange={e => setInterPrivateKey(e.target.value)}
+                                onFocus={() => setShowInterKey(true)}
+                                placeholder="-----BEGIN PRIVATE KEY----- ..."
+                                className="font-mono text-[10px] min-h-[80px]"
+                                data-testid="textarea-inter-key"
+                              />
+                              <button type="button" className="absolute right-3 top-2 text-muted-foreground" onClick={() => setShowInterKey(!showInterKey)}>
+                                {showInterKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                              </button>
+                            </div>
+                          </div>
                         </div>
-                      </div>
+                      </details>
                     </div>
 
                     <div className="space-y-4 pt-4 border-t border-muted/40 bg-muted/20 p-3 rounded-lg">

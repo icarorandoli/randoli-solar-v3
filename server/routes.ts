@@ -1372,7 +1372,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const map: Record<string, string> = {};
       const MASKED_KEYS = new Set([
         "email_smtp_pass", "mp_access_token", "mp_webhook_secret",
-        "inter_client_secret", "inter_certificate", "inter_private_key", "inter_webhook_key",
+        "inter_client_secret", "inter_certificate", "inter_private_key", "inter_webhook_key", "inter_webhook_cert",
       ]);
       for (const s of settings) {
         if (!s.value) continue;
@@ -1392,7 +1392,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       if (!key || value === undefined) return res.status(400).json({ error: "key e value obrigatórios" });
       const MASKED_KEYS = new Set([
         "email_smtp_pass", "mp_access_token", "mp_webhook_secret",
-        "inter_client_secret", "inter_certificate", "inter_private_key", "inter_webhook_key",
+        "inter_client_secret", "inter_certificate", "inter_private_key", "inter_webhook_key", "inter_webhook_cert",
       ]);
       if (MASKED_KEYS.has(key) && value === "••••••••") {
         return res.json({ key, value });
@@ -1424,12 +1424,48 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       console.log("[inter] Webhook recebido:", JSON.stringify(body).slice(0, 500));
 
       const settingsMap = await getSettingsMap();
-      const webhookKey = settingsMap["inter_webhook_key"] || process.env.INTER_WEBHOOK_KEY;
-      if (webhookKey) {
-        const apiKey = req.headers["x-api-key"] as string | undefined;
-        if (apiKey !== webhookKey) {
-          console.warn("[inter] Webhook: chave inválida, ignorado");
-          return;
+
+      // Verificação por certificado mTLS
+      const webhookCertPem = settingsMap["inter_webhook_cert"] || process.env.INTER_WEBHOOK_CERT;
+      if (webhookCertPem) {
+        const crypto = await import("crypto");
+        // Compute fingerprint from stored Inter webhook certificate
+        const certDer = webhookCertPem
+          .replace(/-----BEGIN CERTIFICATE-----/g, "")
+          .replace(/-----END CERTIFICATE-----/g, "")
+          .replace(/\s+/g, "");
+        const storedFingerprint = crypto
+          .createHash("sha256")
+          .update(Buffer.from(certDer, "base64"))
+          .digest("hex")
+          .toUpperCase()
+          .match(/.{2}/g)!
+          .join(":");
+
+        // Try to get peer cert from TLS socket (direct connection, no proxy)
+        const socket = req.socket as any;
+        const peerCert = socket.getPeerCertificate?.();
+        const peerFingerprint = peerCert?.fingerprint256 || peerCert?.fingerprint;
+
+        // Or from Nginx header (proxy scenario: ssl_client_fingerprint or x-ssl-fingerprint)
+        const nginxFingerprint = (
+          (req.headers["x-ssl-client-fingerprint"] as string) ||
+          (req.headers["x-ssl-fingerprint"] as string) ||
+          (req.headers["ssl-client-fingerprint"] as string)
+        )?.toUpperCase();
+
+        const incomingFingerprint = peerFingerprint || nginxFingerprint;
+
+        if (incomingFingerprint) {
+          const normalizedIncoming = incomingFingerprint.replace(/:/g, "").toUpperCase();
+          const normalizedStored = storedFingerprint.replace(/:/g, "").toUpperCase();
+          if (normalizedIncoming !== normalizedStored) {
+            console.warn(`[inter] Webhook: certificado inválido. Recebido: ${incomingFingerprint}, Esperado: ${storedFingerprint}`);
+            return;
+          }
+          console.log("[inter] Webhook: certificado verificado com sucesso");
+        } else {
+          console.log("[inter] Webhook: certificado configurado mas não verificável nesta conexão (proxy sem header SSL). Processando mesmo assim.");
         }
       }
 

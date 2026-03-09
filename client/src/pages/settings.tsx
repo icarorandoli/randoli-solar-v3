@@ -259,9 +259,11 @@ export default function SettingsPage() {
   const [interPrivateKey, setInterPrivateKey] = useState("");
   const [interPixKey, setInterPixKey] = useState("");
   const [interWebhookKey, setInterWebhookKey] = useState("");
+  const [interWebhookCert, setInterWebhookCert] = useState("");
   const [showInterSecret, setShowInterSecret] = useState(false);
   const [showInterCert, setShowInterCert] = useState(false);
   const [showInterKey, setShowInterKey] = useState(false);
+  const [showInterWebhookCert, setShowInterWebhookCert] = useState(false);
 
   const [loginBadgeText, setLoginBadgeText] = useState("Portal SaaS de Homologação");
   const [loginHeadline, setLoginHeadline] = useState("Gerencie projetos de energia solar de forma simples e eficiente");
@@ -302,6 +304,7 @@ export default function SettingsPage() {
     setInterPrivateKey(settings.inter_private_key || "");
     setInterPixKey(settings.inter_pix_key || "");
     setInterWebhookKey(settings.inter_webhook_key || "");
+    setInterWebhookCert(settings.inter_webhook_cert || "");
     if (settings.login_badge_text) setLoginBadgeText(settings.login_badge_text);
     if (settings.login_headline) setLoginHeadline(settings.login_headline);
     if (settings.login_headline_highlight) setLoginHighlight(settings.login_headline_highlight);
@@ -353,6 +356,9 @@ export default function SettingsPage() {
       }
       if (interWebhookKey && interWebhookKey !== "••••••••") {
         pairs.push({ key: "inter_webhook_key", value: interWebhookKey });
+      }
+      if (interWebhookCert && interWebhookCert !== "••••••••") {
+        pairs.push({ key: "inter_webhook_cert", value: interWebhookCert });
       }
       pairs.push({ key: "favicon_url", value: faviconUrl });
       pairs.push(
@@ -764,25 +770,38 @@ export default function SettingsPage() {
                       </div>
 
                       <div className="space-y-2">
-                        <Label>Webhook Key (opcional)</Label>
+                        <Label className="flex items-center gap-1.5">
+                          <ShieldCheck className="h-3.5 w-3.5 text-orange-500" />
+                          Certificado Webhook do Inter (.pem) — Conteúdo PEM
+                        </Label>
                         <div className="relative">
-                          <Input
-                            type="password"
-                            value={interWebhookKey}
-                            onChange={e => setInterWebhookKey(e.target.value)}
-                            placeholder="Chave HMAC para validação de webhooks"
-                            data-testid="input-inter-webhook-key"
+                          <Textarea
+                            value={showInterWebhookCert ? interWebhookCert : (interWebhookCert && interWebhookCert !== "••••••••" ? "••••••••" : interWebhookCert)}
+                            onChange={e => setInterWebhookCert(e.target.value)}
+                            onFocus={() => setShowInterWebhookCert(true)}
+                            placeholder={"-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----"}
+                            rows={4}
+                            className="font-mono text-xs resize-none"
+                            data-testid="textarea-inter-webhook-cert"
                           />
                         </div>
+                        <p className="text-xs text-muted-foreground">
+                          Clique em <strong>"Certificado Webhook"</strong> no portal do Inter (developers.inter.co → Minhas Integrações) e cole o conteúdo do arquivo .pem baixado aqui. Este certificado autentica as chamadas do Inter para o nosso servidor.
+                        </p>
                       </div>
 
                       <div className="p-4 rounded-xl bg-orange-50 dark:bg-orange-900/10 border border-orange-200 dark:border-orange-900/30 space-y-2">
-                        <p className="text-xs font-semibold text-orange-800 dark:text-orange-300">Como obter as credenciais:</p>
+                        <p className="text-xs font-semibold text-orange-800 dark:text-orange-300">URL do Webhook — cadastre no portal Inter:</p>
+                        <code className="text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-900 dark:text-orange-200 px-2 py-1 rounded block break-all">
+                          https://projetos.randolisolar.com.br/api/inter/webhook
+                        </code>
+                        <p className="text-xs font-semibold text-orange-800 dark:text-orange-300 mt-2">Como obter as credenciais:</p>
                         <ol className="text-xs text-orange-700 dark:text-orange-400 space-y-1 list-decimal list-inside">
                           <li>Acesse <strong>developers.inter.co</strong> e crie uma aplicação</li>
                           <li>Gere o certificado digital (baixe o .crt e o .key)</li>
                           <li>Copie o Client ID e Client Secret gerados</li>
                           <li>Informe sua chave PIX cadastrada no Inter para recebimento</li>
+                          <li>Baixe o <strong>Certificado Webhook</strong> e cole no campo acima</li>
                         </ol>
                       </div>
 

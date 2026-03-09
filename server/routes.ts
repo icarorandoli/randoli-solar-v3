@@ -1441,13 +1441,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       if (!clientSecret) missing.push("Client Secret");
       if (!certificate)  missing.push("Certificado (.crt)");
       if (!privateKey)   missing.push("Chave Privada (.key)");
-      if (!pixKey)       missing.push("Chave PIX");
 
       if (missing.length) {
         return res.status(400).json({ ok: false, message: `Campos obrigatórios não configurados: ${missing.join(", ")}` });
       }
 
-      const config: InterConfig = { clientId, clientSecret, certificate, privateKey, pixKey, environment: environment as "sandbox" | "production" };
+      const config: InterConfig = { clientId, clientSecret, certificate, privateKey, pixKey: pixKey || "", environment: environment as "sandbox" | "production" };
       const result = await testInterConnection(config);
       res.json(result);
     } catch (err: any) {
@@ -1482,23 +1481,40 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         }
       }
 
+      // Support both boleto+PIX format (nossoNumero/situacao) and legacy PIX format (pix[].txid)
       let txid: string | null = null;
+      let paidValue = 0;
+      let isPago = false;
 
-      if (body?.pix && Array.isArray(body.pix) && body.pix.length > 0) {
+      if (body?.nossoNumero) {
+        // Boleto+PIX API webhook format
+        txid = body.nossoNumero;
+        isPago = body.situacao === "PAGO";
+        paidValue = parseFloat(body.valorPago || body.valorNominal || "0");
+      } else if (body?.pix && Array.isArray(body.pix) && body.pix.length > 0) {
+        // Legacy PIX API webhook format
         txid = body.pix[0]?.txid || null;
+        isPago = true;
+        paidValue = parseFloat(body.pix[0]?.valor || "0");
       } else if (body?.txid) {
         txid = body.txid;
+        isPago = true;
       }
 
       if (!txid) {
-        console.log("[inter] Webhook: txid não encontrado no body");
+        console.log("[inter] Webhook: identificador não encontrado no body");
+        return;
+      }
+
+      if (!isPago) {
+        console.log(`[inter] Webhook: evento não é pagamento (situacao: ${body.situacao}), ignorado`);
         return;
       }
 
       const projects = await storage.getProjects();
       const project = projects.find((p: any) => p.interPixTxid === txid);
       if (!project) {
-        console.log(`[inter] Webhook: projeto com txid ${txid} não encontrado`);
+        console.log(`[inter] Webhook: projeto com nossoNumero/txid ${txid} não encontrado`);
         return;
       }
 
@@ -1506,8 +1522,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         console.log(`[inter] Webhook: projeto ${project.id} já avançado (${project.status}), ignorado`);
         return;
       }
-
-      const paidValue = parseFloat(body.pix?.[0]?.valor || body.valor || "0");
 
       await storage.updateProject(project.id, {
         status: "projeto_tecnico",

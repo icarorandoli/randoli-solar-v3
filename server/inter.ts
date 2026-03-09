@@ -15,22 +15,18 @@ const BASE_URLS = {
   sandbox: "https://cdpj-sandbox.partners.uatinter.co",
 };
 
-const PIX_SCOPES = "cob.write cob.read pix.read";
+const BOLEPIX_SCOPES = "boleto-cobranca.write boleto-cobranca.read";
 
 interface TokenCache {
   token: string;
   expiresAt: number;
-  scope: string;
 }
 
 const tokenCache = new Map<string, TokenCache>();
 
-function cleanPem(pem: string): string {
-  const lines = pem.split("\n");
-  const cleaned = lines
-    .map((l) => l.trim())
-    .filter((l) => l.length > 0);
-  return cleaned.join("\n") + "\n";
+export function cleanPem(pem: string): string {
+  const lines = pem.split("\n").map((l) => l.trim()).filter((l) => l.length > 0);
+  return lines.join("\n") + "\n";
 }
 
 function httpsRequest(
@@ -126,21 +122,19 @@ async function requestToken(
   });
 }
 
-async function getAccessToken(config: InterConfig, requiredScope?: string): Promise<string> {
-  const cacheKey = `${config.environment}:${config.clientId}:${requiredScope || "pix"}`;
+async function getAccessToken(config: InterConfig): Promise<string> {
+  const cacheKey = `${config.environment}:${config.clientId}`;
   const cached = tokenCache.get(cacheKey);
   if (cached && Date.now() < cached.expiresAt - 30_000) {
     return cached.token;
   }
 
-  const scope = requiredScope || PIX_SCOPES;
-  let result = await requestToken(config, scope);
+  const result = await requestToken(config, BOLEPIX_SCOPES);
 
   if (result.status !== 200 || !result.data.access_token) {
-    console.error("[inter] Token error with scope:", result.status, result.data);
+    console.error("[inter] Token error:", result.status, result.data);
     throw new Error(
-      `Inter OAuth falhou (scope="${scope}"): ${result.status} — ${JSON.stringify(result.data)}\n` +
-      `Verifique se os escopos "${scope}" estão habilitados na sua aplicação em developers.inter.co.`
+      `Inter OAuth falhou (scope="${BOLEPIX_SCOPES}"): ${result.status} — ${JSON.stringify(result.data)}`
     );
   }
 
@@ -148,10 +142,9 @@ async function getAccessToken(config: InterConfig, requiredScope?: string): Prom
   tokenCache.set(cacheKey, {
     token: result.data.access_token,
     expiresAt: Date.now() + expiresIn * 1000,
-    scope: result.data.scope || scope,
   });
 
-  console.log("[inter] Token obtained. Scope:", result.data.scope);
+  console.log("[inter] Token OK. Scope:", result.data.scope);
   return result.data.access_token;
 }
 
@@ -162,6 +155,12 @@ export interface InterPixResult {
   status: string;
 }
 
+function futureDateISO(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
 export async function createInterPixCharge({
   config,
   projectId,
@@ -169,6 +168,7 @@ export async function createInterPixCharge({
   ticketNumber,
   valor,
   integradorName,
+  integradorCpfCnpj,
 }: {
   config: InterConfig;
   projectId: string;
@@ -176,29 +176,40 @@ export async function createInterPixCharge({
   ticketNumber: string | null;
   valor: string;
   integradorName?: string;
+  integradorCpfCnpj?: string;
 }): Promise<InterPixResult> {
   const numericValue = parseFloat(valor.replace(/\./g, "").replace(",", "."));
   if (isNaN(numericValue) || numericValue <= 0) {
-    throw new Error("Valor inválido para PIX Inter");
+    throw new Error("Valor inválido para cobrança Inter");
   }
 
-  const token = await getAccessToken(config, PIX_SCOPES);
+  const token = await getAccessToken(config);
   const baseUrl = BASE_URLS[config.environment];
-  const ticket = ticketNumber || projectId.slice(0, 8);
-  const txid = `RANDOLI${projectId.replace(/-/g, "").slice(0, 26).toUpperCase()}`;
+  const ticket = ticketNumber || projectId.slice(0, 8).toUpperCase();
+  const seuNumero = ticket.replace(/[^a-zA-Z0-9]/g, "").slice(0, 15);
+
+  const pagador: Record<string, string> = {
+    nome: (integradorName || "Integrador Solar").slice(0, 100),
+  };
+  if (integradorCpfCnpj) {
+    pagador.cpfCnpj = integradorCpfCnpj.replace(/\D/g, "");
+  }
 
   const cobBody = JSON.stringify({
-    calendario: { expiracao: 86400 },
-    devedor: integradorName ? { nome: integradorName } : undefined,
-    valor: { original: numericValue.toFixed(2) },
-    chave: config.pixKey,
-    solicitacaoPagador: `Projeto Solar ${ticket} - ${projectTitle}`.slice(0, 140),
+    seuNumero,
+    valorNominal: numericValue,
+    dataVencimento: futureDateISO(30),
+    pagador,
+    mensagem: {
+      linha1: `Projeto Solar: ${projectTitle}`.slice(0, 70),
+      linha2: `Ticket: ${ticket}`.slice(0, 70),
+    },
   });
 
   const cobRes = await httpsRequest(
     baseUrl,
-    `/pix/v2/cob/${txid}`,
-    "PUT",
+    "/cobranca-bolepix/v3/cobrancas",
+    "POST",
     config.certificate,
     config.privateKey,
     { Authorization: `Bearer ${token}` },
@@ -206,38 +217,22 @@ export async function createInterPixCharge({
   );
 
   if (cobRes.status !== 200 && cobRes.status !== 201) {
-    console.error("[inter] PIX cobrança error:", cobRes.status, cobRes.data);
-    throw new Error(`Inter PIX falhou: ${cobRes.status} — ${JSON.stringify(cobRes.data)}`);
+    console.error("[inter] Bolepix error:", cobRes.status, cobRes.data);
+    throw new Error(`Inter cobrança falhou: ${cobRes.status} — ${JSON.stringify(cobRes.data)}`);
   }
 
-  const locId = cobRes.data.loc?.id;
-  let qrCodeBase64 = "";
-  let pixCopiaECola = cobRes.data.pixCopiaECola || "";
+  const d = cobRes.data;
+  const nossoNumero: string = d.nossoNumero || seuNumero;
+  const pixCopiaECola: string = d.pixCopiaECola || d.qrCode || d.pix?.pixCopiaECola || "";
+  const qrCodeBase64: string = d.imagemQrcode || d.qrCodeBase64 || "";
 
-  if (locId) {
-    try {
-      const qrRes = await httpsRequest(
-        baseUrl,
-        `/pix/v2/loc/${locId}/qrcode`,
-        "GET",
-        config.certificate,
-        config.privateKey,
-        { Authorization: `Bearer ${token}` }
-      );
-      if (qrRes.status === 200) {
-        qrCodeBase64 = qrRes.data.imagemQrcode || "";
-        pixCopiaECola = qrRes.data.qrcode || pixCopiaECola;
-      }
-    } catch (e) {
-      console.error("[inter] QR code fetch error:", e);
-    }
-  }
+  console.log("[inter] ✓ Cobrança criada. nossoNumero:", nossoNumero);
 
   return {
-    txid,
+    txid: nossoNumero,
     pixCopiaECola,
     qrCodeBase64,
-    status: cobRes.data.status || "ATIVA",
+    status: d.situacao || "EMITIDO",
   };
 }
 
@@ -245,12 +240,12 @@ export async function getInterPixStatus(
   config: InterConfig,
   txid: string
 ): Promise<{ status: string; paidAt?: string }> {
-  const token = await getAccessToken(config, PIX_SCOPES);
+  const token = await getAccessToken(config);
   const baseUrl = BASE_URLS[config.environment];
 
   const res = await httpsRequest(
     baseUrl,
-    `/pix/v2/cob/${txid}`,
+    `/cobranca-bolepix/v3/cobrancas/${txid}`,
     "GET",
     config.certificate,
     config.privateKey,
@@ -261,34 +256,21 @@ export async function getInterPixStatus(
     throw new Error(`Inter status check falhou: ${res.status}`);
   }
 
-  return {
-    status: res.data.status,
-    paidAt: res.data.pix?.[0]?.horario,
-  };
+  const situacao: string = res.data.situacao || res.data.status || "EMITIDO";
+  const paidAt: string | undefined = res.data.dataPagamento || res.data.pix?.[0]?.horario;
+
+  return { status: situacao, paidAt };
 }
 
 export async function testInterConnection(
   config: InterConfig
 ): Promise<{ ok: boolean; message: string; scope?: string }> {
   try {
-    const cacheKey = `${config.environment}:${config.clientId}:pix`;
-    tokenCache.delete(cacheKey);
-
-    const result = await requestToken(config, PIX_SCOPES);
+    tokenCache.delete(`${config.environment}:${config.clientId}`);
+    const result = await requestToken(config, BOLEPIX_SCOPES);
 
     if (result.status !== 200 || !result.data.access_token) {
       const errBody = JSON.stringify(result.data);
-      if (
-        result.status === 403 ||
-        (result.status === 401 && errBody.includes("scope"))
-      ) {
-        return {
-          ok: false,
-          message:
-            `Certificado OK, mas os escopos PIX não estão habilitados na sua aplicação Inter.\n` +
-            `Acesse developers.inter.co → sua aplicação → habilite os escopos: ${PIX_SCOPES}`,
-        };
-      }
       return {
         ok: false,
         message: `Inter OAuth falhou: ${result.status} — ${errBody}`,
@@ -296,28 +278,27 @@ export async function testInterConnection(
     }
 
     const scope: string = result.data.scope || "";
-    const hasCobWrite = scope.includes("cob.write");
+    const hasWrite = scope.includes("boleto-cobranca.write");
 
-    if (!hasCobWrite) {
+    if (!hasWrite) {
       return {
         ok: false,
         message:
-          `Autenticação ok (scope: "${scope}"), mas o escopo "cob.write" é necessário para emitir PIX.\n` +
-          `Acesse developers.inter.co → sua aplicação → habilite: ${PIX_SCOPES}`,
+          `Autenticação ok (scope: "${scope}"), mas o escopo "boleto-cobranca.write" é necessário.\n` +
+          `Verifique as permissões da integração em developers.inter.co.`,
         scope,
       };
     }
 
     const expiresIn = result.data.expires_in || 3600;
-    tokenCache.set(cacheKey, {
+    tokenCache.set(`${config.environment}:${config.clientId}`, {
       token: result.data.access_token,
       expiresAt: Date.now() + expiresIn * 1000,
-      scope,
     });
 
     return {
       ok: true,
-      message: `Conexão com Banco Inter estabelecida. Escopos: ${scope}`,
+      message: `Conexão com Banco Inter OK! Escopos: ${scope}`,
       scope,
     };
   } catch (err: any) {

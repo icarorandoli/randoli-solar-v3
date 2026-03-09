@@ -163,3 +163,10 @@ shared/
 - Client CRUD requer admin/internal role
 - Project DELETE requer admin
 - Document DELETE verifica ownership para integradores
+- Rate limiting no login: máx 10 tentativas por IP a cada 15min
+
+## Funcionalidades Recentes
+- Filtros avançados na lista de projetos: por cliente, concessionária, status
+- Busca melhorada: ticket number, endereço, nº instalação
+- Exportação CSV dos projetos filtrados (com UTF-8 BOM para Excel)
+- Indicador visual de quantidade filtrada na tela de projetos

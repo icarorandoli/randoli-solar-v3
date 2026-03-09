@@ -32,6 +32,37 @@ import unzipper from "unzipper";
 // Memory-storage multer for certificate uploads (max 5MB)
 const memUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
+const loginAttempts = new Map<string, { count: number; resetAt: number }>();
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const MAX_LOGIN_ATTEMPTS = 10;
+
+function checkLoginRateLimit(ip: string): { allowed: boolean; retryAfterSec?: number } {
+  const now = Date.now();
+  const entry = loginAttempts.get(ip);
+  if (entry && now < entry.resetAt) {
+    if (entry.count >= MAX_LOGIN_ATTEMPTS) {
+      return { allowed: false, retryAfterSec: Math.ceil((entry.resetAt - now) / 1000) };
+    }
+    entry.count++;
+    return { allowed: true };
+  }
+  loginAttempts.set(ip, { count: 1, resetAt: now + LOGIN_WINDOW_MS });
+  return { allowed: true };
+}
+
+function resetLoginRateLimit(ip: string) {
+  loginAttempts.delete(ip);
+}
+
+setInterval(() => {
+  const now = Date.now();
+  const keys = Array.from(loginAttempts.keys());
+  for (const key of keys) {
+    const val = loginAttempts.get(key);
+    if (val && now >= val.resetAt) loginAttempts.delete(key);
+  }
+}, 60_000);
+
 async function extractZipEntries(buf: Buffer): Promise<Record<string, string>> {
   const files: Record<string, string> = {};
   const directory = await unzipper.Open.buffer(buf);
@@ -234,6 +265,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
   app.post("/api/auth/login", async (req, res) => {
     try {
+      const ip = req.ip || req.socket.remoteAddress || "unknown";
+      const rateCheck = checkLoginRateLimit(ip);
+      if (!rateCheck.allowed) {
+        return res.status(429).json({ error: `Muitas tentativas de login. Tente novamente em ${rateCheck.retryAfterSec} segundos.` });
+      }
+
       const { username, password } = req.body;
       if (!username || !password) return res.status(400).json({ error: "Usuário e senha obrigatórios" });
 
@@ -243,6 +280,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const valid = await comparePasswords(password, user.password);
       if (!valid) return res.status(401).json({ error: "Credenciais inválidas" });
 
+      resetLoginRateLimit(ip);
       req.session.userId = user.id;
       await new Promise<void>((resolve, reject) => req.session.save(e => e ? reject(e) : resolve()));
       const { password: _, ...safeUser } = user;
@@ -332,12 +370,18 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   // ── MOBILE APP AUTH ───────────────────────────────────────────────────
   app.post("/api/mobile/login", async (req, res) => {
     try {
+      const ip = req.ip || req.socket.remoteAddress || "unknown";
+      const rateCheck = checkLoginRateLimit(ip);
+      if (!rateCheck.allowed) {
+        return res.status(429).json({ error: `Muitas tentativas de login. Tente novamente em ${rateCheck.retryAfterSec} segundos.` });
+      }
       const { username, password } = req.body;
       if (!username || !password) return res.status(400).json({ error: "Usuário e senha obrigatórios" });
       const user = await storage.getUserByUsername(username);
       if (!user) return res.status(401).json({ error: "Credenciais inválidas" });
       const valid = await comparePasswords(password, user.password);
       if (!valid) return res.status(401).json({ error: "Credenciais inválidas" });
+      resetLoginRateLimit(ip);
       const token = generateMobileToken();
       mobileTokens.set(token, user.id);
       const { password: _, ...safeUser } = user;

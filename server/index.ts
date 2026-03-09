@@ -7,6 +7,7 @@ import { setupWebSocket } from "./websocket";
 import { seedDatabase } from "./seed";
 
 const app = express();
+app.set("trust proxy", 1);
 const httpServer = createServer(app);
 
 declare module "http" {

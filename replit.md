@@ -63,7 +63,8 @@ Sistema SaaS para gerenciamento de projetos de homologação fotovoltaica. Inclu
 - `GET/POST/DELETE /api/projects/:id/documents`
 - `GET/POST /api/projects/:id/timeline`
 - `GET/POST/PATCH/DELETE /api/partners`
-- `GET/POST /api/settings`
+- `GET /api/settings` (requireAuth + admin/engenharia/financeiro)
+- `POST /api/settings` (requireAuth + admin only)
 - `POST /api/mercadopago/webhook` — recebe notificações do Mercado Pago (sem auth, validação por assinatura)
 - `POST /api/email/test`
 - `GET /api/stats`
@@ -152,4 +153,13 @@ shared/
 - Banco de dados: `DATABASE_URL` (PostgreSQL via Replit)
 - Object Storage: `DEFAULT_OBJECT_STORAGE_BUCKET_ID`, `PRIVATE_OBJECT_DIR`, `PUBLIC_OBJECT_SEARCH_PATHS`
 - Mercado Pago: `MP_ACCESS_TOKEN` (env var ou site_settings)
-- GitHub: repo `icarorandoli/randoli-solar`, VPS: `cd /root/randoli-solar && bash update.sh`
+- Inter Cobrança: certificado mTLS + client_id/secret via site_settings; scopes necessários: `boleto-cobranca.write` + `boleto-cobranca.read`
+- GitHub: repo `icarorandoli/Novo-crm-projetos`, VPS: `cd /root/randoli-solar && git pull origin main && npm run build && pm2 restart all`
+
+## Segurança (Auditoria Março/2026)
+- Todas as rotas project-scoped (documents, timeline, chat) verificam ownership para integradores
+- Settings GET requer auth + role admin/engenharia/financeiro; POST requer admin
+- Inter test connection requer admin
+- Client CRUD requer admin/internal role
+- Project DELETE requer admin
+- Document DELETE verifica ownership para integradores

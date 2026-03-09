@@ -17,6 +17,8 @@ const BASE_URLS = {
 
 // Scopes tried in priority order
 const SCOPE_PRIORITY = ["cob.write", "cobv.write", "boleto-cobranca.write"];
+// Read scopes for GET operations (Inter separates read/write for BolePIX)
+const READ_SCOPE_PRIORITY = ["boleto-cobranca.read", "boleto-cobranca.write", "cob.write", "cobv.write"];
 
 interface TokenCache {
   token: string;
@@ -122,6 +124,41 @@ async function requestToken(
     req.write(body);
     req.end();
   });
+}
+
+/**
+ * Gets a token for a specific scope (for read operations).
+ * Returns null if that scope is unavailable.
+ */
+async function getTokenForReadOperations(
+  config: InterConfig
+): Promise<{ token: string; scope: string } | null> {
+  const baseKey = `${config.environment}:${config.clientId}`;
+
+  for (const scope of READ_SCOPE_PRIORITY) {
+    const cacheKey = `${baseKey}:${scope}`;
+    const cached = tokenCache.get(cacheKey);
+    if (cached && Date.now() < cached.expiresAt - 30_000) {
+      return { token: cached.token, scope };
+    }
+  }
+
+  for (const scope of READ_SCOPE_PRIORITY) {
+    const result = await requestToken(config, scope);
+    if (result.status === 200 && result.data.access_token) {
+      const expiresIn = result.data.expires_in || 3600;
+      const cacheKey = `${baseKey}:${scope}`;
+      tokenCache.set(cacheKey, {
+        token: result.data.access_token,
+        expiresAt: Date.now() + expiresIn * 1000,
+        scope,
+      });
+      console.log(`[inter] ✓ Read token OK com scope: ${scope}`);
+      return { token: result.data.access_token, scope };
+    }
+  }
+
+  return null; // none of the read scopes worked, caller will fall back
 }
 
 /**
@@ -409,33 +446,63 @@ async function createBolepix(
   }
 
   const d = cobRes.data;
-  const nossoNumero: string = d.nossoNumero || seuNumero;
+  // Inter assigns nossoNumero — may appear at different keys depending on API version
+  const nossoNumero: string = d.nossoNumero || d.numero || d.numeroCobranca || d.id || seuNumero;
   console.log("[inter] ✓ BolePIX criado. nossoNumero:", nossoNumero, "| POST response keys:", Object.keys(d));
+  console.log("[inter] POST response raw (600):", JSON.stringify(d).slice(0, 600));
 
   // Extract PIX data from POST response if available
-  let pixCopiaECola: string = d.pixCopiaECola || d.qrCode || d.pix?.pixCopiaECola || d.pix?.qrCode || "";
-  let qrCodeBase64: string = d.imagemQrcode || d.qrCodeBase64 || d.pix?.imagemQrcode || "";
+  // Inter BolePIX v3 returns pixCopiaECola and imagemQrCode at root level
+  let pixCopiaECola: string =
+    d.pixCopiaECola ||
+    d.pix?.pixCopiaECola ||
+    d.pix?.[0]?.pixCopiaECola ||
+    d.qrCode || d.brcode || "";
+  let qrCodeBase64: string =
+    d.imagemQrCode ||         // capital C (Inter's BolePIX v3)
+    d.imagemQrcode ||         // lowercase variant
+    d.pix?.imagemQrCode ||
+    d.pix?.imagemQrcode ||
+    d.qrCodeBase64 || "";
+
+  console.log("[inter] POST pixCopiaECola:", pixCopiaECola ? pixCopiaECola.slice(0, 40) + "..." : "(none)");
 
   // If pixCopiaECola is not in the POST response, fetch the charge via GET to get the PIX QR code
   if (!pixCopiaECola && nossoNumero) {
     console.log("[inter] pixCopiaECola not in POST response, fetching via GET...");
-    await new Promise(r => setTimeout(r, 1500)); // small delay for Inter to process
+    await new Promise(r => setTimeout(r, 2000)); // small delay for Inter to process
+
+    // Try read token first (Inter may require boleto-cobranca.read for GET)
+    let getToken = token;
     try {
-      const getRes = await httpsRequest(
-        baseUrl, `/cobranca/v3/cobrancas/${nossoNumero}`, "GET",
-        config.certificate, config.privateKey,
-        { Authorization: `Bearer ${token}` }
-      );
-      console.log("[inter] GET charge HTTP", getRes.status, "| keys:", Object.keys(getRes.data || {}));
-      if (getRes.status === 200) {
-        const g = getRes.data;
-        pixCopiaECola = g.pixCopiaECola || g.qrCode || g.pix?.pixCopiaECola || g.pix?.qrCode || "";
-        qrCodeBase64 = g.imagemQrcode || g.qrCodeBase64 || g.pix?.imagemQrcode || qrCodeBase64;
-        console.log("[inter] GET response keys:", Object.keys(g));
-        console.log("[inter] pixCopiaECola from GET:", pixCopiaECola ? pixCopiaECola.slice(0, 40) + "..." : "(empty)");
+      const readAuth = await getTokenForReadOperations(config);
+      if (readAuth) getToken = readAuth.token;
+    } catch {}
+
+    for (const getPath of [`/cobranca/v3/cobrancas/${nossoNumero}`, `/cobranca-bolepix/v3/cobrancas/${nossoNumero}`]) {
+      try {
+        const getRes = await httpsRequest(
+          baseUrl, getPath, "GET",
+          config.certificate, config.privateKey,
+          { Authorization: `Bearer ${getToken}` }
+        );
+        console.log("[inter] GET charge", getPath, "→ HTTP", getRes.status);
+        if (getRes.status === 200) {
+          const g = getRes.data;
+          console.log("[inter] GET keys:", Object.keys(g));
+          console.log("[inter] GET raw (400):", JSON.stringify(g).slice(0, 400));
+          pixCopiaECola =
+            g.pixCopiaECola || g.pix?.pixCopiaECola || g.pix?.[0]?.pixCopiaECola || g.qrCode || g.brcode || "";
+          qrCodeBase64 =
+            g.imagemQrCode || g.imagemQrcode || g.pix?.imagemQrCode || g.pix?.imagemQrcode || g.qrCodeBase64 || qrCodeBase64;
+          console.log("[inter] GET pixCopiaECola:", pixCopiaECola ? pixCopiaECola.slice(0, 40) + "..." : "(empty)");
+          if (pixCopiaECola) break;
+        } else if (getRes.status !== 404) {
+          break;
+        }
+      } catch (getErr: any) {
+        console.warn("[inter] GET after POST failed:", getErr.message);
       }
-    } catch (getErr: any) {
-      console.warn("[inter] GET after POST failed:", getErr.message);
     }
   }
 
@@ -509,27 +576,63 @@ export async function getInterPixStatus(
   config: InterConfig,
   txid: string
 ): Promise<{ status: string; paidAt?: string; pixCopiaECola?: string; qrCodeBase64?: string }> {
-  const { token, scope } = await getAccessTokenWithScope(config);
   const baseUrl = BASE_URLS[config.environment];
 
+  // For BolePIX, Inter may require boleto-cobranca.read scope for GET operations.
+  // Try read-specific token first, fall back to write token.
+  let token: string;
+  let scope: string;
+  try {
+    const readAuth = await getTokenForReadOperations(config);
+    if (readAuth) {
+      token = readAuth.token;
+      scope = readAuth.scope;
+      console.log(`[inter] getInterPixStatus using read token (scope: ${scope})`);
+    } else {
+      const writeAuth = await getAccessTokenWithScope(config);
+      token = writeAuth.token;
+      scope = writeAuth.scope;
+      console.log(`[inter] getInterPixStatus fallback to write token (scope: ${scope})`);
+    }
+  } catch (authErr: any) {
+    throw new Error(`Inter auth falhou: ${authErr.message}`);
+  }
+
   let res = { status: 0, data: {} as any };
+
   if (scope === "cob.write") {
     res = await httpsRequest(baseUrl, `/pix/v2/cob/${txid}`, "GET", config.certificate, config.privateKey, { Authorization: `Bearer ${token}` });
   } else if (scope === "cobv.write") {
     res = await httpsRequest(baseUrl, `/pix/v2/cobv/${txid}`, "GET", config.certificate, config.privateKey, { Authorization: `Bearer ${token}` });
   } else {
+    // BolePIX — try multiple paths. If one fails with auth error (403), retry with write token.
     const statusPaths = [
       `/cobranca/v3/cobrancas/${txid}`,
       `/cobranca-bolepix/v3/cobrancas/${txid}`,
     ];
     for (const p of statusPaths) {
       res = await httpsRequest(baseUrl, p, "GET", config.certificate, config.privateKey, { Authorization: `Bearer ${token}` });
-      if (res.status === 200 || res.status !== 404) break;
+      console.log(`[inter] getInterPixStatus GET ${p} → HTTP ${res.status}`);
+
+      // If 401/403, try again with the write token (scope might not have read permission)
+      if ((res.status === 401 || res.status === 403) && scope !== "boleto-cobranca.write") {
+        const fallback = await getAccessTokenWithScope(config);
+        console.log(`[inter] Retrying with write token (scope: ${fallback.scope})`);
+        res = await httpsRequest(baseUrl, p, "GET", config.certificate, config.privateKey, { Authorization: `Bearer ${fallback.token}` });
+        console.log(`[inter] Retry ${p} → HTTP ${res.status}`);
+        scope = fallback.scope;
+        token = fallback.token;
+      }
+
+      if (res.status === 200) break;
+      if (res.status !== 404) break; // stop only on non-404 (except we already handled 401/403 above)
     }
   }
 
   if (res.status !== 200) {
-    throw new Error(`Inter status check falhou: ${res.status}`);
+    const errBody = typeof res.data === "string" ? res.data : JSON.stringify(res.data);
+    console.error(`[inter] getInterPixStatus falhou HTTP ${res.status}: ${errBody.slice(0, 300)}`);
+    throw new Error(`Inter status check falhou: ${res.status} — ${errBody.slice(0, 200)}`);
   }
 
   const d = res.data;
@@ -553,26 +656,25 @@ export async function getInterPixStatus(
     d.dataPagamento ||
     d.pixPago?.[0]?.horario;
 
-  // Extract PIX QR code data — Inter BolePIX GET can return it in several locations
-  // depending on API version: top-level, under d.pix (object), or d.pix (array element)
+  // Extract PIX QR code — Inter BolePIX v3 returns these at root level or nested in d.pix
   const pixCopiaECola: string | undefined =
-    d.pixCopiaECola ||          // BolePIX v3 top-level (most common)
-    d.pix?.pixCopiaECola ||     // nested object
-    d.pix?.[0]?.pixCopiaECola || // nested array element
-    d.qrCode ||                 // fallback alias
-    d.brcode ||                 // alternate field name
+    d.pixCopiaECola ||            // BolePIX v3 top-level (most common)
+    d.pix?.pixCopiaECola ||       // nested object
+    d.pix?.[0]?.pixCopiaECola ||  // nested array element
+    d.qrCode ||                   // fallback alias
+    d.brcode ||                   // alternate field name
     undefined;
 
   const qrCodeBase64: string | undefined =
-    d.imagemQrCode ||           // BolePIX v3 top-level (capital C)
-    d.imagemQrcode ||           // lowercase variant
+    d.imagemQrCode ||             // BolePIX v3 top-level (capital C — Inter's convention)
+    d.imagemQrcode ||             // lowercase variant
     d.pix?.imagemQrCode ||
     d.pix?.imagemQrcode ||
     d.qrCodeBase64 ||
     undefined;
 
-  console.log("[inter] getInterPixStatus → pixCopiaECola:", pixCopiaECola ? pixCopiaECola.slice(0, 30) + "..." : "(none)");
-  console.log("[inter] getInterPixStatus → qrCodeBase64:", qrCodeBase64 ? "present" : "(none)");
+  console.log("[inter] pixCopiaECola:", pixCopiaECola ? pixCopiaECola.slice(0, 30) + "..." : "(none)");
+  console.log("[inter] qrCodeBase64:", qrCodeBase64 ? "present" : "(none)");
 
   return { status: situacao, paidAt, pixCopiaECola, qrCodeBase64 };
 }

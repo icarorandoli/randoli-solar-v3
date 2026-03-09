@@ -1422,11 +1422,32 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   // ── INTER TEST CONNECTION ──────────────────────────────────────────
   app.post("/api/inter/test", requireAuth, async (req, res) => {
     try {
-      const { clientId, clientSecret, certificate, privateKey, pixKey, environment } = req.body;
-      if (!clientId || !clientSecret || !certificate || !privateKey || !pixKey) {
-        return res.status(400).json({ ok: false, message: "Todos os campos são obrigatórios para testar a conexão." });
+      const body = req.body;
+      const settingsMap = await getSettingsMap();
+
+      // Fall back to DB values for masked fields
+      const resolve = (field: string, dbKey: string) =>
+        (field && field !== "••••••••") ? field : (settingsMap[dbKey] || "");
+
+      const clientId     = resolve(body.clientId,     "inter_client_id");
+      const clientSecret = resolve(body.clientSecret, "inter_client_secret");
+      const certificate  = resolve(body.certificate,  "inter_certificate");
+      const privateKey   = resolve(body.privateKey,   "inter_private_key");
+      const pixKey       = resolve(body.pixKey,       "inter_pix_key");
+      const environment  = body.environment || settingsMap["inter_environment"] || "production";
+
+      const missing: string[] = [];
+      if (!clientId)     missing.push("Client ID");
+      if (!clientSecret) missing.push("Client Secret");
+      if (!certificate)  missing.push("Certificado (.crt)");
+      if (!privateKey)   missing.push("Chave Privada (.key)");
+      if (!pixKey)       missing.push("Chave PIX");
+
+      if (missing.length) {
+        return res.status(400).json({ ok: false, message: `Campos obrigatórios não configurados: ${missing.join(", ")}` });
       }
-      const config: InterConfig = { clientId, clientSecret, certificate, privateKey, pixKey, environment: environment || "production" };
+
+      const config: InterConfig = { clientId, clientSecret, certificate, privateKey, pixKey, environment: environment as "sandbox" | "production" };
       const result = await testInterConnection(config);
       res.json(result);
     } catch (err: any) {

@@ -27,32 +27,20 @@ import path from "path";
 import fs from "fs";
 import { randomBytes } from "crypto";
 import multer from "multer";
-import zlib from "zlib";
+import unzipper from "unzipper";
 
-// Memory-storage multer for certificate uploads (max 2MB)
-const memUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024 } });
+// Memory-storage multer for certificate uploads (max 5MB)
+const memUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
-// Minimal ZIP parser using built-in zlib — supports STORED (0) and DEFLATED (8) entries
-function extractZipEntries(buf: Buffer): Record<string, string> {
+async function extractZipEntries(buf: Buffer): Promise<Record<string, string>> {
   const files: Record<string, string> = {};
-  let offset = 0;
-  while (offset + 30 < buf.length) {
-    if (buf.readUInt32LE(offset) !== 0x04034b50) break;
-    const compression = buf.readUInt16LE(offset + 8);
-    const compressedSize = buf.readUInt32LE(offset + 18);
-    const fnLen = buf.readUInt16LE(offset + 26);
-    const extraLen = buf.readUInt16LE(offset + 28);
-    const filename = buf.subarray(offset + 30, offset + 30 + fnLen).toString("utf8");
-    const dataStart = offset + 30 + fnLen + extraLen;
-    const compData = buf.subarray(dataStart, dataStart + compressedSize);
+  const directory = await unzipper.Open.buffer(buf);
+  for (const file of directory.files) {
+    if (file.type === "Directory") continue;
     try {
-      if (compression === 0) {
-        files[filename] = compData.toString("utf8");
-      } else if (compression === 8) {
-        files[filename] = zlib.inflateRawSync(compData).toString("utf8");
-      }
-    } catch { /* skip unreadable entry */ }
-    offset = dataStart + compressedSize;
+      const content = await file.buffer();
+      files[file.path] = content.toString("utf8");
+    } catch { /* skip unreadable */ }
   }
   return files;
 }
@@ -1587,7 +1575,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
                     buf.readUInt32LE(0) === 0x04034b50;
 
       if (isZip) {
-        const entries = extractZipEntries(buf);
+        const entries = await extractZipEntries(buf);
         let entityCert = "";
         let caCert = "";
         let key = "";
@@ -1615,8 +1603,11 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           entityCert = caCert;
           caCert = "";
         }
-        if (!entityCert && !key) return res.status(422).json({ error: "Nenhum certificado ou chave encontrado no ZIP. Verifique se é o arquivo correto do Banco Inter." });
-        console.log("[inter] ZIP extracted files:", filesFound);
+        console.log("[inter] ZIP extracted files:", filesFound, "| entityCert:", !!entityCert, "| caCert:", !!caCert, "| key:", !!key);
+        if (!entityCert && !key) return res.status(422).json({
+          error: `Nenhum certificado ou chave encontrado no ZIP.${filesFound.length ? ` Arquivos encontrados: ${filesFound.join(", ")}` : " O arquivo parece vazio ou em formato não suportado."}`,
+          filesFound,
+        });
         return res.json({ certificate: entityCert || null, webhookCert: caCert || null, privateKey: key || null, source: "zip", filesFound });
       }
 

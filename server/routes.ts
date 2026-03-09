@@ -748,48 +748,75 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       // Regenerate payment if valor changed on a project with existing payment
       if (data.valor && data.valor !== current.valor && updated?.status === "aprovado_pagamento_pendente") {
         try {
-          const settingsMap = await getSettingsMap();
-          const mpToken = getMpAccessToken(settingsMap);
-          if (mpToken) {
-            const portalUrl = settingsMap["email_portal_url"] || "https://projetos.randolisolar.com.br";
-            const webhookUrl = `${portalUrl}/api/mercadopago/webhook`;
-            const intEmail = current.integrador?.email || current.client?.email;
-            const intName = current.integrador?.name || current.client?.name;
-            const paymentArgs = {
-              accessToken: mpToken,
-              projectId: (req.params.id as string),
-              projectTitle: current.title,
-              ticketNumber: current.ticketNumber,
-              valor: data.valor,
-              integradorEmail: intEmail || undefined,
-              integradorName: intName || undefined,
-              webhookUrl,
-            };
-            const pref = await createPaymentPreference(paymentArgs);
-            const updatePayment: any = {
-              paymentLink: pref.initPoint,
-              paymentId: pref.id,
-              paymentStatus: "pending",
-            };
+          const settingsMap2 = await getSettingsMap();
+          const mpToken2 = getMpAccessToken(settingsMap2);
+          const interCfg2 = getInterConfig(settingsMap2);
+          const intEmail2 = current.integrador?.email || current.client?.email;
+          const intName2 = current.integrador?.name || current.client?.name;
+          const regenUpdate: any = {};
+
+          if (mpToken2) {
             try {
-              const pix = await createPixPayment(paymentArgs);
-              updatePayment.pixQrCode = pix.qrCode;
-              updatePayment.pixQrCodeBase64 = pix.qrCodeBase64;
-              updatePayment.pixPaymentId = pix.paymentId;
-            } catch (pixErr) {
-              console.error("[mercadopago] Erro ao criar PIX na atualização de valor:", pixErr);
+              const portalUrl = settingsMap2["email_portal_url"] || "https://projetos.randolisolar.com.br";
+              const webhookUrl = `${portalUrl}/api/mercadopago/webhook`;
+              const paymentArgs = {
+                accessToken: mpToken2,
+                projectId: (req.params.id as string),
+                projectTitle: current.title,
+                ticketNumber: current.ticketNumber,
+                valor: data.valor,
+                integradorEmail: intEmail2 || undefined,
+                integradorName: intName2 || undefined,
+                webhookUrl,
+              };
+              const pref = await createPaymentPreference(paymentArgs);
+              regenUpdate.paymentLink = pref.initPoint;
+              regenUpdate.paymentId = pref.id;
+              regenUpdate.paymentStatus = "pending";
+              try {
+                const pix = await createPixPayment(paymentArgs);
+                regenUpdate.pixQrCode = pix.qrCode;
+                regenUpdate.pixQrCodeBase64 = pix.qrCodeBase64;
+                regenUpdate.pixPaymentId = pix.paymentId;
+              } catch (pixErr) {
+                console.error("[mercadopago] Erro ao criar PIX na atualização de valor:", pixErr);
+              }
+            } catch (mpErr) {
+              console.error("[mercadopago] Erro ao regenerar pagamento MP:", mpErr);
             }
-            await storage.updateProject((req.params.id as string), updatePayment);
+          }
+
+          if (interCfg2) {
+            try {
+              const interPix2 = await createInterPixCharge({
+                config: interCfg2,
+                projectId: (req.params.id as string),
+                projectTitle: current.title,
+                ticketNumber: current.ticketNumber,
+                valor: data.valor,
+                integradorName: intName2 || undefined,
+              });
+              regenUpdate.interPixTxid = interPix2.txid;
+              regenUpdate.interPixCopiaECola = interPix2.pixCopiaECola;
+              regenUpdate.interPixQrCodeBase64 = interPix2.qrCodeBase64;
+              regenUpdate.interPixStatus = interPix2.status;
+              console.log(`[inter] ✓ PIX Inter regenerado para projeto ${(req.params.id as string)}`);
+            } catch (interErr) {
+              console.error("[inter] Erro ao regenerar PIX Inter:", interErr);
+            }
+          }
+
+          if (Object.keys(regenUpdate).length > 0) {
+            await storage.updateProject((req.params.id as string), regenUpdate);
             await storage.addTimelineEntry({
               projectId: (req.params.id as string),
               event: "Pagamento atualizado",
-              details: `Valor alterado para R$ ${data.valor}. Novo link de pagamento gerado.`,
+              details: `Valor alterado para R$ ${data.valor}. Cobranças regeneradas.`,
               createdByRole: "admin",
             });
-            console.log(`[mercadopago] ✓ Pagamento regenerado para projeto ${(req.params.id as string)} com novo valor R$ ${data.valor}`);
           }
         } catch (err) {
-          console.error("[mercadopago] Erro ao regenerar pagamento:", err);
+          console.error("[payment] Erro ao regenerar pagamento:", err);
         }
       }
 
@@ -815,58 +842,93 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
       const settingsMap = await getSettingsMap();
       const mpToken = getMpAccessToken(settingsMap);
-      if (!mpToken) {
-        return res.status(400).json({ error: "Access Token do Mercado Pago não configurado" });
+      const interCfg = getInterConfig(settingsMap);
+
+      if (!mpToken && !interCfg) {
+        return res.status(400).json({ error: "Nenhuma forma de pagamento configurada (Mercado Pago ou Banco Inter)" });
       }
 
-      const portalUrl = settingsMap["email_portal_url"] || "https://projetos.randolisolar.com.br";
-      const webhookUrl = `${portalUrl}/api/mercadopago/webhook`;
       const intEmail = (project as any).integrador?.email || (project as any).client?.email;
       const intName = (project as any).integrador?.name || (project as any).client?.name;
+      const updateData: any = {};
+      const methods: string[] = [];
 
-      const paymentArgs = {
-        accessToken: mpToken,
-        projectId: (req.params.id as string),
-        projectTitle: project.title,
-        ticketNumber: project.ticketNumber,
-        valor: project.valor,
-        integradorEmail: intEmail || undefined,
-        integradorName: intName || undefined,
-        webhookUrl,
-      };
+      // ── Mercado Pago ─────────────────────────────────────────────
+      if (mpToken) {
+        try {
+          const portalUrl = settingsMap["email_portal_url"] || "https://projetos.randolisolar.com.br";
+          const webhookUrl = `${portalUrl}/api/mercadopago/webhook`;
+          const paymentArgs = {
+            accessToken: mpToken,
+            projectId: (req.params.id as string),
+            projectTitle: project.title,
+            ticketNumber: project.ticketNumber,
+            valor: project.valor,
+            integradorEmail: intEmail || undefined,
+            integradorName: intName || undefined,
+            webhookUrl,
+          };
+          const pref = await createPaymentPreference(paymentArgs);
+          updateData.paymentLink = pref.initPoint;
+          updateData.paymentId = pref.id;
+          updateData.paymentStatus = "pending";
+          methods.push("Mercado Pago (Cartão)");
+          try {
+            const pix = await createPixPayment(paymentArgs);
+            updateData.pixQrCode = pix.qrCode;
+            updateData.pixQrCodeBase64 = pix.qrCodeBase64;
+            updateData.pixPaymentId = pix.paymentId;
+            methods.push("PIX Mercado Pago");
+            console.log(`[mercadopago] ✓ PIX criado para projeto ${(req.params.id as string)}`);
+          } catch (pixErr) {
+            console.error("[mercadopago] Erro ao criar PIX (continuando):", pixErr);
+          }
+          console.log(`[mercadopago] ✓ Preferência criada para projeto ${(req.params.id as string)}`);
+        } catch (mpErr) {
+          console.error("[mercadopago] Erro ao gerar pagamento MP:", mpErr);
+        }
+      }
 
-      const pref = await createPaymentPreference(paymentArgs);
-
-      const updateData: any = {
-        paymentLink: pref.initPoint,
-        paymentId: pref.id,
-        paymentStatus: "pending",
-      };
-
-      try {
-        const pix = await createPixPayment(paymentArgs);
-        updateData.pixQrCode = pix.qrCode;
-        updateData.pixQrCodeBase64 = pix.qrCodeBase64;
-        updateData.pixPaymentId = pix.paymentId;
-        console.log(`[mercadopago] ✓ PIX criado para projeto ${(req.params.id as string)}`);
-      } catch (pixErr) {
-        console.error("[mercadopago] Erro ao criar PIX (continuando sem PIX):", pixErr);
+      // ── Banco Inter PIX ──────────────────────────────────────────
+      if (interCfg) {
+        try {
+          const interPix = await createInterPixCharge({
+            config: interCfg,
+            projectId: (req.params.id as string),
+            projectTitle: project.title,
+            ticketNumber: project.ticketNumber,
+            valor: project.valor,
+            integradorName: intName || undefined,
+          });
+          updateData.interPixTxid = interPix.txid;
+          updateData.interPixCopiaECola = interPix.pixCopiaECola;
+          updateData.interPixQrCodeBase64 = interPix.qrCodeBase64;
+          updateData.interPixStatus = interPix.status;
+          methods.push("PIX Banco Inter");
+          console.log(`[inter] ✓ PIX Inter criado manualmente para projeto ${(req.params.id as string)}`);
+        } catch (interErr: any) {
+          console.error("[inter] Erro ao gerar PIX Inter:", interErr);
+          if (!mpToken) {
+            return res.status(500).json({ error: interErr.message || "Erro ao gerar cobrança Inter" });
+          }
+        }
       }
 
       await storage.updateProject((req.params.id as string), updateData);
 
       await storage.addTimelineEntry({
         projectId: (req.params.id as string),
-        event: "Link de pagamento gerado",
-        details: "Pagamento via Mercado Pago e PIX criados pelo administrador.",
+        event: "Pagamento gerado pelo administrador",
+        details: methods.length > 0
+          ? `Métodos disponíveis: ${methods.join(", ")}.`
+          : "Pagamento gerado.",
         createdByRole: "admin",
       });
 
-      console.log(`[mercadopago] ✓ Preferência criada manualmente para projeto ${(req.params.id as string)}`);
       const finalProject = await storage.getProject((req.params.id as string));
       res.json(finalProject);
     } catch (err: any) {
-      console.error("[mercadopago] Erro ao gerar pagamento:", err);
+      console.error("[payment] Erro ao gerar pagamento:", err);
       res.status(500).json({ error: err.message || "Erro ao gerar pagamento" });
     }
   });

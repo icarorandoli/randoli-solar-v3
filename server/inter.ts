@@ -218,6 +218,9 @@ export interface InterPixResult {
   qrCodeBase64: string;
   status: string;
   linhaDigitavel?: string;
+  codigoSolicitacao?: string;
+  nossoNumero?: string;
+  seuNumero?: string;
 }
 
 function futureDateISO(days: number): string {
@@ -449,7 +452,9 @@ async function createBolepix(
   const d = cobRes.data;
   // Inter assigns nossoNumero — may appear at different keys depending on API version
   const nossoNumero: string = d.nossoNumero || d.numero || d.numeroCobranca || d.id || seuNumero;
-  console.log("[inter] ✓ BolePIX criado. nossoNumero:", nossoNumero, "| POST response keys:", Object.keys(d));
+  // codigoSolicitacao is the UUID Inter uses for direct GET on /cobranca/v3/cobrancas/:id
+  const codigoSolicitacao: string = d.codigoSolicitacao || d.codigo_solicitacao || "";
+  console.log("[inter] ✓ BolePIX criado. nossoNumero:", nossoNumero, "codigoSolicitacao:", codigoSolicitacao, "| POST response keys:", Object.keys(d));
   console.log("[inter] POST response FULL:", JSON.stringify(d).slice(0, 2000));
 
   // Extract PIX data from POST response if available
@@ -510,7 +515,7 @@ async function createBolepix(
     }
   }
 
-  return { txid: nossoNumero, pixCopiaECola, qrCodeBase64, status: d.situacao || "EMITIDO", linhaDigitavel };
+  return { txid: codigoSolicitacao || nossoNumero, pixCopiaECola, qrCodeBase64, status: d.situacao || "EMITIDO", linhaDigitavel, codigoSolicitacao, nossoNumero, seuNumero };
 }
 
 // ── Main export ────────────────────────────────────────────────────────────
@@ -610,6 +615,7 @@ export async function getInterPixStatus(
     res = await httpsRequest(baseUrl, `/pix/v2/cobv/${txid}`, "GET", config.certificate, config.privateKey, { Authorization: `Bearer ${token}` });
   } else {
     // BolePIX — try direct GET first, then fallback to list endpoint by seuNumero
+    // The txid stored may be codigoSolicitacao (UUID) or nossoNumero — try both
     const statusPaths = [
       `/cobranca/v3/cobrancas/${txid}`,
       `/cobranca-bolepix/v3/cobrancas/${txid}`,
@@ -632,8 +638,9 @@ export async function getInterPixStatus(
       if (res.status !== 404) break;
     }
 
-    // If direct GET returned 404, the txid may be our seuNumero — search by it via list endpoint
-    if (res.status === 404 || res.status === 0) {
+    // If direct GET returned 400/404, the txid format may be wrong for the GET endpoint.
+    // Fall back to list endpoint and search by seuNumero (which we also store as txid in some cases)
+    if (res.status === 400 || res.status === 404 || res.status === 0) {
       console.log(`[inter] Direct GET failed (${res.status}), trying list endpoint with seuNumero=${txid}`);
       const today = new Date();
       const dataFinal = today.toISOString().slice(0, 10);
@@ -787,6 +794,10 @@ export async function fetchInterBoletoPdf(
   throw new Error(`Não foi possível obter o PDF do boleto. Verifique se a cobrança existe no Banco Inter.`);
 }
 
+export function clearInterTokenCache() {
+  tokenCache.clear();
+}
+
 export async function testInterConnection(
   config: InterConfig
 ): Promise<{ ok: boolean; message: string; scope?: string }> {
@@ -794,9 +805,11 @@ export async function testInterConnection(
     const baseKey = `${config.environment}:${config.clientId}`;
     const now = Date.now();
 
+    const allTestScopes = [...SCOPE_PRIORITY, "boleto-cobranca.read"];
+
     // Check if we already have valid cached tokens — avoid unnecessary OAuth requests (rate limit)
     const cachedWorking: string[] = [];
-    for (const scope of SCOPE_PRIORITY) {
+    for (const scope of allTestScopes) {
       const cached = tokenCache.get(`${baseKey}:${scope}`);
       if (cached && cached.expiresAt > now + 60_000) {
         cachedWorking.push(scope);
@@ -813,7 +826,7 @@ export async function testInterConnection(
     const errors: string[] = [];
     const working: string[] = [];
 
-    for (const scope of SCOPE_PRIORITY) {
+    for (const scope of allTestScopes) {
       const result = await requestToken(config, scope);
       if (result.status === 200 && result.data.access_token) {
         working.push(scope);
@@ -873,7 +886,8 @@ export async function diagnoseInterApi(config: InterConfig): Promise<InterDiagno
   let workingScope: string | null = null;
   let workingToken: string | null = null;
 
-  for (const scope of SCOPE_PRIORITY) {
+  const allScopes = [...SCOPE_PRIORITY, "boleto-cobranca.read"];
+  for (const scope of allScopes) {
     // Use cached token if still valid — avoids hammering Inter and getting rate-limited
     const cached = tokenCache.get(`${baseKey}:${scope}`);
     if (cached && cached.expiresAt > now + 60_000) {

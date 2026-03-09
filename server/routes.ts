@@ -15,7 +15,7 @@ import {
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { sendStatusEmail, sendTestEmail, sendPasswordResetEmail, sendDocumentEmail, sendTimelineEmail, type EmailConfig } from "./email";
 import { createPaymentPreference, createPixPayment, getPaymentInfo, getMerchantOrder, verifyWebhookSignature } from "./mercadopago";
-import { createInterPixCharge, getInterPixStatus, testInterConnection, diagnoseInterApi, cleanPem, type InterConfig } from "./inter";
+import { createInterPixCharge, getInterPixStatus, testInterConnection, diagnoseInterApi, cleanPem, clearInterTokenCache, type InterConfig } from "./inter";
 import { registerUploadRoutes } from "./upload";
 import { calculateSystemSize, phaseFromConsumption } from "./ai/solar-calculator";
 import { dimensionSystem } from "./ai/solar-dimensioning";
@@ -1723,6 +1723,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     try {
       const user = await getCurrentUser(req);
       if (user?.role !== "admin") return res.status(403).json({ error: "Sem permissão" });
+      clearInterTokenCache();
       const body = req.body;
       const settingsMap = await getSettingsMap();
 
@@ -1760,6 +1761,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     try {
       const user = await getCurrentUser(req);
       if (user?.role !== "admin") return res.status(403).json({ error: "Sem permissão" });
+      clearInterTokenCache();
 
       const body = req.body;
       const settingsMap = await getSettingsMap();

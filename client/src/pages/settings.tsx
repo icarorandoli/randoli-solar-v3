@@ -499,6 +499,19 @@ export default function SettingsPage() {
     onError: () => toast({ title: "Erro ao testar conexão Inter", variant: "destructive" }),
   });
 
+  const [interDiagResult, setInterDiagResult] = useState<any>(null);
+  const diagInterMut = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/inter/diagnose", {
+        clientId: interClientId,
+        environment: interEnvironment,
+      });
+      return res.json();
+    },
+    onSuccess: (data: any) => { setInterDiagResult(data); },
+    onError: () => toast({ title: "Erro ao diagnosticar API Inter", variant: "destructive" }),
+  });
+
   // Handler for ZIP / .crt / .key file upload
   const handleCertFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -968,12 +981,57 @@ export default function SettingsPage() {
                       </div>
                     </div>
 
-                    <div className="pt-2 flex justify-end">
+                    <div className="pt-2 flex flex-wrap gap-2 justify-end">
                       <Button variant="outline" size="sm" onClick={() => testInterMut.mutate()} disabled={testInterMut.isPending} data-testid="button-test-inter">
                         {testInterMut.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
-                        Testar Conexão Inter
+                        Testar Conexão
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => diagInterMut.mutate()} disabled={diagInterMut.isPending} data-testid="button-diagnose-inter">
+                        {diagInterMut.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Settings2 className="h-4 w-4 mr-2" />}
+                        Diagnosticar API
                       </Button>
                     </div>
+
+                    {interDiagResult && (
+                      <div className="mt-4 rounded-xl border bg-muted/40 p-4 space-y-3 text-xs font-mono">
+                        <p className="font-bold text-sm font-sans">Resultado do Diagnóstico</p>
+
+                        <div>
+                          <p className="font-semibold text-muted-foreground uppercase tracking-wide mb-1">OAuth Escopos</p>
+                          {interDiagResult.oauthTests?.map((t: any) => (
+                            <div key={t.scope} className="flex items-center gap-2">
+                              {t.ok
+                                ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0" />
+                                : <XCircle className="h-3.5 w-3.5 text-red-500 shrink-0" />}
+                              <span className={t.ok ? "text-green-700" : "text-red-700"}>
+                                {t.scope} — HTTP {t.status}{t.error ? `: ${t.error}` : ""}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+
+                        {interDiagResult.pathTests?.length > 0 && (
+                          <div>
+                            <p className="font-semibold text-muted-foreground uppercase tracking-wide mb-1">Paths da API</p>
+                            {interDiagResult.pathTests?.map((t: any) => (
+                              <div key={t.path} className={`flex items-start gap-2 ${t.status === 200 || t.status === 201 || (t.status >= 400 && t.status < 500 && t.status !== 404) ? "text-green-700" : "text-red-700"}`}>
+                                {(t.status !== 404 && t.status !== 0) ? <CheckCircle2 className="h-3.5 w-3.5 shrink-0 mt-0.5" /> : <XCircle className="h-3.5 w-3.5 shrink-0 mt-0.5 text-red-500" />}
+                                <span>{t.path} — HTTP {t.status}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="border-t pt-2">
+                          <p className="font-semibold text-muted-foreground uppercase tracking-wide mb-1">Recomendação</p>
+                          <p className="text-foreground font-sans">{interDiagResult.recommendation}</p>
+                        </div>
+
+                        <Button variant="ghost" size="sm" className="text-xs h-6" onClick={() => setInterDiagResult(null)}>
+                          Fechar
+                        </Button>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>

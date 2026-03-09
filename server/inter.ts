@@ -501,3 +501,94 @@ export async function testInterConnection(
     return { ok: false, message: err.message || "Falha na conexão com o Banco Inter." };
   }
 }
+
+export interface InterDiagnosticResult {
+  oauthTests: Array<{ scope: string; status: number; ok: boolean; error?: string }>;
+  pathTests: Array<{ path: string; method: string; status: number; body: string }>;
+  workingScope: string | null;
+  recommendation: string;
+}
+
+/**
+ * Diagnostic function: tests OAuth scopes + API paths without creating real charges.
+ * Uses GET/HEAD requests to probe endpoints and find which ones respond (not 404).
+ */
+export async function diagnoseInterApi(config: InterConfig): Promise<InterDiagnosticResult> {
+  const baseUrl = BASE_URLS[config.environment];
+  const baseKey = `${config.environment}:${config.clientId}`;
+
+  // Clear token cache for fresh test
+  for (const scope of SCOPE_PRIORITY) {
+    tokenCache.delete(`${baseKey}:${scope}`);
+  }
+
+  const oauthTests: InterDiagnosticResult["oauthTests"] = [];
+  let workingScope: string | null = null;
+  let workingToken: string | null = null;
+
+  for (const scope of SCOPE_PRIORITY) {
+    const result = await requestToken(config, scope);
+    const ok = result.status === 200 && !!result.data.access_token;
+    oauthTests.push({
+      scope,
+      status: result.status,
+      ok,
+      error: ok ? undefined : JSON.stringify(result.data).slice(0, 200),
+    });
+    if (ok && !workingScope) {
+      workingScope = scope;
+      workingToken = result.data.access_token;
+      tokenCache.set(`${baseKey}:${scope}`, {
+        token: result.data.access_token,
+        expiresAt: Date.now() + (result.data.expires_in || 3600) * 1000,
+        scope,
+      });
+    }
+  }
+
+  const pathTests: InterDiagnosticResult["pathTests"] = [];
+
+  if (workingToken) {
+    // Test paths that would be used for charge creation/retrieval (GET probe)
+    const probePaths = [
+      "/cobranca-bolepix/v3/cobran\u00E7as",
+      "/cobranca-bolepix/v3/cobrancas",
+      "/cobranca/v3/cobran\u00E7as",
+      "/cobranca/v3/cobrancas",
+      "/pix/v2/cob",
+      "/pix/v2/cobv",
+      "/banking/v2/billet",
+    ];
+
+    for (const p of probePaths) {
+      try {
+        const r = await httpsRequest(
+          baseUrl, p, "GET",
+          config.certificate, config.privateKey,
+          { Authorization: `Bearer ${workingToken}` }
+        );
+        const bodyStr = typeof r.data === "string"
+          ? r.data.slice(0, 100)
+          : JSON.stringify(r.data).slice(0, 100);
+        pathTests.push({ path: p, method: "GET", status: r.status, body: bodyStr });
+      } catch (e: any) {
+        pathTests.push({ path: p, method: "GET", status: 0, body: e.message });
+      }
+    }
+  }
+
+  // Build recommendation
+  let recommendation = "";
+  if (!workingScope) {
+    recommendation = "Nenhum escopo OAuth funcionou. Verifique as credenciais (clientId, clientSecret, certificado, chave privada) e os escopos registrados em developers.inter.co.";
+  } else {
+    const working = pathTests.filter(p => p.status !== 404 && p.status !== 0);
+    if (working.length === 0) {
+      recommendation = `OAuth funcionou com escopo "${workingScope}", mas todos os paths retornaram 404. Verifique se o produto correto (Boleto/PIX) está habilitado na conta Inter em https://developers.inter.co.`;
+    } else {
+      recommendation = `Paths respondendo: ${working.map(p => `${p.path} (HTTP ${p.status})`).join(", ")}`;
+    }
+  }
+
+  return { oauthTests, pathTests, workingScope, recommendation };
+}

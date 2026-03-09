@@ -15,7 +15,7 @@ import {
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { sendStatusEmail, sendTestEmail, sendPasswordResetEmail, sendDocumentEmail, sendTimelineEmail, type EmailConfig } from "./email";
 import { createPaymentPreference, createPixPayment, getPaymentInfo, getMerchantOrder, verifyWebhookSignature } from "./mercadopago";
-import { createInterPixCharge, testInterConnection, type InterConfig } from "./inter";
+import { createInterPixCharge, getInterPixStatus, testInterConnection, diagnoseInterApi, cleanPem, type InterConfig } from "./inter";
 import { registerUploadRoutes } from "./upload";
 import { calculateSystemSize, phaseFromConsumption } from "./ai/solar-calculator";
 import { dimensionSystem } from "./ai/solar-dimensioning";
@@ -1549,6 +1549,36 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       res.json(result);
     } catch (err: any) {
       res.status(500).json({ ok: false, message: err.message || "Erro ao testar conexão" });
+    }
+  });
+
+  // ── INTER DIAGNOSE PATHS ───────────────────────────────────────────
+  app.post("/api/inter/diagnose", requireAuth, async (req, res) => {
+    try {
+      const user = await getCurrentUser(req);
+      if (user?.role !== "admin") return res.status(403).json({ error: "Sem permissão" });
+
+      const body = req.body;
+      const settingsMap = await getSettingsMap();
+      const resolve = (field: string, dbKey: string) =>
+        (field && field !== "••••••••") ? field : (settingsMap[dbKey] || "");
+
+      const clientId     = resolve(body.clientId,     "inter_client_id");
+      const clientSecret = resolve(body.clientSecret, "inter_client_secret");
+      const certificate  = resolve(body.certificate,  "inter_certificate");
+      const privateKey   = resolve(body.privateKey,   "inter_private_key");
+      const pixKey       = resolve(body.pixKey,       "inter_pix_key");
+      const environment  = body.environment || settingsMap["inter_environment"] || "production";
+
+      if (!clientId || !clientSecret || !certificate || !privateKey) {
+        return res.status(400).json({ error: "Credenciais Inter incompletas" });
+      }
+
+      const config: InterConfig = { clientId, clientSecret, certificate, privateKey, pixKey: pixKey || "", environment: environment as "sandbox" | "production" };
+      const result = await diagnoseInterApi(config);
+      res.json(result);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "Erro ao diagnosticar" });
     }
   });
 

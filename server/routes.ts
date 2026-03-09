@@ -888,6 +888,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const updateData: any = { interPixStatus: result.status };
       if (result.pixCopiaECola) updateData.interPixCopiaECola = result.pixCopiaECola;
       if (result.qrCodeBase64) updateData.interPixQrCodeBase64 = result.qrCodeBase64;
+      if (result.linhaDigitavel) (updateData as any).interBoletoLinhaDigitavel = result.linhaDigitavel;
 
       // If payment confirmed, advance project status
       if (result.status === "PAGO" && project.status === "aprovado_pagamento_pendente") {

@@ -579,7 +579,7 @@ export async function createInterPixCharge({
 export async function getInterPixStatus(
   config: InterConfig,
   txid: string
-): Promise<{ status: string; paidAt?: string; pixCopiaECola?: string; qrCodeBase64?: string }> {
+): Promise<{ status: string; paidAt?: string; pixCopiaECola?: string; qrCodeBase64?: string; linhaDigitavel?: string }> {
   const baseUrl = BASE_URLS[config.environment];
 
   // For BolePIX, Inter may require boleto-cobranca.read scope for GET operations.
@@ -677,10 +677,18 @@ export async function getInterPixStatus(
     d.qrCodeBase64 ||
     undefined;
 
+  const linhaDigitavel: string | undefined =
+    d.linhaDigitavel ||
+    d.linha_digitavel ||
+    d.linhaDigitavelNominal ||
+    d.codigoBarras ||
+    undefined;
+
   console.log("[inter] pixCopiaECola:", pixCopiaECola ? pixCopiaECola.slice(0, 30) + "..." : "(none)");
   console.log("[inter] qrCodeBase64:", qrCodeBase64 ? "present" : "(none)");
+  console.log("[inter] linhaDigitavel:", linhaDigitavel ? linhaDigitavel.slice(0, 30) + "..." : "(none)");
 
-  return { status: situacao, paidAt, pixCopiaECola, qrCodeBase64 };
+  return { status: situacao, paidAt, pixCopiaECola, qrCodeBase64, linhaDigitavel };
 }
 
 /**

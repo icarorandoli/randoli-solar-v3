@@ -386,23 +386,9 @@ function InterBoletoSection({
         </div>
       )}
 
-      {/* Boleto PDF link */}
-      <a
-        href={`/api/projects/${projectId}/inter-boleto-pdf`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-lg font-bold text-sm text-white no-underline"
-        style={{ background: "#ff6600" }}
-        data-testid="link-inter-boleto-pdf"
-      >
-        <FileText className="h-4 w-4" />
-        Visualizar / Imprimir Boleto
-        <ExternalLink className="h-3.5 w-3.5" />
-      </a>
-
       {!copiaECola && !linhaDigitavel && (
         <p className="text-[11px] text-orange-600 dark:text-orange-500 text-center">
-          Clique no botão acima para visualizar e pagar o boleto.
+          Os dados do boleto serão carregados automaticamente. Se não aparecerem, clique em "verificar pagamento" abaixo.
         </p>
       )}
     </div>
@@ -607,13 +593,14 @@ export default function PortalProjetoPage() {
     onError: () => {},
   });
 
-  // Auto-refresh Inter PIX QR code if txid exists but no copiaECola yet
+  // Auto-refresh Inter if txid exists but linhaDigitavel or copiaECola are missing
   useEffect(() => {
     if (!project) return;
-    if (project.interPixTxid && !project.interPixCopiaECola && project.status === "aprovado_pagamento_pendente") {
+    const hasLinha = !!(project as any).interBoletoLinhaDigitavel;
+    if (project.interPixTxid && (!project.interPixCopiaECola || !hasLinha) && project.status === "aprovado_pagamento_pendente") {
       interRefreshMut.mutate();
     }
-  }, [project?.id, project?.interPixTxid, project?.interPixCopiaECola]);
+  }, [project?.id, project?.interPixTxid, project?.interPixCopiaECola, (project as any)?.interBoletoLinhaDigitavel]);
 
   // Poll for payment status every 30s while payment is pending
   useEffect(() => {

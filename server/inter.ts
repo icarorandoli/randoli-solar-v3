@@ -450,7 +450,7 @@ async function createBolepix(
   // Inter assigns nossoNumero — may appear at different keys depending on API version
   const nossoNumero: string = d.nossoNumero || d.numero || d.numeroCobranca || d.id || seuNumero;
   console.log("[inter] ✓ BolePIX criado. nossoNumero:", nossoNumero, "| POST response keys:", Object.keys(d));
-  console.log("[inter] POST response raw (600):", JSON.stringify(d).slice(0, 600));
+  console.log("[inter] POST response FULL:", JSON.stringify(d).slice(0, 2000));
 
   // Extract PIX data from POST response if available
   // Inter BolePIX v3 returns pixCopiaECola and imagemQrCode at root level

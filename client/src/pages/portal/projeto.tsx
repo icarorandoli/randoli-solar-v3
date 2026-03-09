@@ -588,17 +588,35 @@ export default function PortalProjetoPage() {
       }
     },
     onError: (err: any) => {
-      const msg = err?.message || "Não foi possível consultar o Banco Inter. Verifique os logs do servidor.";
+      const raw = err?.message || "";
+      const isScope = raw.includes("scope") || raw.includes("401");
+      const msg = isScope
+        ? "O cliente Inter não possui o escopo boleto-cobranca.read. Adicione essa permissão no portal de desenvolvedores do Inter."
+        : raw || "Não foi possível consultar o Banco Inter.";
       toast({ title: "Erro ao consultar Inter", description: msg, variant: "destructive" });
     },
   });
+
+  // Silent auto-refresh — does not show error toast (avoids alarming the user on page load)
+  const silentInterRefresh = async () => {
+    try {
+      const data = await apiRequest("POST", `/api/projects/${id}/inter-refresh-pix`);
+      queryClient.setQueryData(["/api/projects", id], data);
+      if ((data as any)?.status === "projeto_tecnico") {
+        toast({ title: "Pagamento confirmado!", description: "Seu projeto foi avançado automaticamente." });
+        queryClient.invalidateQueries({ queryKey: ["/api/projects", id, "timeline"] });
+      }
+    } catch {
+      // silent — user can manually click to see the error
+    }
+  };
 
   // Auto-refresh Inter if txid exists but linhaDigitavel or copiaECola are missing
   useEffect(() => {
     if (!project) return;
     const hasLinha = !!(project as any).interBoletoLinhaDigitavel;
     if (project.interPixTxid && (!project.interPixCopiaECola || !hasLinha) && project.status === "aprovado_pagamento_pendente") {
-      interRefreshMut.mutate();
+      silentInterRefresh();
     }
   }, [project?.id, project?.interPixTxid, project?.interPixCopiaECola, (project as any)?.interBoletoLinhaDigitavel]);
 
@@ -608,7 +626,7 @@ export default function PortalProjetoPage() {
     if (!project.interPixTxid && !project.paymentLink && !project.pixQrCode) return;
     const interval = setInterval(() => {
       if (project.interPixTxid) {
-        interRefreshMut.mutate();
+        silentInterRefresh();
       } else {
         queryClient.invalidateQueries({ queryKey: ["/api/projects", id] });
       }

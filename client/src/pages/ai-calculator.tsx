@@ -135,7 +135,7 @@ export default function AiCalculator() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-background/60 backdrop-blur-sm border border-border/50 rounded-xl p-4 shadow-sm hover-elevate transition-all" data-testid="result-kwp">
                     <div className="flex items-center gap-2 mb-1">
-                      <Zap className="w-4 h-4 text-primary" />
+                      <Zap className="w-4 h-4 text-sky-500" />
                       <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Potência Total</span>
                     </div>
                     <div className="text-3xl font-bold text-foreground tracking-tight">
@@ -144,7 +144,7 @@ export default function AiCalculator() {
                   </div>
                   <div className="bg-background/60 backdrop-blur-sm border border-border/50 rounded-xl p-4 shadow-sm hover-elevate transition-all" data-testid="result-panels">
                     <div className="flex items-center gap-2 mb-1">
-                      <Sun className="w-4 h-4 text-orange-500" />
+                      <Sun className="w-4 h-4 text-sky-500" />
                       <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Módulos</span>
                     </div>
                     <div className="text-3xl font-bold text-foreground tracking-tight">
@@ -153,7 +153,7 @@ export default function AiCalculator() {
                   </div>
                   <div className="bg-background/60 backdrop-blur-sm border border-border/50 rounded-xl p-4 shadow-sm hover-elevate transition-all" data-testid="result-monthly-gen">
                     <div className="flex items-center gap-2 mb-1">
-                      <Zap className="w-4 h-4 text-green-500" />
+                      <Zap className="w-4 h-4 text-sky-600" />
                       <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Geração Mensal</span>
                     </div>
                     <div className="text-3xl font-bold text-foreground tracking-tight">
@@ -162,7 +162,7 @@ export default function AiCalculator() {
                   </div>
                   <div className="bg-background/60 backdrop-blur-sm border border-border/50 rounded-xl p-4 shadow-sm hover-elevate transition-all">
                     <div className="flex items-center gap-2 mb-1">
-                      <TrendingUp className="w-4 h-4 text-blue-500" />
+                      <TrendingUp className="w-4 h-4 text-sky-500" />
                       <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Economia</span>
                     </div>
                     <div className="text-3xl font-bold text-foreground tracking-tight">

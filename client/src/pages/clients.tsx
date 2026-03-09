@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Plus, Search, Pencil, Trash2, Users, Phone, Mail, Building2, User,
-  MapPin, Filter, MoreHorizontal, UserPlus, ArrowRight
+  MapPin, Filter, MoreHorizontal, UserPlus, ArrowRight, FileText
 } from "lucide-react";
 import { useForm, Controller } from "react-hook-form";
 import type { Client, InsertClient } from "@shared/schema";
@@ -316,7 +316,7 @@ export default function ClientsPage() {
                     </Avatar>
                     <div className="min-w-0">
                       <p className="font-bold text-foreground truncate leading-none mb-1.5">{client.name}</p>
-                      <Badge variant="secondary" className="text-[10px] uppercase tracking-wider font-semibold h-5">
+                      <Badge variant="outline" className="text-[10px] uppercase tracking-wider font-bold h-5 bg-blue-500/10 text-blue-600 border-blue-200 dark:border-blue-900/50">
                         {client.type === "PJ" ? <Building2 className="h-3 w-3 mr-1" /> : <User className="h-3 w-3 mr-1" />}
                         {client.type}
                       </Badge>
@@ -326,21 +326,23 @@ export default function ClientsPage() {
                     <Button
                       size="icon"
                       variant="ghost"
-                      className="h-8 w-8 text-muted-foreground hover:text-primary"
+                      className="h-8 w-8 text-muted-foreground hover:text-primary transition-colors"
                       onClick={() => { setEditClient(client); setDialogOpen(true); }}
                       data-testid={`button-edit-client-${client.id}`}
+                      title="Editar"
                     >
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
                     <Button
                       size="icon"
                       variant="ghost"
-                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive transition-colors"
                       onClick={() => {
                         if (confirm(`Excluir cliente ${client.name}?`)) deleteMut.mutate(client.id);
                       }}
                       disabled={deleteMut.isPending}
                       data-testid={`button-delete-client-${client.id}`}
+                      title="Excluir"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
@@ -354,18 +356,16 @@ export default function ClientsPage() {
                     </div>
                     <span className="truncate">{client.email}</span>
                   </div>
-                  {client.phone && (
-                    <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
-                      <div className="h-7 w-7 rounded-full bg-muted/50 flex items-center justify-center shrink-0">
-                        <Phone className="h-3.5 w-3.5" />
-                      </div>
-                      <span className="truncate">{client.phone}</span>
+                  <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
+                    <div className="h-7 w-7 rounded-full bg-muted/50 flex items-center justify-center shrink-0">
+                      <Phone className="h-3.5 w-3.5" />
                     </div>
-                  )}
+                    <span className="truncate">{formatPhone(client.phone || "")}</span>
+                  </div>
                   {client.cpfCnpj && (
                     <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
                       <div className="h-7 w-7 rounded-full bg-muted/50 flex items-center justify-center shrink-0">
-                        <Building2 className="h-3.5 w-3.5" />
+                        <FileText className="h-3.5 w-3.5" />
                       </div>
                       <span className="truncate">{client.cpfCnpj}</span>
                     </div>
@@ -380,7 +380,7 @@ export default function ClientsPage() {
                   )}
                 </div>
 
-                <Button variant="ghost" className="w-full mt-4 h-8 text-xs justify-between group-hover:bg-primary/5 group-hover:text-primary border border-transparent group-hover:border-primary/20 transition-all">
+                <Button variant="ghost" className="w-full mt-4 h-8 text-xs justify-between group-hover:bg-primary/5 group-hover:text-primary border border-transparent group-hover:border-primary/20 transition-all no-default-hover-elevate">
                   Ver Projetos
                   <ArrowRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0" />
                 </Button>

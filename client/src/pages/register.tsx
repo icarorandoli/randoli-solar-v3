@@ -142,36 +142,38 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#070707] flex flex-col lg:flex-row items-stretch">
+    <div className="min-h-screen bg-background flex flex-col lg:flex-row items-stretch overflow-hidden">
       {/* Left Decoration / Info */}
-      <div className="hidden lg:flex lg:w-1/3 flex-col justify-between p-12 bg-gradient-to-b from-primary/20 via-primary/5 to-transparent border-r border-white/5 relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/3 flex-col justify-between p-12 relative overflow-hidden"
+        style={{ background: "linear-gradient(135deg, hsl(215 80% 18%) 0%, hsl(215 80% 12%) 50%, hsl(215 80% 8%) 100%)" }}
+      >
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 blur-[120px]" />
         
-        <Link href="/login" className="relative z-10 flex items-center gap-2 text-sm font-semibold text-sky-200 hover:text-white transition-colors group">
+        <Link href="/login" className="relative z-10 flex items-center gap-2 text-sm font-bold text-sky-200 hover:text-white transition-colors group">
           <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
           Voltar para o login
         </Link>
 
         <div className="relative z-10 max-w-sm">
-          <div className="h-14 w-14 rounded-2xl bg-primary flex items-center justify-center shadow-2xl shadow-primary/40 mb-8">
-            <Zap className="h-8 w-8 text-white fill-white" />
+          <div className="h-16 w-16 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-2xl mb-10">
+            <Zap className="h-10 w-10 text-white fill-white" />
           </div>
-          <h2 className="text-3xl font-extrabold text-white leading-tight mb-6">
+          <h2 className="text-4xl font-extrabold text-white leading-tight mb-8">
             Junte-se à maior rede de integradores do Brasil
           </h2>
-          <div className="space-y-6">
+          <div className="space-y-8">
             {[
               { icon: ShieldCheck, title: "Segurança Total", desc: "Seus dados e projetos protegidos com criptografia de ponta." },
               { icon: Zap, title: "Agilidade", desc: "Aprovação de projetos em tempo recorde com auxílio de IA." },
               { icon: CheckCircle2, title: "Transparência", desc: "Acompanhe cada etapa da homologação em tempo real." }
             ].map((item, idx) => (
               <div key={idx} className="flex gap-4 group">
-                <div className="h-10 w-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors duration-300">
-                  <item.icon className="h-5 w-5 text-primary" />
+                <div className="h-12 w-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0 group-hover:bg-white/10 transition-colors duration-300">
+                  <item.icon className="h-6 w-6 text-sky-400" />
                 </div>
                 <div>
-                  <h3 className="text-white font-bold text-sm">{item.title}</h3>
-                  <p className="text-sky-100/60 text-xs leading-relaxed mt-1">{item.desc}</p>
+                  <h3 className="text-white font-bold text-base">{item.title}</h3>
+                  <p className="text-sky-100/60 text-sm leading-relaxed mt-1 font-medium">{item.desc}</p>
                 </div>
               </div>
             ))}

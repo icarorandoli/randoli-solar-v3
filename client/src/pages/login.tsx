@@ -35,7 +35,7 @@ export default function LoginPage() {
   const headlineNode = (() => {
     if (!loginHighlight || !loginHeadline.includes(loginHighlight)) return <>{loginHeadline}</>;
     const parts = loginHeadline.split(loginHighlight);
-    return <>{parts[0]}<span className="text-sky-300">{loginHighlight}</span>{parts.slice(1).join(loginHighlight)}</>;
+    return <>{parts[0]}<span className="text-sky-400 dark:text-sky-300">{loginHighlight}</span>{parts.slice(1).join(loginHighlight)}</>;
   })();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -58,7 +58,7 @@ export default function LoginPage() {
         className="hidden lg:flex lg:w-1/2 xl:w-[55%] flex-col p-12 relative overflow-hidden"
         style={loginBgType === "image" && loginBgImage
           ? { backgroundImage: `url(${loginBgImage})`, backgroundSize: "cover", backgroundPosition: "center" }
-          : { background: "linear-gradient(135deg, hsl(215 60% 15%) 0%, hsl(215 60% 10%) 50%, hsl(215 60% 5%) 100%)" }
+          : { background: "linear-gradient(135deg, hsl(215 80% 18%) 0%, hsl(215 80% 12%) 50%, hsl(215 80% 8%) 100%)" }
         }
       >
         {/* Overlay for image bg */}
@@ -76,39 +76,39 @@ export default function LoginPage() {
             <img src={logoUrl} alt="Logo" className="h-12 object-contain" />
           ) : (
             <div className="h-12 w-12 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-2xl">
-              <Zap className="h-7 w-7 text-white" />
+              <Zap className="h-7 w-7 text-white fill-white" />
             </div>
           )}
-          <span className="text-white font-bold text-xl tracking-tight drop-shadow-sm">{companyName}</span>
+          <span className="text-white font-bold text-2xl tracking-tight drop-shadow-sm">{companyName}</span>
         </div>
 
         {/* Content */}
-        <div className="relative z-10 max-w-xl">
-          <div className="inline-flex items-center gap-2 bg-sky-500/20 backdrop-blur-md border border-sky-400/30 rounded-full px-4 py-1.5 text-xs text-sky-200 font-semibold uppercase tracking-wider mb-8 shadow-lg">
+        <div className="relative z-10 max-w-2xl">
+          <div className="inline-flex items-center gap-2 bg-sky-500/20 backdrop-blur-md border border-sky-400/30 rounded-full px-4 py-1.5 text-xs text-sky-100 font-bold uppercase tracking-wider mb-8 shadow-lg">
             <Zap className="h-3.5 w-3.5 fill-sky-400 text-sky-400" />
             {loginBadgeText}
           </div>
           
-          <h1 className="text-4xl xl:text-6xl font-extrabold text-white leading-[1.1] mb-6 drop-shadow-md">
+          <h1 className="text-4xl xl:text-7xl font-extrabold text-white leading-[1.05] mb-8 drop-shadow-md">
             {headlineNode}
           </h1>
           
-          <p className="text-lg text-sky-100/70 leading-relaxed mb-10 font-medium">
+          <p className="text-xl text-sky-100/80 leading-relaxed mb-12 font-medium">
             {loginDescription}
           </p>
 
           {/* Feature list */}
-          <div className="grid grid-cols-1 gap-5">
+          <div className="grid grid-cols-1 gap-6">
             {[
               { icon: CheckCircle, text: loginFeature1, color: "text-emerald-400" },
               { icon: ShieldCheck, text: loginFeature2, color: "text-sky-400" },
               { icon: Clock, text: loginFeature3, color: "text-amber-400" },
             ].map(({ icon: Icon, text, color }) => (
               <div key={text} className="flex items-center gap-4 group">
-                <div className="h-10 w-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-110 duration-300">
-                  <Icon className={`h-5 w-5 ${color}`} />
+                <div className="h-12 w-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0 transition-all group-hover:bg-white/10 group-hover:scale-110 duration-300">
+                  <Icon className={`h-6 w-6 ${color}`} />
                 </div>
-                <span className="text-base text-sky-50/90 font-medium">{text}</span>
+                <span className="text-lg text-sky-50 font-semibold">{text}</span>
               </div>
             ))}
           </div>

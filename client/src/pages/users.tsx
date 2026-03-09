@@ -30,13 +30,15 @@ const ROLE_LABELS: Record<string, string> = {
   engenharia: "Engenharia",
   financeiro: "Financeiro",
   integrador: "Integrador",
+  viewer: "Visualizador",
 };
 
 const ROLE_COLORS: Record<string, string> = {
-  admin: "bg-red-500/10 text-red-600 border-red-200 dark:border-red-900/50",
+  admin: "bg-purple-500/10 text-purple-600 border-purple-200 dark:border-purple-900/50",
   engenharia: "bg-blue-500/10 text-blue-600 border-blue-200 dark:border-blue-900/50",
   financeiro: "bg-emerald-500/10 text-emerald-600 border-emerald-200 dark:border-emerald-900/50",
   integrador: "bg-amber-500/10 text-amber-600 border-amber-200 dark:border-amber-900/50",
+  viewer: "bg-slate-500/10 text-slate-600 border-slate-200 dark:border-slate-900/50",
 };
 
 function EditUserDialog({ open, onClose, user }: { open: boolean; onClose: () => void; user: SafeUser }) {
@@ -577,7 +579,7 @@ export default function UsersPage() {
   });
 
   const deleteMut = useMutation({
-    mutationFn: (id: string) => apiRequest("DELETE", `/api/users/${id}`),
+    mutationFn: (id: number) => apiRequest("DELETE", `/api/users/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       toast({ title: "Usuário removido com sucesso!" });
@@ -596,7 +598,9 @@ export default function UsersPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <Users className="h-6 w-6 text-primary" />
+            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Users className="h-5 w-5 text-primary" />
+            </div>
             <h1 className="text-2xl font-bold tracking-tight" data-testid="text-page-title">Usuários</h1>
           </div>
           <p className="text-muted-foreground">Gerencie a equipe interna e integradores parceiros</p>
@@ -652,14 +656,13 @@ export default function UsersPage() {
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <Avatar className="h-12 w-12 border-2 border-background shadow-sm">
-                      <AvatarImage src={`https://avatar.vercel.sh/${u.username}.png`} />
                       <AvatarFallback className="bg-primary/10 text-primary font-bold">
                         {getInitials(u.name)}
                       </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0">
                       <p className="font-bold text-foreground truncate leading-none mb-1.5">{u.name}</p>
-                      <Badge variant="outline" className={`text-[10px] uppercase tracking-wider font-semibold ${ROLE_COLORS[u.role] || ""}`}>
+                      <Badge variant="outline" className={`text-[10px] uppercase tracking-wider font-bold h-5 ${ROLE_COLORS[u.role] || "bg-muted text-muted-foreground"}`}>
                         {u.role === "admin" && <Shield className="h-3 w-3 mr-1 inline" />}
                         {ROLE_LABELS[u.role] || u.role}
                       </Badge>
@@ -692,7 +695,7 @@ export default function UsersPage() {
                         variant="ghost"
                         className="h-8 w-8 text-muted-foreground hover:text-destructive transition-colors"
                         onClick={() => {
-                          if (confirm(`Excluir usuário ${u.name}?`)) deleteMut.mutate(u.id);
+                          if (confirm(`Excluir usuário ${u.name}?`)) deleteMut.mutate(Number(u.id));
                         }}
                         disabled={deleteMut.isPending}
                         data-testid={`button-delete-user-${u.id}`}
@@ -722,7 +725,7 @@ export default function UsersPage() {
                       <div className="h-7 w-7 rounded-full bg-muted/50 flex items-center justify-center shrink-0">
                         <Phone className="h-3.5 w-3.5" />
                       </div>
-                      <span className="truncate">{u.phone}</span>
+                      <span className="truncate">{formatPhone(u.phone)}</span>
                     </div>
                   )}
                   {u.company && (

@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { KanbanSquare, Hash, User, Zap } from "lucide-react";
 import type { Project, Client, StatusConfig } from "@shared/schema";
-import { getBadgeClass, getKanbanClass } from "@/lib/status-colors";
+import { getBadgeClass, getKanbanClass, STATUS_COLOR_PRESETS } from "@/lib/status-colors";
 import { useLocation } from "wouter";
 
 type ProjectWithClient = Project & {
@@ -107,18 +107,19 @@ export default function KanbanPage() {
   const isLoading = projLoading || configLoading;
 
   return (
-    <div className="p-6 space-y-8 h-[calc(100vh-64px)] flex flex-col overflow-hidden">
+    <div className="p-6 space-y-8 h-[calc(100vh-64px)] flex flex-col overflow-hidden bg-background">
       <div className="flex items-end justify-between flex-shrink-0">
         <div className="space-y-1">
           <div className="flex items-center gap-2 mb-1">
-            <div className="h-2 w-2 rounded-full bg-primary shadow-[0_0_8px_rgba(var(--primary),0.5)]" />
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/80">Fluxo de Trabalho</span>
+            <div className="h-2 w-2 rounded-full bg-primary shadow-[0_0_8px_rgba(var(--primary),0.5)] animate-pulse" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/80">Fluxo de Operações</span>
           </div>
           <h1 className="text-4xl font-black tracking-tight text-foreground flex items-center gap-3">
-            Kanban
+            Pipeline <span className="text-primary/20">/</span> Kanban
           </h1>
-          <p className="text-muted-foreground text-sm font-medium">
-            {projects.filter(p => !p.archived).length} projetos ativos em pipeline
+          <p className="text-muted-foreground text-sm font-medium flex items-center gap-2">
+            <span className="flex h-2 w-2 rounded-full bg-emerald-500" />
+            {projects.filter(p => !p.archived).length} projetos ativos sob sua gestão
           </p>
         </div>
         
@@ -126,10 +127,10 @@ export default function KanbanPage() {
           variant="outline"
           size="sm"
           onClick={() => navigate("/status-config")}
-          className="rounded-xl border-border/40 font-bold uppercase tracking-wider text-[10px] h-10 px-4 bg-muted/10 hover:bg-primary hover:text-primary-foreground transition-all no-default-hover-elevate"
+          className="rounded-xl border-border/60 font-bold uppercase tracking-widest text-[10px] h-10 px-5 bg-background hover:bg-primary hover:text-primary-foreground transition-all shadow-sm"
           data-testid="link-kanban-config"
         >
-          Configurar Colunas
+          Configurar Estágios
         </Button>
       </div>
 
@@ -137,26 +138,35 @@ export default function KanbanPage() {
         {isLoading ? (
           <div className="flex gap-6 overflow-x-auto pb-6 h-full">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="flex-shrink-0 w-72 space-y-4">
-                <Skeleton className="h-12 w-full rounded-2xl bg-muted/30" />
-                <Skeleton className="h-32 w-full rounded-2xl bg-muted/30" />
-                <Skeleton className="h-32 w-full rounded-2xl bg-muted/30" />
+              <div key={i} className="flex-shrink-0 w-80 space-y-4">
+                <Skeleton className="h-12 w-full rounded-2xl bg-muted/40" />
+                <Skeleton className="h-40 w-full rounded-2xl bg-muted/40 shadow-sm" />
+                <Skeleton className="h-40 w-full rounded-2xl bg-muted/40 shadow-sm" />
               </div>
             ))}
           </div>
         ) : (
           <DragDropContext onDragEnd={onDragEnd}>
-            <div className="flex gap-6 overflow-x-auto pb-8 h-full scrollbar-thin scrollbar-thumb-muted-foreground/20 hover:scrollbar-thumb-muted-foreground/30 transition-all">
+            <div className="flex gap-6 overflow-x-auto pb-8 h-full scroll-smooth snap-x scrollbar-thin scrollbar-thumb-muted-foreground/10 hover:scrollbar-thumb-muted-foreground/20">
               {columns.map(col => {
                 const colProjects = projects.filter(p => p.status === col.key && !p.archived);
-                const kanbanClass = getKanbanClass(col.color);
                 const badgeClass = getBadgeClass(col.color);
+                const colorHex = STATUS_COLOR_PRESETS[col.color]?.hex || "#94a3b8";
                 return (
-                  <div key={col.key} className="flex-shrink-0 w-72 flex flex-col h-full group/column">
-                    <div className={`rounded-3xl p-4 flex flex-col h-full transition-all border border-border/40 hover:border-primary/20 bg-muted/10 hover:bg-muted/20`}>
-                      <div className="flex items-center justify-between mb-5 px-1">
-                        <h3 className="text-xs font-black uppercase tracking-widest text-foreground/80">{col.label}</h3>
-                        <Badge className={`px-2 py-0.5 rounded-lg font-black text-[10px] border-0 shadow-sm ${badgeClass}`}>
+                  <div key={col.key} className="flex-shrink-0 w-80 flex flex-col h-full snap-start group/column">
+                    <div className="rounded-[2rem] p-4 flex flex-col h-full transition-all border border-border/40 bg-muted/5 hover:bg-muted/10 relative overflow-hidden">
+                      {/* Subtlest color indicator at the top */}
+                      <div 
+                        className="absolute top-0 left-0 right-0 h-1.5 opacity-40 group-hover/column:opacity-100 transition-opacity" 
+                        style={{ backgroundColor: colorHex }}
+                      />
+                      
+                      <div className="flex items-center justify-between mb-6 px-2 pt-2">
+                        <div className="flex items-center gap-2">
+                          <div className={`h-2 w-2 rounded-full ${badgeClass.split(" ")[1]}`} />
+                          <h3 className="text-[11px] font-black uppercase tracking-[0.15em] text-foreground/70">{col.label}</h3>
+                        </div>
+                        <Badge className={`px-2.5 py-0.5 rounded-lg font-black text-[10px] border-0 shadow-sm ${badgeClass}`}>
                           {colProjects.length}
                         </Badge>
                       </div>
@@ -166,10 +176,10 @@ export default function KanbanPage() {
                           <div
                             ref={provided.innerRef}
                             {...provided.droppableProps}
-                            className={`flex-1 overflow-y-auto pr-1 -mr-1 scrollbar-none transition-all rounded-2xl ${snapshot.isDraggingOver ? "bg-primary/[0.03] ring-2 ring-primary/20 ring-inset" : ""}`}
+                            className={`flex-1 overflow-y-auto pr-2 -mr-1 scrollbar-none transition-all rounded-3xl p-1 ${snapshot.isDraggingOver ? "bg-primary/[0.04] ring-2 ring-primary/10 ring-inset" : ""}`}
                             data-testid={`kanban-column-${col.key}`}
                           >
-                            <div className="space-y-1">
+                            <div className="space-y-3">
                               {colProjects.map((project, idx) => (
                                 <ProjectCard
                                   key={project.id}

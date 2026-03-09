@@ -555,11 +555,11 @@ export default function PortalProjetoPage() {
   if (!project) return <div className="p-8 text-center font-bold text-muted-foreground">Projeto não encontrado.</div>;
 
   return (
-    <div className="p-4 md:p-10 space-y-8 max-w-6xl mx-auto">
+    <div className="p-4 md:p-10 space-y-10 max-w-6xl mx-auto pb-20">
       {/* Header Navigation */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" asChild className="rounded-full h-11 w-11 shrink-0 shadow-sm">
+          <Button variant="outline" size="icon" asChild className="rounded-full h-12 w-12 shrink-0 shadow-sm hover-elevate">
             <Link href="/portal"><ArrowLeft className="h-5 w-5" /></Link>
           </Button>
           <div className="min-w-0">
@@ -569,303 +569,263 @@ export default function PortalProjetoPage() {
                   {(project as any).ticketNumber}
                 </Badge>
               )}
-              <h1 className="text-2xl md:text-3xl font-black tracking-tight truncate" data-testid="text-project-title">
+              <h1 className="text-3xl md:text-4xl font-black tracking-tight truncate" data-testid="text-project-title">
                 {project.title}
               </h1>
             </div>
-            <p className="text-sm font-medium text-muted-foreground mt-1 flex items-center gap-2">
-              <Building className="h-3.5 w-3.5" /> {project.concessionaria || "Concessionária não informada"}
-              {project.numeroProtocolo && (
-                <>
-                  <span className="opacity-30">•</span>
-                  <span className="flex items-center gap-1.5"><FileText className="h-3.5 w-3.5" /> Prot: {project.numeroProtocolo}</span>
-                </>
-              )}
-            </p>
+            <p className="text-muted-foreground font-medium mt-1">Gerencie os detalhes e acompanhe o progresso da sua homologação.</p>
           </div>
         </div>
-
-        <div className={`px-5 py-2.5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-black/5 flex items-center gap-3 ${STATUS_BADGE_STYLES[project.status]}`}>
-          <div className="h-2 w-2 rounded-full animate-pulse" style={{ backgroundColor: STATUS_COLORS[project.status] }} />
-          {STATUS_LABELS[project.status]}
+        <div className="flex items-center gap-3">
+          <div className={`px-4 py-2 rounded-2xl font-black text-xs uppercase tracking-widest shadow-sm ${STATUS_BADGE_STYLES[project.status]}`}>
+            {STATUS_LABELS[project.status]}
+          </div>
         </div>
       </div>
 
-      {/* Status Stepper Card */}
-      {project.status !== "cancelado" && (
-        <Card className="border-border/40 shadow-xl shadow-black/5 overflow-hidden rounded-3xl">
-          <CardHeader className="bg-muted/30 px-8 py-6 border-b border-border/40">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <CardTitle className="text-lg font-bold">Fluxo de Homologação</CardTitle>
-                <CardDescription className="font-medium">Acompanhe o progresso técnico do seu sistema</CardDescription>
-              </div>
-              <div className="text-right">
-                <p className="text-2xl font-black tracking-tighter text-primary">
-                  {Math.round(((currentIdx + 1) / STATUS_ORDER.length) * 100)}%
-                </p>
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Etapa {currentIdx + 1} de {STATUS_ORDER.length}</p>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-8">
-            {/* Progress bar */}
-            <div className="relative mb-10 h-3 bg-muted rounded-full overflow-hidden shadow-inner">
-              <div
-                className="h-full rounded-full transition-all duration-1000 ease-out shadow-[0_0_20px_rgba(0,0,0,0.1)]"
-                style={{
-                  width: `${Math.round(((currentIdx + 1) / STATUS_ORDER.length) * 100)}%`,
-                  backgroundColor: STATUS_COLORS[project.status] || "#3b82f6",
-                }}
-              />
-            </div>
-
-            {/* Horizontal Scrollable Steps */}
-            <div className="flex items-start gap-0 overflow-x-auto pb-6 scrollbar-hide -mx-2 px-2">
-              {STATUS_ORDER.map((status, i) => {
-                const isPast = i < currentIdx;
-                const isCurrent = i === currentIdx;
-                const isFuture = i > currentIdx;
+      {/* Stepper Status Horizontal */}
+      <Card className="border-border/40 shadow-xl shadow-black/5 overflow-hidden rounded-[2.5rem]">
+        <CardContent className="p-8 md:p-12">
+          <div className="relative">
+            {/* Connection Line */}
+            <div className="absolute top-6 left-0 w-full h-0.5 bg-muted z-0 hidden md:block" />
+            <div 
+              className="absolute top-6 left-0 h-0.5 bg-primary z-0 transition-all duration-1000 hidden md:block" 
+              style={{ width: `${(currentIdx / (STATUS_ORDER.length - 1)) * 100}%` }}
+            />
+            
+            <div className="relative z-10 flex justify-between gap-4 overflow-x-auto pb-4 no-scrollbar">
+              {STATUS_ORDER.map((step, idx) => {
+                const isCompleted = idx < currentIdx;
+                const isCurrent = idx === currentIdx;
+                const isPast = idx <= currentIdx;
+                
                 return (
-                  <div key={status} className="flex items-start shrink-0 group" style={{ flex: "1 0 auto", minWidth: "80px", maxWidth: "120px" }}>
-                    <div className="flex flex-col items-center w-full gap-3">
-                      <div
-                        className={`h-10 w-10 rounded-2xl flex items-center justify-center text-xs font-black transition-all border-4 shadow-sm ${
-                          isCurrent
-                            ? "border-primary/20 text-white shadow-xl shadow-primary/20 scale-110 z-10"
-                            : isPast
-                            ? "border-transparent text-white"
-                            : "border-muted-foreground/10 bg-muted/30 text-muted-foreground/40"
-                        }`}
-                        style={
-                          isCurrent || isPast
-                            ? { backgroundColor: STATUS_COLORS[status] }
-                            : undefined
-                        }
-                      >
-                        {isPast ? <Check className="h-5 w-5 stroke-[3]" /> : i + 1}
-                      </div>
-                      <span
-                        className={`text-[10px] font-bold text-center leading-tight px-2 transition-colors ${
-                          isCurrent
-                            ? "text-foreground"
-                            : isPast
-                            ? "text-muted-foreground"
-                            : "text-muted-foreground/30"
-                        }`}
-                      >
-                        {STATUS_LABELS[status]}
-                      </span>
+                  <div key={step} className="flex flex-col items-center gap-3 min-w-[80px]">
+                    <div 
+                      className={`h-12 w-12 rounded-2xl flex items-center justify-center border-4 transition-all duration-500 ${
+                        isCurrent 
+                          ? "bg-primary border-primary shadow-lg shadow-primary/30 scale-110 z-10" 
+                          : isCompleted 
+                            ? "bg-primary border-primary text-white" 
+                            : "bg-muted border-muted text-muted-foreground"
+                      }`}
+                      style={
+                        (isCurrent || isCompleted)
+                          ? { backgroundColor: STATUS_COLORS[step], borderColor: STATUS_COLORS[step] }
+                          : undefined
+                      }
+                    >
+                      {isCompleted ? (
+                        <Check className="h-6 w-6 stroke-[3]" />
+                      ) : (
+                        <span className={`text-sm font-black ${isCurrent ? "text-white" : ""}`}>
+                          {String(idx + 1).padStart(2, "0")}
+                        </span>
+                      )}
                     </div>
-                    {i < STATUS_ORDER.length - 1 && (
-                      <div
-                        className="h-1 mt-4.5 shrink-0 transition-all"
-                        style={{
-                          width: "100%",
-                          minWidth: "12px",
-                          backgroundColor: i < currentIdx ? STATUS_COLORS[status] : "hsl(var(--muted))",
-                        }}
-                      />
-                    )}
+                    <span className={`text-[10px] font-black uppercase tracking-widest text-center max-w-[100px] leading-tight ${isCurrent ? "text-primary" : isPast ? "text-foreground" : "text-muted-foreground"}`}>
+                      {STATUS_LABELS[step]}
+                    </span>
                   </div>
                 );
               })}
             </div>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* Left Column: Details and Docs */}
         <div className="lg:col-span-2 space-y-8">
-          
-          {/* Project Details Card */}
+          {/* Dados do Projeto */}
           <Card className="border-border/40 shadow-xl shadow-black/5 overflow-hidden rounded-3xl">
             <CardHeader className="bg-muted/30 border-b border-border/40 px-8 py-6">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <Activity className="h-5 w-5 text-primary" />
+                <div className="h-10 w-10 rounded-xl bg-sky-500/10 flex items-center justify-center">
+                  <Activity className="h-5 w-5 text-sky-500" />
                 </div>
-                <CardTitle className="text-xl font-bold">Especificações Técnicas</CardTitle>
+                <CardTitle className="text-xl font-bold">Dados do Projeto</CardTitle>
               </div>
             </CardHeader>
             <CardContent className="p-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-2">
-                <div className="space-y-2">
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-primary mb-4">Dados da Unidade</h4>
-                  <InfoRow label="Cliente" value={project.nomeCliente} />
-                  <InfoRow label="CPF/CNPJ" value={project.cpfCnpjCliente} />
-                  <InfoRow label="Endereço" value={project.endereco} />
-                  <InfoRow label="Localização" value={project.localizacao} link />
-                </div>
-                <div className="space-y-2 mt-8 md:mt-0">
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-primary mb-4">Equipamentos & Potência</h4>
-                  <div className="p-4 rounded-2xl bg-muted/30 border border-border/40 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Zap className="h-4 w-4 text-amber-500" />
-                        <span className="text-sm font-bold">Potência Total</span>
-                      </div>
-                      <span className="text-lg font-black">{project.potencia} kWp</span>
-                    </div>
-                    <div className="h-px bg-border/40" />
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase">Módulos</p>
-                        <p className="text-xs font-bold truncate" title={project.modeloPainel || undefined}>{project.modeloPainel || "-"}</p>
-                        <p className="text-[10px] font-medium text-muted-foreground">{project.quantidadePaineis} unidades</p>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase">Inversor</p>
-                        <p className="text-xs font-bold truncate" title={project.modeloInversor || undefined}>{project.modeloInversor || "-"}</p>
-                        <p className="text-[10px] font-medium text-muted-foreground">{project.potenciaInversor} kW</p>
-                      </div>
-                    </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-wider mb-2">
+                    <User className="h-3.5 w-3.5" /> Informações Básicas
                   </div>
+                  <InfoRow label="Cliente" value={project.nomeCliente || (project.client as any)?.name} />
+                  <InfoRow label="CPF/CNPJ" value={project.cpfCnpjCliente || (project.client as any)?.cpfCnpj} />
+                  <InfoRow label="Potência" value={project.potencia ? `${project.potencia} kWp` : null} />
+                  <InfoRow label="Concessionária" value={project.concessionaria} />
+                </div>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-wider mb-2">
+                    <MapPin className="h-3.5 w-3.5" /> Localização e Identificação
+                  </div>
+                  <InfoRow label="Endereço" value={project.endereco} link />
+                  <InfoRow label="Nº Instalação" value={project.numeroInstalacao} />
+                  <InfoRow label="Nº Protocolo" value={project.numeroProtocolo} />
+                  <InfoRow label="Valor do Projeto" value={project.valor ? `R$ ${parseFloat(project.valor).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : null} />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Document Section */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <DocumentUploadCard projectId={project.id} />
-            
-            <Card className="border-border/40 shadow-xl shadow-black/5 overflow-hidden rounded-3xl">
-              <CardHeader className="bg-muted/30 border-b border-border/40 px-8 py-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-xl bg-sky-500/10 flex items-center justify-center">
-                      <FileText className="h-5 w-5 text-sky-500" />
-                    </div>
-                    <CardTitle className="text-lg font-bold">Documentos ({docs.length})</CardTitle>
+          {/* Pagamento */}
+          {(project.status === "aprovado_pagamento_pendente" || project.status === "orcamento" || project.paymentStatus === "pending") && (
+            <Card className="border-emerald-500/20 bg-emerald-500/[0.02] shadow-xl shadow-emerald-500/5 overflow-hidden rounded-3xl">
+              <CardHeader className="bg-emerald-500/10 border-b border-emerald-500/20 px-8 py-6">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                    <DollarSign className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl font-bold text-emerald-900 dark:text-emerald-100">Pagamento da Taxa</CardTitle>
+                    <CardDescription className="text-emerald-700/70 dark:text-emerald-400/70">Escolha a melhor forma de pagamento para iniciar seu projeto.</CardDescription>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="p-0">
-                {docsLoading ? (
-                  <div className="p-6 space-y-3">
-                    <Skeleton className="h-14 w-full rounded-2xl" />
-                    <Skeleton className="h-14 w-full rounded-2xl" />
+              <CardContent className="p-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-6">
+                    <div className="p-6 rounded-2xl bg-white dark:bg-black/20 border border-emerald-500/20 shadow-sm">
+                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">Valor a Pagar</p>
+                      <p className="text-4xl font-black text-emerald-600 dark:text-emerald-400">
+                        {project.valor ? `R$ ${parseFloat(project.valor).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "R$ 0,00"}
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <p className="text-sm font-bold flex items-center gap-2">
+                        <Check className="h-4 w-4 text-emerald-500" /> Liberação imediata após confirmação
+                      </p>
+                      <p className="text-sm font-bold flex items-center gap-2">
+                        <Check className="h-4 w-4 text-emerald-500" /> Nota fiscal enviada por e-mail
+                      </p>
+                    </div>
                   </div>
-                ) : docs.length === 0 ? (
-                  <div className="py-12 px-8 text-center text-muted-foreground">
-                    <p className="text-sm font-medium">Nenhum documento anexado.</p>
+
+                  <div className="space-y-4">
+                    {/* Inter PIX */}
+                    {project.interPixCopiaECola && (
+                      <InterPixSection 
+                        copiaECola={project.interPixCopiaECola} 
+                        qrCodeBase64={project.interPixQrCodeBase64 || undefined} 
+                      />
+                    )}
+
+                    {/* PIX Padrao */}
+                    {project.pixQrCode && project.pixQrCodeBase64 && (
+                      <PixSection qrCode={project.pixQrCode} qrCodeBase64={project.pixQrCodeBase64} />
+                    )}
+                    
+                    {/* MP Checkout */}
+                    {project.paymentLink && (
+                      <MercadoPagoBrick 
+                        preferenceId={project.paymentId || ""} 
+                        paymentLink={project.paymentLink} 
+                      />
+                    )}
+
+                    {!project.interPixCopiaECola && !project.pixQrCode && !project.paymentLink && (
+                      <div className="flex flex-col items-center justify-center py-8 text-center bg-muted/30 rounded-2xl border border-dashed border-border/60">
+                        <AlertCircle className="h-8 w-8 text-muted-foreground mb-3" />
+                        <p className="text-sm font-bold">Aguardando geração da cobrança</p>
+                        <p className="text-xs text-muted-foreground mt-1">Nossa equipe financeira está processando seu pedido.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Chat / Timeline */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <Card className="border-border/40 shadow-xl shadow-black/5 overflow-hidden rounded-3xl flex flex-col h-[600px]">
+              <CardHeader className="bg-muted/30 border-b border-border/40 px-8 py-6">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <Activity className="h-5 w-5 text-primary" />
+                  </div>
+                  <CardTitle className="text-xl font-bold">Histórico do Projeto</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="p-8 overflow-y-auto flex-1 no-scrollbar">
+                {tl.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground opacity-50">
+                    <Lock className="h-12 w-12 mb-4" />
+                    <p className="font-bold">Nenhuma atividade registrada</p>
                   </div>
                 ) : (
-                  <div className="divide-y divide-border/40 max-h-[400px] overflow-y-auto">
-                    {docs.map(doc => (
-                      <div key={doc.id} className="flex items-center justify-between p-5 group hover:bg-muted/30 transition-colors">
-                        <div className="flex items-center gap-4 min-w-0">
-                          <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center shrink-0 group-hover:bg-background transition-colors">
-                            <FileText className="h-5 w-5 text-muted-foreground group-hover:text-sky-500 transition-colors" />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-sm font-bold truncate pr-2">{doc.name}</p>
-                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{DOC_TYPE_LABELS[doc.docType]}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button variant="ghost" size="icon" asChild className="rounded-full h-9 w-9 hover:bg-sky-50 hover:text-sky-600 transition-colors">
-                            <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer">
-                              <ExternalLink className="h-4 w-4" />
-                            </a>
-                          </Button>
-                          {doc.uploadedByRole === "integrador" && (
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="rounded-full h-9 w-9 hover:bg-red-50 hover:text-red-600 transition-colors"
-                              onClick={() => deleteDocMut.mutate(doc.id)}
-                              disabled={deleteDocMut.isPending}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
+                  <div className="space-y-0">
+                    {tl.map((entry, idx) => (
+                      <TimelineItem key={entry.id} entry={entry} isLast={idx === tl.length - 1} />
                     ))}
                   </div>
                 )}
               </CardContent>
             </Card>
+
+            <ChatPanel projectId={id!} />
           </div>
         </div>
 
-        {/* Right Column: Timeline and Chat */}
         <div className="space-y-8">
-          
-          {/* Payment Card if needed */}
-          {(project.status === "aprovado_pagamento_pendente" || project.paymentStatus === "pending") && (
-            <Card className="border-amber-200 bg-amber-50/50 dark:bg-amber-900/10 dark:border-amber-900/40 shadow-lg shadow-amber-500/5 rounded-3xl overflow-hidden">
-              <CardHeader className="pb-2">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                    <DollarSign className="h-5 w-5 text-amber-600" />
-                  </div>
-                  <CardTitle className="text-lg font-bold text-amber-800 dark:text-amber-400">Pagamento Pendente</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm font-medium text-amber-700/80 dark:text-amber-400/80">
-                  O projeto técnico foi aprovado! Realize o pagamento para iniciar a elaboração dos documentos.
-                </p>
-                <div className="pt-2 space-y-2">
-                  {project.interPixCopiaECola && (
-                    <InterPixSection
-                      copiaECola={project.interPixCopiaECola}
-                      qrCodeBase64={project.interPixQrCodeBase64 || undefined}
-                    />
-                  )}
-                  {project.pixQrCode && project.pixQrCodeBase64 && (
-                    <PixSection qrCode={project.pixQrCode} qrCodeBase64={project.pixQrCodeBase64} />
-                  )}
-                  {project.paymentLink && (
-                    <MercadoPagoBrick preferenceId={project.paymentId || ""} paymentLink={project.paymentLink} />
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          {/* Documentos */}
+          <DocumentUploadCard projectId={id!} />
 
-          {/* Timeline Card */}
           <Card className="border-border/40 shadow-xl shadow-black/5 overflow-hidden rounded-3xl">
             <CardHeader className="bg-muted/30 border-b border-border/40 px-8 py-6">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <Activity className="h-5 w-5 text-primary" />
-                </div>
-                <CardTitle className="text-lg font-bold">Linha do Tempo</CardTitle>
-              </div>
+              <CardTitle className="text-lg font-bold flex items-center gap-2">
+                <FileText className="h-5 w-5 text-primary" />
+                Arquivos do Projeto ({docs.length})
+              </CardTitle>
             </CardHeader>
-            <CardContent className="p-8">
-              {tlLoading ? (
-                <div className="space-y-4">
-                  <Skeleton className="h-12 w-full rounded-xl" />
-                  <Skeleton className="h-12 w-full rounded-xl" />
+            <CardContent className="p-0">
+              {docs.length === 0 ? (
+                <div className="p-12 text-center text-muted-foreground opacity-50">
+                  <p className="text-sm font-bold">Nenhum documento</p>
                 </div>
-              ) : tl.length === 0 ? (
-                <p className="text-center text-sm text-muted-foreground font-medium py-8">Aguardando movimentações.</p>
               ) : (
-                <div className="space-y-0">
-                  {tl.map((entry, i) => (
-                    <TimelineItem key={entry.id} entry={entry} isLast={i === tl.length - 1} />
+                <div className="divide-y divide-border/40">
+                  {docs.map(doc => (
+                    <div key={doc.id} className="group p-6 hover:bg-muted/30 transition-all">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-4 min-w-0">
+                          <div className="h-12 w-12 rounded-2xl bg-background border border-border/40 flex items-center justify-center shrink-0 shadow-sm group-hover:border-primary/20 group-hover:bg-primary/5 transition-all">
+                            <FileText className="h-6 w-6 text-muted-foreground group-hover:text-primary transition-colors" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-bold truncate group-hover:text-primary transition-colors">{doc.name}</p>
+                            <Badge variant="outline" className="text-[9px] font-black uppercase mt-1 border-primary/20 text-primary/60">
+                              {DOC_TYPE_LABELS[doc.docType] || doc.docType}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button variant="ghost" size="icon" className="rounded-xl hover:bg-primary/10 hover:text-primary" asChild>
+                            <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer">
+                              <ExternalLink className="h-4 w-4" />
+                            </a>
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="rounded-xl hover:bg-red-500/10 hover:text-red-500"
+                            onClick={() => deleteDocMut.mutate(doc.id)}
+                            disabled={deleteDocMut.isPending}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
                   ))}
                 </div>
               )}
             </CardContent>
           </Card>
-
-          {/* Chat Panel */}
-          {user && id && (
-            <ChatPanel 
-              projectId={id} 
-              currentUserId={user.id} 
-              currentUserRole={user.role} 
-            />
-          )}
         </div>
       </div>
     </div>

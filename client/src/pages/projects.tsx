@@ -45,14 +45,14 @@ type ProjectWithClient = Project & {
 function InfoRow({ label, value, link }: { label: string; value?: string | null; link?: boolean }) {
   if (!value) return null;
   return (
-    <div className="flex gap-4 py-2 border-b border-border/40 last:border-0 hover:bg-muted/30 transition-colors px-2 -mx-2 rounded-sm">
-      <span className="text-xs font-semibold text-muted-foreground min-w-[140px] flex-shrink-0 uppercase tracking-wider">{label}</span>
+    <div className="flex gap-4 py-2 border-b border-border/40 last:border-0 hover:bg-muted/30 transition-colors px-3 -mx-3 rounded-md">
+      <span className="text-[10px] font-bold text-muted-foreground min-w-[140px] flex-shrink-0 uppercase tracking-widest">{label}</span>
       {link ? (
-        <a href={value} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-primary flex items-center gap-1 hover:underline decoration-primary/30 underline-offset-2">
-          Abrir mapa <ExternalLink className="h-3 w-3" />
+        <a href={value} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-primary flex items-center gap-1.5 hover:underline decoration-primary/30 underline-offset-4">
+          Visualizar Mapa <ExternalLink className="h-3.5 w-3.5" />
         </a>
       ) : (
-        <span className="text-xs font-medium flex-1 text-foreground/90">{value}</span>
+        <span className="text-xs font-medium flex-1 text-foreground/90 leading-relaxed">{value}</span>
       )}
     </div>
   );
@@ -834,7 +834,7 @@ export default function ProjectsPage() {
       </div>
 
       {/* Filters & Search Toolbar */}
-      <Card className="border-border/40 shadow-sm bg-muted/10 overflow-visible">
+      <Card className="border-border/40 shadow-sm bg-muted/10 overflow-visible rounded-2xl">
         <CardContent className="p-4 flex flex-col lg:flex-row gap-4">
           <div className="relative flex-1 group">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50 group-focus-within:text-primary transition-colors" />
@@ -847,19 +847,24 @@ export default function ProjectsPage() {
             />
           </div>
           
-          <div className="flex flex-wrap gap-3">
-            <div className="min-w-[200px]">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="min-w-[220px]">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="h-11 bg-background border-border/40 rounded-xl px-4 text-xs font-semibold" data-testid="select-filter-status">
+                <SelectTrigger className="h-11 bg-background border-border/40 rounded-xl px-4 text-xs font-bold uppercase tracking-wider" data-testid="select-filter-status">
                   <div className="flex items-center gap-2">
-                    <Activity className="h-3.5 w-3.5 text-muted-foreground/50" />
+                    <Activity className="h-3.5 w-3.5 text-primary" />
                     <SelectValue />
                   </div>
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
-                  <SelectItem value="todos" className="text-xs font-medium">Todos os Status</SelectItem>
+                  <SelectItem value="todos" className="text-[10px] font-bold uppercase tracking-widest">Todos os Status</SelectItem>
                   {statusConfigs.sort((a, b) => a.sortOrder - b.sortOrder).map(c => (
-                    <SelectItem key={c.key} value={c.key} className="text-xs font-medium">{c.label}</SelectItem>
+                    <SelectItem key={c.key} value={c.key} className="text-[10px] font-bold uppercase tracking-widest">
+                      <div className="flex items-center gap-2">
+                        <div className={`h-2 w-2 rounded-full ${getStatusBadge(c.key).split(" ")[1]}`} />
+                        {c.label}
+                      </div>
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -870,7 +875,7 @@ export default function ProjectsPage() {
                 variant="ghost"
                 size="icon"
                 onClick={() => setViewMode("grid")}
-                className={`rounded-lg transition-all ${viewMode === "grid" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-muted"}`}
+                className={`rounded-lg transition-all h-9 w-9 ${viewMode === "grid" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:bg-muted"}`}
                 data-testid="button-view-grid"
                 title="Grade"
               >
@@ -880,7 +885,7 @@ export default function ProjectsPage() {
                 variant="ghost"
                 size="icon"
                 onClick={() => setViewMode("list")}
-                className={`rounded-lg transition-all ${viewMode === "list" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-muted"}`}
+                className={`rounded-lg transition-all h-9 w-9 ${viewMode === "list" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:bg-muted"}`}
                 data-testid="button-view-list"
                 title="Lista"
               >
@@ -894,33 +899,42 @@ export default function ProjectsPage() {
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {Array(6).fill(0).map((_, i) => (
-            <Card key={i} className="border-border/40 overflow-hidden">
-              <div className="h-2 bg-muted animate-pulse" />
-              <CardContent className="p-6 space-y-4">
-                <Skeleton className="h-6 w-3/4 rounded-md" />
-                <Skeleton className="h-4 w-full rounded-md" />
-                <div className="pt-4 flex justify-between">
-                  <Skeleton className="h-4 w-20 rounded-md" />
-                  <Skeleton className="h-4 w-20 rounded-md" />
+            <Card key={i} className="border-border/40 overflow-hidden rounded-2xl">
+              <div className="h-1.5 bg-muted animate-pulse" />
+              <CardContent className="p-6 space-y-6">
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-1/4 rounded-md" />
+                  <Skeleton className="h-6 w-3/4 rounded-md" />
+                </div>
+                <div className="space-y-3 pt-4 border-t border-border/30">
+                  <Skeleton className="h-4 w-full rounded-md" />
+                  <Skeleton className="h-4 w-full rounded-md" />
+                </div>
+                <div className="pt-4 flex justify-between items-center">
+                  <Skeleton className="h-8 w-24 rounded-lg" />
+                  <div className="flex gap-2">
+                    <Skeleton className="h-8 w-8 rounded-lg" />
+                    <Skeleton className="h-8 w-8 rounded-lg" />
+                  </div>
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-32 text-center bg-muted/10 rounded-[2rem] border-2 border-dashed border-border/40">
-          <div className="h-20 w-20 rounded-full bg-muted/50 flex items-center justify-center mb-6">
-            <FolderOpen className="h-10 w-10 text-muted-foreground/30" />
+        <div className="flex flex-col items-center justify-center py-32 text-center bg-muted/10 rounded-[2.5rem] border-2 border-dashed border-border/40 shadow-inner">
+          <div className="h-24 w-24 rounded-full bg-background flex items-center justify-center mb-8 shadow-sm border border-border/40">
+            <FolderOpen className="h-10 w-10 text-primary/40" />
           </div>
-          <h3 className="text-xl font-bold text-foreground mb-2">
+          <h3 className="text-2xl font-black text-foreground mb-3 tracking-tight">
             {tab === "arquivados" ? "Nenhum projeto arquivado" : "O horizonte está limpo"}
           </h3>
-          <p className="text-muted-foreground max-w-sm text-sm">
-            {tab === "arquivados" ? "Projetos concluídos ou cancelados serão listados aqui." : "Não encontramos nenhum projeto com os critérios atuais. Tente redefinir seus filtros."}
+          <p className="text-muted-foreground max-w-sm text-sm font-medium leading-relaxed">
+            {tab === "arquivados" ? "Projetos concluídos ou cancelados aparecerão aqui para seu histórico." : "Não encontramos nenhum projeto com os critérios atuais. Tente redefinir seus filtros ou buscar por outros termos."}
           </p>
           {search && (
-            <Button variant="ghost" onClick={() => setSearch("")} className="mt-4 text-primary font-bold uppercase tracking-widest text-[10px]">
-              Limpar Pesquisa
+            <Button variant="outline" onClick={() => setSearch("")} className="mt-8 rounded-xl font-bold uppercase tracking-widest text-[10px] h-10 px-6 border-primary/20 hover:bg-primary hover:text-primary-foreground">
+              Limpar Filtros de Busca
             </Button>
           )}
         </div>

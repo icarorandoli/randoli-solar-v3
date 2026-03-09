@@ -148,20 +148,20 @@ export default function EquipmentDb() {
             <TabsTrigger 
               value="panels" 
               data-testid="tab-panels"
-              className="px-1 py-3 bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none transition-all hover:text-primary"
+              className="px-1 py-3 bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none transition-all hover:text-primary font-semibold"
             >
               <Zap className="w-4 h-4 mr-2" />
               Módulos
-              <Badge variant="secondary" className="ml-2 h-5 px-1.5 font-mono text-[10px]">{panels.length}</Badge>
+              <Badge variant="secondary" className="ml-2 h-5 px-1.5 font-mono text-[10px] bg-sky-500/10 text-sky-600">{panels.length}</Badge>
             </TabsTrigger>
             <TabsTrigger 
               value="inverters" 
               data-testid="tab-inverters"
-              className="px-1 py-3 bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none transition-all hover:text-primary"
+              className="px-1 py-3 bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none transition-all hover:text-primary font-semibold"
             >
               <Battery className="w-4 h-4 mr-2" />
               Inversores
-              <Badge variant="secondary" className="ml-2 h-5 px-1.5 font-mono text-[10px]">{inverters.length}</Badge>
+              <Badge variant="secondary" className="ml-2 h-5 px-1.5 font-mono text-[10px] bg-sky-500/10 text-sky-600">{inverters.length}</Badge>
             </TabsTrigger>
           </TabsList>
         </div>

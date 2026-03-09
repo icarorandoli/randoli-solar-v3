@@ -129,20 +129,20 @@ export default function ProductionSimulator() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <Card data-testid="stat-annual" className="border-border/50 shadow-sm hover-elevate transition-all overflow-hidden relative">
               <div className="absolute top-0 right-0 p-3 opacity-10">
-                <Sun className="w-12 h-12 text-green-500" />
+                <Sun className="w-12 h-12 text-sky-500" />
               </div>
               <CardContent className="p-6">
                 <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Total Anual</div>
-                <div className="text-3xl font-bold text-green-600 tracking-tight">{data.totalAnnualKwh.toLocaleString("pt-BR")} <span className="text-sm font-medium text-muted-foreground">kWh</span></div>
+                <div className="text-3xl font-bold text-sky-600 tracking-tight">{data.totalAnnualKwh.toLocaleString("pt-BR")} <span className="text-sm font-medium text-muted-foreground">kWh</span></div>
               </CardContent>
             </Card>
             <Card className="border-border/50 shadow-sm hover-elevate transition-all overflow-hidden relative">
               <div className="absolute top-0 right-0 p-3 opacity-10">
-                <Zap className="w-12 h-12 text-blue-500" />
+                <Zap className="w-12 h-12 text-sky-500" />
               </div>
               <CardContent className="p-6">
                 <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Média Mensal</div>
-                <div className="text-3xl font-bold text-blue-600 tracking-tight">{data.averageMonthlyKwh.toLocaleString("pt-BR")} <span className="text-sm font-medium text-muted-foreground">kWh</span></div>
+                <div className="text-3xl font-bold text-sky-600 tracking-tight">{data.averageMonthlyKwh.toLocaleString("pt-BR")} <span className="text-sm font-medium text-muted-foreground">kWh</span></div>
               </CardContent>
             </Card>
             <Card className="border-border/50 shadow-sm hover-elevate transition-all overflow-hidden relative">

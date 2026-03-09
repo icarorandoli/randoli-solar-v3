@@ -24,22 +24,94 @@ const CLIENT_TYPE_LABELS: Record<string, string> = {
   pj: "Pessoa Jurídica",
 };
 
+function NavSection({
+  items,
+  location,
+  unreadCount,
+  label,
+}: {
+  items: { title: string; url: string; icon: any }[];
+  location: string;
+  unreadCount: number;
+  label: string;
+}) {
+  return (
+    <SidebarGroup>
+      <SidebarGroupLabel className="px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50 mb-2">
+        {label}
+      </SidebarGroupLabel>
+      <SidebarGroupContent>
+        <SidebarMenu>
+          {items.map(item => {
+            const isActive = location === item.url;
+            const showBadge = item.url === "/portal" && unreadCount > 0;
+            return (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isActive}
+                  data-active={isActive}
+                  data-testid={`link-portal-${item.title.toLowerCase().replace(/\s/g, "-")}`}
+                  className={cn(
+                    "group transition-all duration-200 h-9",
+                    isActive 
+                      ? "bg-primary/10 text-primary font-semibold border-l-[3px] border-primary rounded-none" 
+                      : "hover:bg-primary/5 text-sidebar-foreground/70 hover:text-primary"
+                  )}
+                >
+                  <Link href={item.url} className="flex items-center w-full px-3">
+                    <item.icon className={cn(
+                      "h-4 w-4 shrink-0 transition-colors",
+                      isActive ? "text-primary" : "text-sidebar-foreground/40 group-hover:text-primary"
+                    )} />
+                    <span className="ml-3 flex-1">{item.title}</span>
+                    {showBadge && (
+                      <Badge 
+                        className="ml-auto h-5 min-w-5 flex items-center justify-center rounded-full p-0 text-[10px] bg-primary text-primary-foreground animate-pulse border-none"
+                      >
+                        {unreadCount > 99 ? "99+" : unreadCount}
+                      </Badge>
+                    )}
+                    {isActive && <ChevronRight className="ml-auto h-3 w-3 text-primary/50" />}
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            );
+          })}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
+  );
+}
+
 function UserFooter({ user, logout }: { user: any; logout: () => void }) {
   const clientType = user?.clientType ? CLIENT_TYPE_LABELS[user.clientType] ?? user.clientType : "Integrador";
   
+  const getAvatarColor = (name: string = "") => {
+    const colors = [
+      "bg-blue-500", "bg-emerald-500", "bg-indigo-500", 
+      "bg-violet-500", "bg-amber-500", "bg-rose-500"
+    ];
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return colors[Math.abs(hash) % colors.length];
+  };
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-3 px-1 py-2">
-        <Avatar className="h-9 w-9 border border-sidebar-border shadow-sm">
+        <Avatar className="h-10 w-10 border-2 border-background shadow-sm ring-1 ring-sidebar-border">
           <AvatarImage src={user?.avatarUrl} />
-          <AvatarFallback className="bg-primary/10 text-primary font-bold">
+          <AvatarFallback className={cn("text-white font-bold text-xs", getAvatarColor(user?.name))}>
             {user?.name?.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase() || "?"}
           </AvatarFallback>
         </Avatar>
         <div className="flex flex-col min-w-0 flex-1">
-          <span className="text-sm font-semibold truncate leading-tight">{user?.name}</span>
-          <div className="flex items-center mt-0.5">
-            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 font-medium bg-sidebar-accent/50 text-muted-foreground border-none">
+          <span className="text-sm font-bold truncate leading-tight text-sidebar-foreground">{user?.name}</span>
+          <div className="flex items-center mt-1">
+            <Badge className="text-[9px] px-2 py-0 h-4 font-bold uppercase tracking-wider bg-primary/10 text-primary border-none">
               {clientType}
             </Badge>
           </div>
@@ -48,12 +120,12 @@ function UserFooter({ user, logout }: { user: any; logout: () => void }) {
       <Button
         variant="ghost"
         size="sm"
-        className="w-full justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+        className="w-full justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200 group"
         onClick={logout}
         data-testid="button-logout"
       >
-        <LogOut className="h-4 w-4 mr-2" /> 
-        <span className="font-medium">Encerrar Sessão</span>
+        <LogOut className="h-4 w-4 mr-2 transition-transform group-hover:-translate-x-0.5" /> 
+        <span className="font-semibold">Sair do Portal</span>
       </Button>
     </div>
   );
@@ -75,79 +147,41 @@ export function PortalSidebar() {
 
   return (
     <Sidebar className="border-r border-sidebar-border bg-sidebar shadow-xl">
-      <SidebarHeader className="px-6 py-8">
-        <div className="flex items-center gap-3.5 group cursor-default">
+      <SidebarHeader className="px-6 py-10">
+        <div className="flex items-center gap-4 group cursor-default">
           <div className="relative">
             {logoUrl ? (
               <img
                 src={logoUrl}
                 alt="Logo"
-                className="h-10 w-10 object-contain rounded-xl shadow-md transition-transform group-hover:scale-105"
+                className="h-12 w-12 object-contain rounded-xl shadow-md transition-transform group-hover:scale-105"
               />
             ) : (
-              <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20 transition-transform group-hover:scale-105">
-                <Zap className="h-6 w-6 text-primary-foreground fill-current" />
+              <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20 transition-transform group-hover:scale-105">
+                <Zap className="h-7 w-7 text-primary-foreground fill-current" />
               </div>
             )}
-            <div className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full bg-emerald-500 border-2 border-sidebar animate-pulse" />
+            <div className="absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full bg-emerald-500 border-2 border-sidebar animate-pulse" />
           </div>
           <div className="flex flex-col min-w-0">
-            <span className="text-base font-bold text-sidebar-foreground tracking-tight truncate leading-tight">
+            <span className="text-lg font-bold text-sidebar-foreground tracking-tight truncate leading-tight">
               {companyName}
             </span>
-            <span className="text-[11px] font-medium text-primary uppercase tracking-widest mt-0.5">Portal Integrador</span>
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest mt-0.5">Portal Integrador</span>
           </div>
         </div>
       </SidebarHeader>
 
       <SidebarContent className="px-3">
-        <SidebarGroup>
-          <SidebarGroupLabel className="px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50 mb-2">Menu Principal</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {navItems.map(item => {
-                const isActive = location === item.url;
-                const showBadge = item.url === "/portal" && unreadCount > 0;
-                return (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={isActive}
-                      data-active={isActive}
-                      data-testid={`link-portal-${item.title.toLowerCase().replace(/\s/g, "-")}`}
-                      className={cn(
-                        "group transition-all duration-200",
-                        isActive 
-                          ? "bg-primary/10 text-primary font-medium border-l-2 border-primary rounded-none" 
-                          : "hover:bg-sidebar-accent/50 text-sidebar-foreground/70 hover:text-sidebar-foreground"
-                      )}
-                    >
-                      <Link href={item.url} className="flex items-center w-full px-3 py-2">
-                        <item.icon className={cn(
-                          "h-4 w-4 shrink-0 transition-colors",
-                          isActive ? "text-primary" : "text-sidebar-foreground/40 group-hover:text-sidebar-foreground"
-                        )} />
-                        <span className="ml-3 flex-1">{item.title}</span>
-                        {showBadge && (
-                          <Badge 
-                            variant="destructive" 
-                            className="ml-auto h-5 min-w-5 flex items-center justify-center rounded-full p-0 text-[10px] animate-pulse"
-                          >
-                            {unreadCount > 99 ? "99+" : unreadCount}
-                          </Badge>
-                        )}
-                        {isActive && <ChevronRight className="ml-auto h-3 w-3 text-primary opacity-50" />}
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        <NavSection
+          items={navItems}
+          location={location}
+          unreadCount={unreadCount}
+          label="Menu Principal"
+        />
       </SidebarContent>
 
-      <SidebarFooter className="p-6 bg-sidebar-accent/20 border-t border-sidebar-border mt-auto">
+      <SidebarFooter className="p-6 bg-sidebar-accent/30 border-t border-sidebar-border mt-auto">
         <UserFooter user={user} logout={logout} />
       </SidebarFooter>
     </Sidebar>

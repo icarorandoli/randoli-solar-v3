@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import {
   Save, Upload, Zap, Building2, ImageOff, Mail, Send, Eye, EyeOff,
   CreditCard, MonitorPlay, Image, Settings2, Globe, ShieldCheck, Palette, ArrowRight,
@@ -461,79 +462,23 @@ export default function SettingsPage() {
 
             <div className="md:col-span-3 space-y-6">
               <TabsContent value="general" className="mt-0 space-y-6">
-                <Card className="border-muted/40 shadow-sm">
+                <Card className="border-muted/40 shadow-md">
                   <CardHeader>
-                    <CardTitle className="text-lg">Informações Gerais</CardTitle>
+                    <div className="flex items-center gap-2">
+                      <Globe className="h-4 w-4 text-primary" />
+                      <CardTitle className="text-lg">Informações Gerais</CardTitle>
+                    </div>
                     <CardDescription>Configure os dados básicos da sua empresa na plataforma.</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="company-name">Nome da Empresa</Label>
-                      <Input id="company-name" value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Randoli Engenharia" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="portal-url">URL do Portal (Integrador)</Label>
-                      <Input id="portal-url" value={portalUrl} onChange={e => setPortalUrl(e.target.value)} placeholder="https://portal.suaempresa.com" />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="border-muted/40 shadow-sm">
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Zap className="h-4 w-4 text-amber-500" /> Carrossel de Parceiros
-                    </CardTitle>
-                    <CardDescription>Gerencie as logos que aparecem no site principal.</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="p-4 rounded-xl bg-primary/5 border border-primary/10 flex items-start gap-4">
-                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                        <ArrowRight className="h-5 w-5 text-primary" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="company-name">Nome da Empresa</Label>
+                        <Input id="company-name" value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Randoli Engenharia" data-testid="input-company-name" />
                       </div>
-                      <div>
-                        <p className="font-semibold text-primary">Gerenciar no Módulo de Parceiros</p>
-                        <p className="text-sm text-muted-foreground mt-1">A configuração detalhada do carrossel, incluindo logos, nomes e links, deve ser feita diretamente na página de parceiros.</p>
-                        <Button variant="ghost" className="p-0 h-auto mt-2 text-primary" onClick={() => window.location.href = "/partners"}>Ir para Parceiros</Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="visual" className="mt-0 space-y-6">
-                <Card className="border-muted/40 shadow-sm">
-                  <CardHeader>
-                    <CardTitle className="text-lg">Logomarca</CardTitle>
-                    <CardDescription>Faça o upload da sua logo principal.</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <LogoUploadSection currentLogoUrl={logoUrl} onLogoUrlChange={setLogoUrl} />
-                  </CardContent>
-                </Card>
-
-                <Card className="border-muted/40 shadow-sm">
-                  <CardHeader>
-                    <CardTitle className="text-lg">Ícone da Aba (Favicon)</CardTitle>
-                    <CardDescription>URL da imagem exibida no ícone da aba do navegador. Use PNG ou ICO de 32×32px ou 64×64px.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex items-center gap-4">
-                      <div className="h-16 w-16 border border-border rounded-lg bg-muted/40 flex items-center justify-center flex-shrink-0">
-                        {faviconUrl ? (
-                          <img src={faviconUrl} alt="Favicon preview" className="h-10 w-10 object-contain" data-testid="img-favicon-preview" />
-                        ) : (
-                          <div className="text-muted-foreground text-xs text-center leading-tight px-1">Sem<br/>ícone</div>
-                        )}
-                      </div>
-                      <div className="space-y-2 flex-1">
-                        <Label>URL do Favicon</Label>
-                        <Input
-                          value={faviconUrl}
-                          onChange={e => setFaviconUrl(e.target.value)}
-                          placeholder="https://... ou /favicon.png"
-                          data-testid="input-favicon-url"
-                        />
-                        <p className="text-xs text-muted-foreground">Salve e recarregue a página para ver o novo ícone na aba.</p>
+                      <div className="space-y-2">
+                        <Label htmlFor="portal-url">URL do Portal (Integrador)</Label>
+                        <Input id="portal-url" value={portalUrl} onChange={e => setPortalUrl(e.target.value)} placeholder="https://portal.suaempresa.com" data-testid="input-portal-url" />
                       </div>
                     </div>
                   </CardContent>
@@ -553,96 +498,120 @@ export default function SettingsPage() {
                 />
               </TabsContent>
 
-              <TabsContent value="notifications" className="mt-0 space-y-6">
-                <Card className="border-muted/40 shadow-sm">
+              <TabsContent value="visual" className="mt-0 space-y-6">
+                <Card className="border-muted/40 shadow-md">
                   <CardHeader>
-                    <CardTitle className="text-lg">Configuração SMTP</CardTitle>
-                    <CardDescription>O sistema utiliza esses dados para enviar e-mails automáticos.</CardDescription>
+                    <div className="flex items-center gap-2">
+                      <Palette className="h-4 w-4 text-primary" />
+                      <CardTitle className="text-lg">Identidade Visual</CardTitle>
+                    </div>
+                    <CardDescription>Personalize o visual da sua plataforma (Logo e Favicon).</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
-                    <div className="flex items-center justify-between p-4 rounded-xl bg-muted/30 border border-muted/50">
-                      <div className="space-y-0.5">
-                        <p className="font-semibold">E-mails Automáticos</p>
-                        <p className="text-sm text-muted-foreground">Enviar avisos de status para integradores</p>
-                      </div>
-                      <Switch checked={emailEnabled} onCheckedChange={setEmailEnabled} />
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <LogoUploadSection currentLogoUrl={logoUrl} onLogoUrlChange={setLogoUrl} />
+                    <div className="pt-4 border-t border-muted/40 space-y-4">
                       <div className="space-y-2">
-                        <Label>Servidor SMTP</Label>
-                        <Input value={smtpHost} onChange={e => setSmtpHost(e.target.value)} />
+                        <Label>Favicon URL</Label>
+                        <Input value={faviconUrl} onChange={e => setFaviconUrl(e.target.value)} placeholder="https://... ou caminho do arquivo" data-testid="input-favicon-url" />
                       </div>
                       <div className="space-y-2">
-                        <Label>Porta</Label>
-                        <Input value={smtpPort} onChange={e => setSmtpPort(e.target.value)} />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>E-mail de Envio (User)</Label>
-                      <Input value={smtpUser} onChange={e => setSmtpUser(e.target.value)} />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Senha SMTP</Label>
-                      <div className="relative">
-                        <Input
-                          type={showPassword ? "text" : "password"}
-                          value={smtpPass}
-                          onChange={e => setSmtpPass(e.target.value)}
-                          placeholder="••••••••"
-                          className="pr-10"
-                        />
-                        <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" onClick={() => setShowPassword(!showPassword)}>
-                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="pt-4 border-t border-muted/40">
-                      <div className="flex items-center gap-3">
-                        <Input
-                          value={testEmailTo}
-                          onChange={e => setTestEmailTo(e.target.value)}
-                          placeholder="E-mail para teste"
-                          className="max-w-xs h-9 text-sm"
-                        />
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => testEmailMut.mutate()}
-                          disabled={testEmailMut.isPending}
-                          className="h-9 hover-elevate"
-                        >
-                          <Send className="h-3.5 w-3.5 mr-2" />
-                          {testEmailMut.isPending ? "Enviando..." : "Enviar Teste"}
-                        </Button>
+                        <Label>Cor Primária</Label>
+                        <div className="flex items-center gap-3">
+                          <Input type="color" value={primaryColor} onChange={e => setPrimaryColor(e.target.value)} className="w-12 h-10 p-1 rounded-md" data-testid="input-primary-color" />
+                          <Input value={primaryColor} onChange={e => setPrimaryColor(e.target.value)} className="font-mono" />
+                        </div>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
               </TabsContent>
 
-              <TabsContent value="integrations" className="mt-0 space-y-6">
-                <Card className="border-muted/40 shadow-sm">
+              <TabsContent value="notifications" className="mt-0 space-y-6">
+                <Card className="border-muted/40 shadow-md">
                   <CardHeader>
-                    <CardTitle className="text-lg">Mercado Pago</CardTitle>
-                    <CardDescription>Configure o recebimento automático de projetos via PIX ou Cartão.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="flex items-center justify-between p-4 rounded-xl bg-muted/30 border border-border">
-                      <div className="space-y-0.5">
-                        <p className="font-semibold">Pagamento Integrado</p>
-                        <p className="text-sm text-muted-foreground">Habilitar checkout Mercado Pago no portal</p>
-                      </div>
-                      <Switch checked={mpEnabled} onCheckedChange={setMpEnabled} />
+                    <div className="flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-primary" />
+                      <CardTitle className="text-lg">Configurações de E-mail (SMTP)</CardTitle>
                     </div>
+                    <CardDescription>Configure como a plataforma envia e-mails automáticos.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-muted/40 mb-2">
+                      <div className="space-y-0.5">
+                        <Label className="text-base font-semibold">Notificações Ativas</Label>
+                        <p className="text-xs text-muted-foreground">Habilitar envio automático de e-mails para clientes e equipe.</p>
+                      </div>
+                      <Switch checked={emailEnabled} onCheckedChange={setEmailEnabled} data-testid="switch-email-enabled" />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Host SMTP</Label>
+                        <Input value={smtpHost} onChange={e => setSmtpHost(e.target.value)} placeholder="smtp.office365.com" data-testid="input-smtp-host" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Porta SMTP</Label>
+                        <Input value={smtpPort} onChange={e => setSmtpPort(e.target.value)} placeholder="587" data-testid="input-smtp-port" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Usuário/E-mail</Label>
+                        <Input value={smtpUser} onChange={e => setSmtpUser(e.target.value)} placeholder="contato@suaempresa.com" data-testid="input-smtp-user" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Senha</Label>
+                        <div className="relative">
+                          <Input
+                            type={showPassword ? "text" : "password"}
+                            value={smtpPass}
+                            onChange={e => setSmtpPass(e.target.value)}
+                            placeholder="••••••••"
+                            className="pr-10"
+                            data-testid="input-smtp-pass"
+                          />
+                          <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" onClick={() => setShowPassword(!showPassword)}>
+                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>E-mail do Remetente (From)</Label>
+                        <Input value={smtpFrom} onChange={e => setSmtpFrom(e.target.value)} placeholder="Engenharia Solar <contato@suaempresa.com>" data-testid="input-smtp-from" />
+                      </div>
+                    </div>
+                    <div className="pt-4 border-t border-muted/40 flex items-center gap-3">
+                      <div className="flex-1 space-y-2">
+                        <Label>Enviar teste para:</Label>
+                        <Input value={testEmailTo} onChange={e => setTestEmailTo(e.target.value)} placeholder="seuemail@exemplo.com" />
+                      </div>
+                      <Button variant="outline" className="mt-8" onClick={() => testEmailMut.mutate()} disabled={testEmailMut.isPending} data-testid="button-test-email">
+                        {testEmailMut.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
+                        Testar SMTP
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-                    <div className="space-y-4">
+              <TabsContent value="integrations" className="mt-0 space-y-6">
+                <Card className="border-muted/40 shadow-md">
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <CreditCard className="h-4 w-4 text-primary" />
+                      <CardTitle className="text-lg">Mercado Pago</CardTitle>
+                    </div>
+                    <CardDescription>Receba pagamentos via Cartão e PIX através do Mercado Pago.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-muted/40 mb-2">
+                      <div className="space-y-0.5">
+                        <Label className="text-base font-semibold">Mercado Pago Ativo</Label>
+                        <p className="text-xs text-muted-foreground">Utilizar Mercado Pago para liquidação de faturas.</p>
+                      </div>
+                      <Switch checked={mpEnabled} onCheckedChange={setMpEnabled} data-testid="switch-mp-enabled" />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Public Key</Label>
-                        <Input value={mpPublicKey} onChange={e => setMpPublicKey(e.target.value)} placeholder="APP_USR-..." />
+                        <Input value={mpPublicKey} onChange={e => setMpPublicKey(e.target.value)} placeholder="APP_USR-..." data-testid="input-mp-public-key" />
                       </div>
                       <div className="space-y-2">
                         <Label>Access Token</Label>
@@ -653,73 +622,66 @@ export default function SettingsPage() {
                             onChange={e => setMpAccessToken(e.target.value)}
                             placeholder="APP_USR-..."
                             className="pr-10"
+                            data-testid="input-mp-access-token"
                           />
                           <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" onClick={() => setShowMpToken(!showMpToken)}>
                             {showMpToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </button>
                         </div>
                       </div>
+                      <div className="space-y-2 md:col-span-2">
+                        <Label>Webhook Secret</Label>
+                        <Input value={mpWebhookSecret} onChange={e => setMpWebhookSecret(e.target.value)} placeholder="Seu secret do webhook" data-testid="input-mp-webhook-secret" />
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
 
-                {/* Banco Inter */}
-                <Card className="border-muted/40 shadow-sm">
+                <Card className="border-muted/40 shadow-md">
                   <CardHeader>
-                    <div className="flex items-center gap-3">
-                      <div className="h-9 w-9 rounded-xl bg-orange-500/10 flex items-center justify-center">
-                        <CreditCard className="h-5 w-5 text-orange-500" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-lg">Banco Inter — PIX</CardTitle>
-                        <CardDescription>Configure o recebimento via PIX diretamente pelo Banco Inter (mTLS).</CardDescription>
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <Building2 className="h-4 w-4 text-primary" />
+                      <CardTitle className="text-lg">Banco Inter (API PIX)</CardTitle>
                     </div>
+                    <CardDescription>Integração direta com Banco Inter para recebimento de PIX com taxas menores.</CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="flex items-center justify-between p-4 rounded-xl bg-muted/30 border border-border">
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-muted/40 mb-2">
                       <div className="space-y-0.5">
-                        <p className="font-semibold">PIX Banco Inter</p>
-                        <p className="text-sm text-muted-foreground">Habilitar PIX via Banco Inter no portal do integrador</p>
+                        <div className="flex items-center gap-2">
+                          <Label className="text-base font-semibold">Banco Inter Ativo</Label>
+                          {interEnabled ? (
+                            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[10px] font-bold h-5">CONFIGURADO</Badge>
+                          ) : (
+                            <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-[10px] font-bold h-5">PENDENTE</Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">Utilizar Banco Inter para geração dinâmica de PIX.</p>
                       </div>
                       <Switch checked={interEnabled} onCheckedChange={setInterEnabled} data-testid="switch-inter-enabled" />
                     </div>
 
-                    <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Ambiente</Label>
-                        <Select value={interEnvironment} onValueChange={(v) => setInterEnvironment(v as "sandbox" | "production")}>
-                          <SelectTrigger data-testid="select-inter-environment">
+                        <Select value={interEnvironment} onValueChange={(v: any) => setInterEnvironment(v)}>
+                          <SelectTrigger data-testid="select-inter-env">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
+                            <SelectItem value="sandbox">Sandbox (Testes)</SelectItem>
                             <SelectItem value="production">Produção</SelectItem>
-                            <SelectItem value="sandbox">Sandbox (testes)</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label>Client ID</Label>
-                          <Input
-                            value={interClientId}
-                            onChange={e => setInterClientId(e.target.value)}
-                            placeholder="seu-client-id"
-                            data-testid="input-inter-client-id"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Chave PIX (recebimento)</Label>
-                          <Input
-                            value={interPixKey}
-                            onChange={e => setInterPixKey(e.target.value)}
-                            placeholder="CPF, CNPJ, e-mail ou chave aleatória"
-                            data-testid="input-inter-pix-key"
-                          />
-                        </div>
+                      <div className="space-y-2">
+                        <Label>Chave PIX</Label>
+                        <Input value={interPixKey} onChange={e => setInterPixKey(e.target.value)} placeholder="Chave PIX cadastrada no Inter" data-testid="input-inter-pix-key" />
                       </div>
-
+                      <div className="space-y-2">
+                        <Label>Client ID</Label>
+                        <Input value={interClientId} onChange={e => setInterClientId(e.target.value)} placeholder="..." data-testid="input-inter-client-id" />
+                      </div>
                       <div className="space-y-2">
                         <Label>Client Secret</Label>
                         <div className="relative">
@@ -727,7 +689,7 @@ export default function SettingsPage() {
                             type={showInterSecret ? "text" : "password"}
                             value={interClientSecret}
                             onChange={e => setInterClientSecret(e.target.value)}
-                            placeholder="client-secret"
+                            placeholder="••••••••"
                             className="pr-10"
                             data-testid="input-inter-client-secret"
                           />
@@ -736,94 +698,68 @@ export default function SettingsPage() {
                           </button>
                         </div>
                       </div>
+                    </div>
 
+                    <div className="space-y-4 pt-4 border-t border-muted/40">
                       <div className="space-y-2">
-                        <Label>Certificado (.crt) — Conteúdo PEM</Label>
+                        <Label>Certificado (.crt / .pem)</Label>
                         <div className="relative">
                           <Textarea
-                            value={showInterCert ? interCertificate : (interCertificate && interCertificate !== "••••••••" ? "••••••••" : interCertificate)}
+                            value={interCertificate}
                             onChange={e => setInterCertificate(e.target.value)}
-                            onFocus={() => setShowInterCert(true)}
-                            placeholder={"-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----"}
-                            rows={4}
-                            className="font-mono text-xs resize-none"
-                            data-testid="textarea-inter-certificate"
+                            placeholder="-----BEGIN CERTIFICATE----- ..."
+                            className="font-mono text-[10px] min-h-[100px]"
+                            data-testid="textarea-inter-cert"
                           />
+                          <button type="button" className="absolute right-3 top-2 text-muted-foreground" onClick={() => setShowInterCert(!showInterCert)}>
+                            {showInterCert ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
                         </div>
-                        <p className="text-xs text-muted-foreground">Cole o conteúdo completo do arquivo .crt gerado pelo portal Inter.</p>
                       </div>
-
                       <div className="space-y-2">
-                        <Label>Chave Privada (.key) — Conteúdo PEM</Label>
+                        <Label>Chave Privada (.key)</Label>
                         <div className="relative">
                           <Textarea
-                            value={showInterKey ? interPrivateKey : (interPrivateKey && interPrivateKey !== "••••••••" ? "••••••••" : interPrivateKey)}
+                            value={interPrivateKey}
                             onChange={e => setInterPrivateKey(e.target.value)}
-                            onFocus={() => setShowInterKey(true)}
-                            placeholder={"-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"}
-                            rows={4}
-                            className="font-mono text-xs resize-none"
-                            data-testid="textarea-inter-private-key"
+                            placeholder="-----BEGIN PRIVATE KEY----- ..."
+                            className="font-mono text-[10px] min-h-[100px]"
+                            data-testid="textarea-inter-key"
                           />
+                          <button type="button" className="absolute right-3 top-2 text-muted-foreground" onClick={() => setShowInterKey(!showInterKey)}>
+                            {showInterKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
                         </div>
-                        <p className="text-xs text-muted-foreground">Cole o conteúdo completo do arquivo .key gerado pelo portal Inter.</p>
                       </div>
+                    </div>
 
+                    <div className="space-y-4 pt-4 border-t border-muted/40 bg-muted/20 p-3 rounded-lg">
+                      <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Configurações de Webhook (Opcional)</Label>
                       <div className="space-y-2">
-                        <Label className="flex items-center gap-1.5">
-                          <ShieldCheck className="h-3.5 w-3.5 text-orange-500" />
-                          Certificado CA do Webhook Inter (.pem)
-                        </Label>
-                        {interWebhookCert === "••••••••" && !showInterWebhookCert ? (
-                          <div className="flex items-center gap-2 p-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
-                            <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
-                            <span className="text-sm text-green-700 dark:text-green-400 font-medium">Certificado CA configurado</span>
-                            <Button type="button" variant="ghost" size="sm" className="ml-auto text-xs h-7" onClick={() => setShowInterWebhookCert(true)}>
-                              Substituir
-                            </Button>
-                          </div>
-                        ) : (
+                        <Label>Webhook Secret / Key</Label>
+                        <Input value={interWebhookKey} onChange={e => setInterWebhookKey(e.target.value)} placeholder="..." data-testid="input-inter-webhook-key" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Webhook Certificado (Inter)</Label>
+                        <div className="relative">
                           <Textarea
-                            value={showInterWebhookCert ? interWebhookCert : interWebhookCert}
+                            value={interWebhookCert}
                             onChange={e => setInterWebhookCert(e.target.value)}
-                            placeholder={"-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----"}
-                            rows={4}
-                            className="font-mono text-xs resize-none"
+                            placeholder="-----BEGIN CERTIFICATE----- ..."
+                            className="font-mono text-[10px] min-h-[80px]"
                             data-testid="textarea-inter-webhook-cert"
                           />
-                        )}
-                        <p className="text-xs text-muted-foreground">
-                          Cole aqui o conteúdo do arquivo <strong>.pem</strong> baixado em <strong>developers.inter.co → Minhas Integrações → Certificado Webhook</strong>. Este certificado é usado para autenticar chamadas do servidor do Inter.
-                        </p>
+                          <button type="button" className="absolute right-3 top-2 text-muted-foreground" onClick={() => setShowInterWebhookCert(!showInterWebhookCert)}>
+                            {showInterWebhookCert ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
                       </div>
+                    </div>
 
-                      <div className="p-4 rounded-xl bg-orange-50 dark:bg-orange-900/10 border border-orange-200 dark:border-orange-900/30 space-y-2">
-                        <p className="text-xs font-semibold text-orange-800 dark:text-orange-300">URL do Webhook — cadastre no portal Inter:</p>
-                        <code className="text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-900 dark:text-orange-200 px-2 py-1 rounded block break-all">
-                          https://projetos.randolisolar.com.br/api/inter/webhook
-                        </code>
-                        <p className="text-xs font-semibold text-orange-800 dark:text-orange-300 mt-2">Como obter as credenciais:</p>
-                        <ol className="text-xs text-orange-700 dark:text-orange-400 space-y-1 list-decimal list-inside">
-                          <li>Acesse <strong>developers.inter.co</strong> e crie uma aplicação</li>
-                          <li>Gere o certificado digital (baixe o .crt e o .key)</li>
-                          <li>Copie o Client ID e Client Secret gerados</li>
-                          <li>Informe sua chave PIX cadastrada no Inter para recebimento</li>
-                          <li>Baixe o <strong>Certificado Webhook</strong> e cole no campo acima</li>
-                        </ol>
-                      </div>
-
-                      <Button
-                        variant="outline"
-                        onClick={() => testInterMut.mutate()}
-                        disabled={testInterMut.isPending || !interClientId || !interPixKey}
-                        className="w-full"
-                        data-testid="button-test-inter"
-                      >
-                        {testInterMut.isPending ? (
-                          <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Testando conexão...</>
-                        ) : (
-                          <><ShieldCheck className="h-4 w-4 mr-2" />Testar Conexão com Banco Inter</>
-                        )}
+                    <div className="pt-2 flex justify-end">
+                      <Button variant="outline" size="sm" onClick={() => testInterMut.mutate()} disabled={testInterMut.isPending} data-testid="button-test-inter">
+                        {testInterMut.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
+                        Testar Conexão Inter
                       </Button>
                     </div>
                   </CardContent>

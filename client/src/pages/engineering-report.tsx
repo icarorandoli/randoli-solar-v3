@@ -139,7 +139,7 @@ export default function EngineeringReport() {
               <Card className="border-border/50 shadow-sm hover-elevate transition-all overflow-hidden relative">
                 <CardContent className="p-6">
                   <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Potência Nominal</div>
-                  <div className="text-3xl font-bold text-orange-600 tracking-tight" data-testid="report-kwp">
+                  <div className="text-3xl font-bold text-sky-600 tracking-tight" data-testid="report-kwp">
                     {report.dimensioning.kwp} <span className="text-sm font-medium text-muted-foreground">kWp</span>
                   </div>
                 </CardContent>
@@ -147,7 +147,7 @@ export default function EngineeringReport() {
               <Card className="border-border/50 shadow-sm hover-elevate transition-all overflow-hidden relative">
                 <CardContent className="p-6">
                   <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Total de Módulos</div>
-                  <div className="text-3xl font-bold text-blue-600 tracking-tight">
+                  <div className="text-3xl font-bold text-sky-600 tracking-tight">
                     {report.dimensioning.panelsNeeded} <span className="text-sm font-medium text-muted-foreground">unid.</span>
                   </div>
                 </CardContent>
@@ -155,7 +155,7 @@ export default function EngineeringReport() {
               <Card className="border-border/50 shadow-sm hover-elevate transition-all overflow-hidden relative">
                 <CardContent className="p-6">
                   <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Geração Mensal</div>
-                  <div className="text-3xl font-bold text-green-600 tracking-tight">
+                  <div className="text-3xl font-bold text-sky-700 tracking-tight">
                     {report.dimensioning.monthlyGenerationKwh.toLocaleString("pt-BR")} <span className="text-sm font-medium text-muted-foreground">kWh</span>
                   </div>
                 </CardContent>
@@ -163,7 +163,7 @@ export default function EngineeringReport() {
               <Card className="border-border/50 shadow-sm hover-elevate transition-all overflow-hidden relative">
                 <CardContent className="p-6">
                   <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Taxa de Cobertura</div>
-                  <div className="text-3xl font-bold text-purple-600 tracking-tight">
+                  <div className="text-3xl font-bold text-sky-600 tracking-tight">
                     {report.dimensioning.coveragePercent}<span className="text-sm font-medium text-muted-foreground">%</span>
                   </div>
                 </CardContent>

@@ -609,7 +609,7 @@ export async function getInterPixStatus(
   } else if (scope === "cobv.write") {
     res = await httpsRequest(baseUrl, `/pix/v2/cobv/${txid}`, "GET", config.certificate, config.privateKey, { Authorization: `Bearer ${token}` });
   } else {
-    // BolePIX — try multiple paths. If one fails with auth error (403), retry with write token.
+    // BolePIX — try direct GET first, then fallback to list endpoint by seuNumero
     const statusPaths = [
       `/cobranca/v3/cobrancas/${txid}`,
       `/cobranca-bolepix/v3/cobrancas/${txid}`,
@@ -629,7 +629,39 @@ export async function getInterPixStatus(
       }
 
       if (res.status === 200) break;
-      if (res.status !== 404) break; // stop only on non-404 (except we already handled 401/403 above)
+      if (res.status !== 404) break;
+    }
+
+    // If direct GET returned 404, the txid may be our seuNumero — search by it via list endpoint
+    if (res.status === 404 || res.status === 0) {
+      console.log(`[inter] Direct GET failed (${res.status}), trying list endpoint with seuNumero=${txid}`);
+      const today = new Date();
+      const dataFinal = today.toISOString().slice(0, 10);
+      const dataInicial = new Date(today.getTime() - 365 * 2 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      const listPath = `/cobranca/v3/cobrancas?seuNumero=${encodeURIComponent(txid)}&dataInicial=${dataInicial}&dataFinal=${dataFinal}&situacao=A_RECEBER`;
+      const listRes = await httpsRequest(baseUrl, listPath, "GET", config.certificate, config.privateKey, { Authorization: `Bearer ${token}` });
+      console.log(`[inter] LIST endpoint ${listPath} → HTTP ${listRes.status}`);
+      if (listRes.status === 200) {
+        const content = listRes.data?.content || listRes.data?.cobrancas || [];
+        console.log(`[inter] LIST returned ${content.length} item(s)`);
+        if (content.length > 0) {
+          console.log("[inter] LIST[0] keys:", Object.keys(content[0]));
+          console.log("[inter] LIST[0] raw (400):", JSON.stringify(content[0]).slice(0, 400));
+          res = { status: 200, data: content[0] };
+        }
+      } else {
+        // Also try without situacao filter (charge might be in different state)
+        const listPath2 = `/cobranca/v3/cobrancas?seuNumero=${encodeURIComponent(txid)}&dataInicial=${dataInicial}&dataFinal=${dataFinal}`;
+        const listRes2 = await httpsRequest(baseUrl, listPath2, "GET", config.certificate, config.privateKey, { Authorization: `Bearer ${token}` });
+        console.log(`[inter] LIST (no filter) → HTTP ${listRes2.status}`);
+        if (listRes2.status === 200) {
+          const content2 = listRes2.data?.content || listRes2.data?.cobrancas || [];
+          console.log(`[inter] LIST2 returned ${content2.length} item(s)`);
+          if (content2.length > 0) {
+            res = { status: 200, data: content2[0] };
+          }
+        }
+      }
     }
   }
 

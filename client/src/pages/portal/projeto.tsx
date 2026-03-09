@@ -582,15 +582,15 @@ export default function PortalProjetoPage() {
     mutationFn: () => apiRequest("POST", `/api/projects/${id}/inter-refresh-pix`),
     onSuccess: (data: any) => {
       queryClient.setQueryData(["/api/projects", id], data);
-      if (data?.interPixCopiaECola) {
-        toast({ title: "QR Code Inter carregado com sucesso" });
-      }
       if (data?.status === "projeto_tecnico") {
         toast({ title: "Pagamento confirmado!", description: "Seu projeto foi avançado automaticamente." });
         queryClient.invalidateQueries({ queryKey: ["/api/projects", id, "timeline"] });
       }
     },
-    onError: () => {},
+    onError: (err: any) => {
+      const msg = err?.message || "Não foi possível consultar o Banco Inter. Verifique os logs do servidor.";
+      toast({ title: "Erro ao consultar Inter", description: msg, variant: "destructive" });
+    },
   });
 
   // Auto-refresh Inter if txid exists but linhaDigitavel or copiaECola are missing

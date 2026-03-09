@@ -332,20 +332,32 @@ async function createBolepix(
     },
   });
 
-  const cobRes = await httpsRequest(
-    baseUrl,
+  // Try paths in order: new API path first, legacy as fallback
+  const paths = [
+    "/cobranca/v3/cobran\u00E7as",   // /cobranca/v3/cobranças
     "/cobranca-bolepix/v3/cobrancas",
-    "POST",
-    config.certificate,
-    config.privateKey,
-    { Authorization: `Bearer ${token}` },
-    cobBody
-  );
+    "/banking/v2/billet",
+  ];
+
+  let cobRes = { status: 0, data: {} as any };
+  let usedPath = "";
+  for (const p of paths) {
+    cobRes = await httpsRequest(
+      baseUrl, p, "POST",
+      config.certificate, config.privateKey,
+      { Authorization: `Bearer ${token}` },
+      cobBody
+    );
+    console.log(`[inter] BolePIX ${p} → HTTP ${cobRes.status}`);
+    if (cobRes.status === 200 || cobRes.status === 201) { usedPath = p; break; }
+    if (cobRes.status !== 404) break; // non-404 error → stop trying paths
+  }
 
   if (cobRes.status !== 200 && cobRes.status !== 201) {
     console.error("[inter] Bolepix error:", cobRes.status, cobRes.data);
     throw new Error(`Inter cobrança falhou: ${cobRes.status} — ${JSON.stringify(cobRes.data)}`);
   }
+  console.log("[inter] BolePIX respondeu com sucesso no path:", usedPath);
 
   const d = cobRes.data;
   const nossoNumero: string = d.nossoNumero || seuNumero;
@@ -402,23 +414,22 @@ export async function getInterPixStatus(
   const { token, scope } = await getAccessTokenWithScope(config);
   const baseUrl = BASE_URLS[config.environment];
 
-  let path: string;
+  let res = { status: 0, data: {} as any };
   if (scope === "cob.write") {
-    path = `/pix/v2/cob/${txid}`;
+    res = await httpsRequest(baseUrl, `/pix/v2/cob/${txid}`, "GET", config.certificate, config.privateKey, { Authorization: `Bearer ${token}` });
   } else if (scope === "cobv.write") {
-    path = `/pix/v2/cobv/${txid}`;
+    res = await httpsRequest(baseUrl, `/pix/v2/cobv/${txid}`, "GET", config.certificate, config.privateKey, { Authorization: `Bearer ${token}` });
   } else {
-    path = `/cobranca-bolepix/v3/cobrancas/${txid}`;
+    // Try multiple paths for bolepix
+    const statusPaths = [
+      `/cobranca/v3/cobran\u00E7as/${txid}`,
+      `/cobranca-bolepix/v3/cobrancas/${txid}`,
+    ];
+    for (const p of statusPaths) {
+      res = await httpsRequest(baseUrl, p, "GET", config.certificate, config.privateKey, { Authorization: `Bearer ${token}` });
+      if (res.status === 200 || res.status !== 404) break;
+    }
   }
-
-  const res = await httpsRequest(
-    baseUrl,
-    path,
-    "GET",
-    config.certificate,
-    config.privateKey,
-    { Authorization: `Bearer ${token}` }
-  );
 
   if (res.status !== 200) {
     throw new Error(`Inter status check falhou: ${res.status}`);

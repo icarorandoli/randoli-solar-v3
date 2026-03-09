@@ -67,6 +67,15 @@ app.use((req, res, next) => {
   setupWebSocket(httpServer);
   await seedDatabase();
 
+  // Auto-migrate: ensure inter_boleto_linha_digitavel column exists
+  try {
+    const { pool: dbPool } = await import("./db");
+    await dbPool.query(`ALTER TABLE projects ADD COLUMN IF NOT EXISTS inter_boleto_linha_digitavel TEXT`);
+    console.log("[migration] inter_boleto_linha_digitavel column ensured");
+  } catch (migErr: any) {
+    console.warn("[migration] Could not ensure inter_boleto_linha_digitavel column:", migErr.message);
+  }
+
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";

@@ -883,6 +883,364 @@ function ProjectDetailSheet({
   );
 }
 
+const CONCESSIONARIAS_ADMIN = [
+  "ENEL SP", "ENEL CE", "ENEL GO", "ENEL RJ",
+  "CEMIG", "COPEL", "CPFL", "RGE", "ELEKTRO",
+  "ENERGISA", "COELBA", "CELPE", "EQUATORIAL",
+  "COSERN", "CELESC", "LIGHT", "EDP", "Outra",
+];
+const AMPERAGENS_ADMIN = ["15A", "20A", "25A", "30A", "40A", "50A", "60A", "70A", "80A", "100A", "Outro"];
+
+interface AdminProjectForm {
+  clientId: string;
+  title: string;
+  nomeCliente: string;
+  cpfCnpjCliente: string;
+  telefoneCliente: string;
+  concessionaria: string;
+  numeroInstalacao: string;
+  tipoConexao: string;
+  amperagemDisjuntor: string;
+  cep: string;
+  rua: string;
+  numero: string;
+  bairro: string;
+  cidade: string;
+  estado: string;
+  localizacao: string;
+  marcaInversor: string;
+  modeloInversor: string;
+  potenciaInversor: string;
+  quantidadeInversor: string;
+  marcaPainel: string;
+  modeloPainel: string;
+  potenciaPainel: string;
+  quantidadePaineis: string;
+}
+
+function AdminNewProjectDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { toast } = useToast();
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<AdminProjectForm>({
+    defaultValues: {
+      clientId: "", title: "", nomeCliente: "", cpfCnpjCliente: "", telefoneCliente: "",
+      concessionaria: "", numeroInstalacao: "", tipoConexao: "monofasico", amperagemDisjuntor: "",
+      cep: "", rua: "", numero: "", bairro: "", cidade: "", estado: "", localizacao: "",
+      marcaInversor: "", modeloInversor: "", potenciaInversor: "", quantidadeInversor: "",
+      marcaPainel: "", modeloPainel: "", potenciaPainel: "", quantidadePaineis: "",
+    }
+  });
+
+  const { data: clients = [] } = useQuery<Client[]>({ queryKey: ["/api/clients"] });
+  const integradores = clients.filter(c => c.tipo === "integrador" || !c.tipo);
+
+  const cep = watch("cep");
+
+  useEffect(() => {
+    const digits = cep?.replace(/\D/g, "");
+    if (digits?.length === 8) {
+      fetch(`https://viacep.com.br/ws/${digits}/json/`)
+        .then(r => r.json())
+        .then(d => {
+          if (!d.erro) {
+            setValue("rua", d.logradouro || "");
+            setValue("bairro", d.bairro || "");
+            setValue("cidade", d.localidade || "");
+            setValue("estado", d.uf || "");
+          }
+        }).catch(() => {});
+    }
+  }, [cep, setValue]);
+
+  const createMut = useMutation({
+    mutationFn: (data: AdminProjectForm) => apiRequest("POST", "/api/projects", {
+      clientId: data.clientId || undefined,
+      title: data.title,
+      nomeCliente: data.nomeCliente,
+      cpfCnpjCliente: data.cpfCnpjCliente,
+      telefoneCliente: data.telefoneCliente || undefined,
+      concessionaria: data.concessionaria || undefined,
+      numeroInstalacao: data.numeroInstalacao || undefined,
+      tipoConexao: data.tipoConexao || undefined,
+      amperagemDisjuntor: data.amperagemDisjuntor || undefined,
+      cep: data.cep || undefined,
+      rua: data.rua || undefined,
+      numero: data.numero || undefined,
+      bairro: data.bairro || undefined,
+      cidade: data.cidade || undefined,
+      estado: data.estado || undefined,
+      localizacao: data.localizacao || undefined,
+      marcaInversor: data.marcaInversor || undefined,
+      modeloInversor: data.modeloInversor || undefined,
+      potenciaInversor: data.potenciaInversor || undefined,
+      quantidadeInversor: data.quantidadeInversor || undefined,
+      marcaPainel: data.marcaPainel || undefined,
+      modeloPainel: data.modeloPainel || undefined,
+      potenciaPainel: data.potenciaPainel || undefined,
+      quantidadePaineis: data.quantidadePaineis || undefined,
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+      toast({ title: "Projeto criado com sucesso!" });
+      reset();
+      onClose();
+    },
+    onError: (err: any) => toast({ title: "Erro ao criar projeto", description: err.message, variant: "destructive" }),
+  });
+
+  const onSubmit = (data: AdminProjectForm) => createMut.mutate(data);
+
+  const SectionTitle = ({ children }: { children: React.ReactNode }) => (
+    <div className="flex items-center gap-2 pt-4 pb-1">
+      <div className="h-px flex-1 bg-border/40" />
+      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">{children}</span>
+      <div className="h-px flex-1 bg-border/40" />
+    </div>
+  );
+
+  return (
+    <Dialog open={open} onOpenChange={v => { if (!v) { reset(); onClose(); } }}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-lg font-black tracking-tight flex items-center gap-2">
+            <Plus className="h-5 w-5 text-primary" />
+            Novo Projeto
+          </DialogTitle>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-2">
+          <SectionTitle>Integrador</SectionTitle>
+          <div>
+            <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Integrador responsável</Label>
+            <select
+              {...register("clientId")}
+              data-testid="select-admin-new-integrador"
+              className="mt-1.5 w-full h-10 rounded-xl border border-border/40 bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            >
+              <option value="">— Sem integrador (projeto direto) —</option>
+              {integradores.map(c => (
+                <option key={c.id} value={c.id}>{c.name}{c.email ? ` — ${c.email}` : ""}</option>
+              ))}
+            </select>
+          </div>
+
+          <SectionTitle>Identificação</SectionTitle>
+          <div>
+            <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Título do Projeto *</Label>
+            <Input
+              {...register("title", { required: "Obrigatório" })}
+              placeholder="Ex: Residencial João Silva"
+              className="mt-1.5 rounded-xl border-border/40"
+              data-testid="input-new-project-title"
+            />
+            {errors.title && <p className="text-xs text-destructive mt-1">{errors.title.message}</p>}
+          </div>
+
+          <SectionTitle>Dados do Titular</SectionTitle>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Nome Completo *</Label>
+              <Input
+                {...register("nomeCliente", { required: "Obrigatório" })}
+                placeholder="Nome do titular"
+                className="mt-1.5 rounded-xl border-border/40"
+                data-testid="input-new-project-nome"
+              />
+              {errors.nomeCliente && <p className="text-xs text-destructive mt-1">{errors.nomeCliente.message}</p>}
+            </div>
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">CPF / CNPJ *</Label>
+              <Input
+                {...register("cpfCnpjCliente", { required: "Obrigatório" })}
+                placeholder="000.000.000-00"
+                className="mt-1.5 rounded-xl border-border/40"
+                data-testid="input-new-project-cpf"
+              />
+              {errors.cpfCnpjCliente && <p className="text-xs text-destructive mt-1">{errors.cpfCnpjCliente.message}</p>}
+            </div>
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Telefone</Label>
+              <Input
+                {...register("telefoneCliente")}
+                placeholder="(66) 99999-0000"
+                className="mt-1.5 rounded-xl border-border/40"
+                data-testid="input-new-project-telefone"
+              />
+            </div>
+          </div>
+
+          <SectionTitle>Concessionária</SectionTitle>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Concessionária</Label>
+              <select
+                {...register("concessionaria")}
+                data-testid="select-new-project-concessionaria"
+                className="mt-1.5 w-full h-10 rounded-xl border border-border/40 bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              >
+                <option value="">Selecione...</option>
+                {CONCESSIONARIAS_ADMIN.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Nº Instalação</Label>
+              <Input
+                {...register("numeroInstalacao")}
+                placeholder="Número da UC"
+                className="mt-1.5 rounded-xl border-border/40"
+                data-testid="input-new-project-instalacao"
+              />
+            </div>
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Tipo de Conexão</Label>
+              <select
+                {...register("tipoConexao")}
+                data-testid="select-new-project-conexao"
+                className="mt-1.5 w-full h-10 rounded-xl border border-border/40 bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              >
+                <option value="monofasico">Monofásico</option>
+                <option value="bifasico">Bifásico</option>
+                <option value="trifasico">Trifásico</option>
+              </select>
+            </div>
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Disjuntor</Label>
+              <select
+                {...register("amperagemDisjuntor")}
+                data-testid="select-new-project-disjuntor"
+                className="mt-1.5 w-full h-10 rounded-xl border border-border/40 bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              >
+                <option value="">Selecione...</option>
+                {AMPERAGENS_ADMIN.map(a => <option key={a} value={a}>{a}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <SectionTitle>Endereço</SectionTitle>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">CEP</Label>
+              <Input
+                {...register("cep")}
+                placeholder="00000-000"
+                className="mt-1.5 rounded-xl border-border/40"
+                data-testid="input-new-project-cep"
+              />
+            </div>
+            <div className="col-span-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Rua</Label>
+              <Input
+                {...register("rua")}
+                placeholder="Rua, Avenida..."
+                className="mt-1.5 rounded-xl border-border/40"
+                data-testid="input-new-project-rua"
+              />
+            </div>
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Número</Label>
+              <Input
+                {...register("numero")}
+                placeholder="Nº"
+                className="mt-1.5 rounded-xl border-border/40"
+                data-testid="input-new-project-numero"
+              />
+            </div>
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Bairro</Label>
+              <Input
+                {...register("bairro")}
+                placeholder="Bairro"
+                className="mt-1.5 rounded-xl border-border/40"
+                data-testid="input-new-project-bairro"
+              />
+            </div>
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Cidade</Label>
+              <Input
+                {...register("cidade")}
+                placeholder="Cidade"
+                className="mt-1.5 rounded-xl border-border/40"
+                data-testid="input-new-project-cidade"
+              />
+            </div>
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Estado (UF)</Label>
+              <Input
+                {...register("estado")}
+                placeholder="MT"
+                maxLength={2}
+                className="mt-1.5 rounded-xl border-border/40"
+                data-testid="input-new-project-estado"
+              />
+            </div>
+            <div className="col-span-3">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Link Google Maps (opcional)</Label>
+              <Input
+                {...register("localizacao")}
+                placeholder="https://maps.google.com/..."
+                className="mt-1.5 rounded-xl border-border/40"
+                data-testid="input-new-project-maps"
+              />
+            </div>
+          </div>
+
+          <SectionTitle>Equipamentos (opcional)</SectionTitle>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 flex items-center gap-2">
+              <Cpu className="h-3 w-3" /> Inversor
+            </div>
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Marca</Label>
+              <Input {...register("marcaInversor")} placeholder="Ex: Fronius" className="mt-1.5 rounded-xl border-border/40" data-testid="input-new-project-marca-inv" />
+            </div>
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Modelo</Label>
+              <Input {...register("modeloInversor")} placeholder="Ex: Primo GEN24" className="mt-1.5 rounded-xl border-border/40" data-testid="input-new-project-modelo-inv" />
+            </div>
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Potência (W)</Label>
+              <Input {...register("potenciaInversor")} placeholder="Ex: 5000" type="number" className="mt-1.5 rounded-xl border-border/40" data-testid="input-new-project-pot-inv" />
+            </div>
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Quantidade</Label>
+              <Input {...register("quantidadeInversor")} placeholder="Ex: 1" type="number" className="mt-1.5 rounded-xl border-border/40" data-testid="input-new-project-qtd-inv" />
+            </div>
+
+            <div className="col-span-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 flex items-center gap-2 pt-2">
+              <Sun className="h-3 w-3" /> Painéis
+            </div>
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Marca</Label>
+              <Input {...register("marcaPainel")} placeholder="Ex: BYD" className="mt-1.5 rounded-xl border-border/40" data-testid="input-new-project-marca-painel" />
+            </div>
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Modelo</Label>
+              <Input {...register("modeloPainel")} placeholder="Ex: HVS 10.24" className="mt-1.5 rounded-xl border-border/40" data-testid="input-new-project-modelo-painel" />
+            </div>
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Potência Unit. (W)</Label>
+              <Input {...register("potenciaPainel")} placeholder="Ex: 550" type="number" className="mt-1.5 rounded-xl border-border/40" data-testid="input-new-project-pot-painel" />
+            </div>
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Qtd. Painéis</Label>
+              <Input {...register("quantidadePaineis")} placeholder="Ex: 12" type="number" className="mt-1.5 rounded-xl border-border/40" data-testid="input-new-project-qtd-painel" />
+            </div>
+          </div>
+
+          <DialogFooter className="pt-4 gap-2">
+            <Button type="button" variant="outline" onClick={() => { reset(); onClose(); }} className="rounded-xl">
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={createMut.isPending} className="rounded-xl" data-testid="button-admin-create-project">
+              {createMut.isPending ? "Criando..." : "Criar Projeto"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function ProjectsPage() {
   const [search, setSearch] = useState("");
   const [detailProjectId, setDetailProjectId] = useState<string | null>(null);
@@ -890,6 +1248,7 @@ export default function ProjectsPage() {
   const [statusFilter, setStatusFilter] = useState("todos");
   const [tab, setTab] = useState("ativos");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [showNewProject, setShowNewProject] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
   const canDelete = user?.role === "admin";
@@ -1101,6 +1460,17 @@ export default function ProjectsPage() {
                   </SelectContent>
                 </Select>
               </div>
+            )}
+
+            {user?.role === "admin" && (
+              <Button
+                onClick={() => setShowNewProject(true)}
+                className="h-11 rounded-xl px-4 font-bold text-[10px] uppercase tracking-wider"
+                data-testid="button-admin-new-project"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Novo Projeto
+              </Button>
             )}
 
             <Button
@@ -1389,6 +1759,8 @@ export default function ProjectsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AdminNewProjectDialog open={showNewProject} onClose={() => setShowNewProject(false)} />
     </div>
   );
 }

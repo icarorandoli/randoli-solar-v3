@@ -731,20 +731,10 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
       // If status changed, add timeline entry + send email notification
       if (data.status && data.status !== current.status && user) {
-        const statusLabels: Record<string, string> = {
-          orcamento: "Orçamento",
-          aprovado_pagamento_pendente: "Aprovado / Pagamento Pendente",
-          projeto_tecnico: "Projeto Técnico",
-          aguardando_art: "Aguardando Emissão da ART",
-          protocolado: "Protocolado na Concessionária",
-          parecer_acesso: "Parecer de Acesso Emitido",
-          instalacao: "Em Instalação",
-          vistoria: "Aguardando Vistoria",
-          projeto_aprovado: "Projeto Aprovado",
-          homologado: "Homologado — Conexão Aprovada",
-          finalizado: "Projeto Finalizado",
-          cancelado: "Projeto Cancelado",
-        };
+        const allStatusConfigs = await storage.getStatusConfigs();
+        const statusLabels: Record<string, string> = Object.fromEntries(
+          allStatusConfigs.map(c => [c.key, c.label])
+        );
         await storage.addTimelineEntry({
           projectId: (req.params.id as string),
           event: `Status atualizado: ${statusLabels[data.status] || data.status}`,

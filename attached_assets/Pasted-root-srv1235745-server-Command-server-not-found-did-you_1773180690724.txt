@@ -1,0 +1,53 @@
+root@srv1235745:~# server {
+Command 'server' not found, did you mean:
+  command 'serve' from snap serve (0.3.0)
+  command 'serveo' from snap serveo (0.0.10)
+  command 'cserver' from deb freewnn-cserver (1.1.1~a021+cvs20130302-7build1)
+  command 'jserver' from deb freewnn-jserver (1.1.1~a021+cvs20130302-7build1)
+  command 'semver' from deb node-semver (7.5.4+~7.5.0-2)
+  command 'kserver' from deb freewnn-kserver (1.1.1~a021+cvs20130302-7build1)
+See 'snap info <snapname>' for additional versions.
+root@srv1235745:~#     listen 80;
+Command 'listen' not found, but can be installed with:
+apt install ruby-listen
+root@srv1235745:~#     server_name api.randolisolar.com.br;
+server_name: command not found
+root@srv1235745:~#
+root@srv1235745:~#     location / {
+Command 'location' not found, but can be installed with:
+apt install location
+root@srv1235745:~#         proxy_pass http://localhost:8080;
+proxy_pass: command not found
+root@srv1235745:~#         proxy_http_version 1.1;
+proxy_http_version: command not found
+root@srv1235745:~#         proxy_set_header Upgrade $http_upgrade;
+proxy_set_header: command not found
+root@srv1235745:~#         proxy_set_header Connection 'upgrade';
+proxy_set_header: command not found
+root@srv1235745:~#         proxy_set_header Host $host;
+proxy_set_header: command not found
+root@srv1235745:~#         proxy_cache_bypass $http_upgrade;
+proxy_cache_bypass: command not found
+root@srv1235745:~#     }
+-bash: syntax error near unexpected token `}'
+root@srv1235745:~# }
+-bash: syntax error near unexpected token `}'
+root@srv1235745:~# ln -s /etc/nginx/sites-available/evolution /etc/nginx/sites-enabled/
+root@srv1235745:~# nginx -t && systemctl reload nginx
+2026/03/10 22:10:26 [emerg] 3809#3809: open() "/etc/nginx/sites-enabled/evolution" failed (2: No such file or directory) in /etc/nginx/nginx.conf:60
+nginx: configuration file /etc/nginx/nginx.conf test failed
+root@srv1235745:~# certbot --nginx -d evolution.randolisolar.com.br^C
+root@srv1235745:~# ln -s /etc/nginx/sites-available/evolution /etc/nginx/sites-enabled/
+ln: failed to create symbolic link '/etc/nginx/sites-enabled/evolution': File exists
+root@srv1235745:~# nginx -t && systemctl reload nginx
+2026/03/10 22:10:42 [emerg] 3919#3919: open() "/etc/nginx/sites-enabled/evolution" failed (2: No such file or directory) in /etc/nginx/nginx.conf:60
+nginx: configuration file /etc/nginx/nginx.conf test failed
+root@srv1235745:~# certbot --nginx -d api.randolisolar.com.br
+Saving debug log to /var/log/letsencrypt/letsencrypt.log
+Error while running nginx -c /etc/nginx/nginx.conf -t.
+
+2026/03/10 22:10:44 [emerg] 3921#3921: open() "/etc/nginx/sites-enabled/evolution" failed (2: No such file or directory) in /etc/nginx/nginx.conf:60
+nginx: configuration file /etc/nginx/nginx.conf test failed
+
+The nginx plugin is not working; there may be problems with your existing configuration.
+The error was: MisconfigurationError('Error while running nginx -c /etc/nginx/nginx.conf -t.\n\n2026/03/10 22:10:44 [emerg] 3921#3921: open() "/etc/nginx/sites-enabled/evolution" failed (2: No such file or directory) in /etc/nginx/nginx.conf:60\nnginx: configuration file /etc/nginx/nginx.conf test failed\n')

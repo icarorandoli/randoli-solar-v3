@@ -100,6 +100,29 @@ export async function sendWhatsAppNewProjectNotification({
   return sendEvolutionMessage(config, phone, text);
 }
 
+export async function sendWhatsAppAdminCreatedProjectNotification({
+  config,
+  phone,
+  clientName,
+  projectTitle,
+  ticketNumber,
+}: {
+  config: WhatsAppConfig;
+  phone: string;
+  clientName: string;
+  projectTitle: string;
+  ticketNumber: string;
+}): Promise<boolean> {
+  const text =
+    `🌟 *Seu projeto foi cadastrado!*\n\n` +
+    `Olá, *${clientName}*! Seu projeto solar foi cadastrado pela nossa equipe.\n\n` +
+    `📋 *Projeto:* ${projectTitle}\n` +
+    `🔖 *Ticket:* ${ticketNumber}\n\n` +
+    `Nossa equipe já está analisando. Você receberá atualizações por aqui.`;
+
+  return sendEvolutionMessage(config, phone, text);
+}
+
 export async function sendWhatsAppDocumentNotification({
   config,
   phone,

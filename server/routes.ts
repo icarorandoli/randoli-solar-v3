@@ -16,7 +16,7 @@ import { registerObjectStorageRoutes } from "./replit_integrations/object_storag
 import { sendStatusEmail, sendTestEmail, sendPasswordResetEmail, sendDocumentEmail, sendTimelineEmail, type EmailConfig } from "./email";
 import { createPaymentPreference, createPixPayment, getPaymentInfo, getMerchantOrder, verifyWebhookSignature } from "./mercadopago";
 import { createInterPixCharge, getInterPixStatus, testInterConnection, diagnoseInterApi, cleanPem, clearInterTokenCache, type InterConfig } from "./inter";
-import { testWhatsAppConnection, type WhatsAppConfig, sendWhatsAppNewProjectNotification, sendWhatsAppStatusNotification, sendWhatsAppTimelineNotification, sendWhatsAppDocumentNotification, sendWhatsAppPaymentNotification } from "./whatsapp";
+import { testWhatsAppConnection, type WhatsAppConfig, sendWhatsAppNewProjectNotification, sendWhatsAppAdminCreatedProjectNotification, sendWhatsAppStatusNotification, sendWhatsAppTimelineNotification, sendWhatsAppDocumentNotification, sendWhatsAppPaymentNotification } from "./whatsapp";
 import { registerUploadRoutes } from "./upload";
 import { calculateSystemSize, phaseFromConsumption } from "./ai/solar-calculator";
 import { dimensionSystem } from "./ai/solar-dimensioning";
@@ -674,24 +674,41 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         payload: JSON.stringify({ title: project.title, clientId: project.clientId }),
       }).catch(() => {});
 
-      // WhatsApp: notify admin about new project
+      // WhatsApp: notify admin about new project (integrador created) OR notify client (admin created)
       (async () => {
         try {
           const waConfig = await getWhatsAppConfig();
           if (!waConfig.enabled) return;
-          const adminPhone = await getWhatsAppAdminPhone();
-          if (!adminPhone) return;
           const client = project.clientId ? await storage.getClient(project.clientId) : null;
-          const integradorName = client?.name || user?.name || "Integrador";
-          await sendWhatsAppNewProjectNotification({
-            config: waConfig,
-            phone: adminPhone,
-            adminName: "Admin",
-            integradorName,
-            projectTitle: project.title,
-            ticketNumber: project.ticketNumber || "",
-            potencia: project.potpicoKwp || undefined,
-          });
+
+          if (user?.role === "admin") {
+            // Admin created the project: notify the client/integrador
+            const clientPhone = client?.phone;
+            const clientName = client?.name || "Cliente";
+            if (clientPhone) {
+              await sendWhatsAppAdminCreatedProjectNotification({
+                config: waConfig,
+                phone: clientPhone,
+                clientName,
+                projectTitle: project.title,
+                ticketNumber: project.ticketNumber || "",
+              });
+            }
+          } else {
+            // Integrador created the project: notify admin
+            const adminPhone = await getWhatsAppAdminPhone();
+            if (!adminPhone) return;
+            const integradorName = client?.name || user?.name || "Integrador";
+            await sendWhatsAppNewProjectNotification({
+              config: waConfig,
+              phone: adminPhone,
+              adminName: "Admin",
+              integradorName,
+              projectTitle: project.title,
+              ticketNumber: project.ticketNumber || "",
+              potencia: project.potpicoKwp || undefined,
+            });
+          }
         } catch (err) { console.error("[whatsapp] Erro ao notificar novo projeto:", err); }
       })();
 

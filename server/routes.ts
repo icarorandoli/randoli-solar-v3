@@ -16,6 +16,7 @@ import { registerObjectStorageRoutes } from "./replit_integrations/object_storag
 import { sendStatusEmail, sendTestEmail, sendPasswordResetEmail, sendDocumentEmail, sendTimelineEmail, type EmailConfig } from "./email";
 import { createPaymentPreference, createPixPayment, getPaymentInfo, getMerchantOrder, verifyWebhookSignature } from "./mercadopago";
 import { createInterPixCharge, getInterPixStatus, testInterConnection, diagnoseInterApi, cleanPem, clearInterTokenCache, type InterConfig } from "./inter";
+import { testWhatsAppConnection, type WhatsAppConfig, sendWhatsAppNewProjectNotification, sendWhatsAppStatusNotification, sendWhatsAppTimelineNotification, sendWhatsAppDocumentNotification, sendWhatsAppPaymentNotification } from "./whatsapp";
 import { registerUploadRoutes } from "./upload";
 import { calculateSystemSize, phaseFromConsumption } from "./ai/solar-calculator";
 import { dimensionSystem } from "./ai/solar-dimensioning";
@@ -83,6 +84,21 @@ async function getSettingsMap(): Promise<Record<string, string>> {
   const map: Record<string, string> = {};
   for (const s of settings) { if (s.value) map[s.key] = s.value; }
   return map;
+}
+
+async function getWhatsAppConfig(): Promise<WhatsAppConfig> {
+  const map = await getSettingsMap();
+  return {
+    enabled: map["whatsapp_enabled"] === "true",
+    apiUrl: map["whatsapp_api_url"] || "",
+    apiKey: map["whatsapp_api_key"] || "",
+    instanceName: map["whatsapp_instance_name"] || "",
+  };
+}
+
+async function getWhatsAppAdminPhone(): Promise<string> {
+  const map = await getSettingsMap();
+  return map["whatsapp_admin_phone"] || "";
 }
 
 async function getEmailConfig(): Promise<EmailConfig> {
@@ -658,6 +674,27 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         payload: JSON.stringify({ title: project.title, clientId: project.clientId }),
       }).catch(() => {});
 
+      // WhatsApp: notify admin about new project
+      (async () => {
+        try {
+          const waConfig = await getWhatsAppConfig();
+          if (!waConfig.enabled) return;
+          const adminPhone = await getWhatsAppAdminPhone();
+          if (!adminPhone) return;
+          const client = project.clientId ? await storage.getClient(project.clientId) : null;
+          const integradorName = client?.name || user?.name || "Integrador";
+          await sendWhatsAppNewProjectNotification({
+            config: waConfig,
+            phone: adminPhone,
+            adminName: "Admin",
+            integradorName,
+            projectTitle: project.title,
+            ticketNumber: project.ticketNumber || "",
+            potencia: project.potpicoKwp || undefined,
+          });
+        } catch (err) { console.error("[whatsapp] Erro ao notificar novo projeto:", err); }
+      })();
+
       res.status(201).json(project);
     } catch (err: any) { res.status(400).json({ error: err.message }); }
   });
@@ -667,6 +704,17 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const user = await getCurrentUser(req);
       const current = await storage.getProject((req.params.id as string));
       if (!current) return res.status(404).json({ error: "Não encontrado" });
+
+      // Integrador can only edit their own projects (limited fields)
+      const isInternal = user && ["admin", "engenharia", "financeiro", "tecnico"].includes(user.role);
+      if (!isInternal) {
+        const client = await storage.getClientByUserId(user!.id);
+        if (!client || current.clientId !== client.id) return res.status(403).json({ error: "Sem permissão" });
+        // Integradores cannot change status or financial fields
+        delete req.body.status;
+        delete req.body.valor;
+        delete req.body.archived;
+      }
 
       // engenharia and tecnico cannot modify financial fields
       if (user && ["engenharia", "tecnico"].includes(user.role)) {
@@ -818,6 +866,26 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             config: emailConfig,
           })).catch(err => console.error("[email] Falha ao enviar:", err));
         }
+
+        // WhatsApp: notify integrador about status change
+        const statusLabelsWa = statusLabels;
+        (async () => {
+          try {
+            const waConfig = await getWhatsAppConfig();
+            if (!waConfig.enabled) return;
+            const intPhone = current.integrador?.phone || current.client?.phone;
+            if (!intPhone) return;
+            await sendWhatsAppStatusNotification({
+              config: waConfig,
+              phone: intPhone,
+              integradorName: integradorName || "Integrador",
+              projectTitle: current.title,
+              ticketNumber: current.ticketNumber || "",
+              newStatus: statusLabelsWa[data.status as string] || (data.status as string),
+              changedBy: user.name || user.username,
+            });
+          } catch (err) { console.error("[whatsapp] Erro ao notificar status:", err); }
+        })();
       }
 
       // Regenerate payment if valor changed on a project with existing payment
@@ -1214,6 +1282,43 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         }
       }
 
+      // WhatsApp: notify about document upload
+      (async () => {
+        try {
+          const waConfig = await getWhatsAppConfig();
+          if (!waConfig.enabled) return;
+          const proj = await storage.getProject((req.params.id as string));
+          if (!proj) return;
+          if (isAdminUpload) {
+            const intPhone = proj.integrador?.phone || proj.client?.phone;
+            if (intPhone) {
+              await sendWhatsAppDocumentNotification({
+                config: waConfig,
+                phone: intPhone,
+                recipientName: proj.integrador?.name || proj.client?.name || "Integrador",
+                projectTitle: proj.title,
+                ticketNumber: proj.ticketNumber || "",
+                documentName: doc.name,
+                uploadedBy: user?.name || "Randoli Engenharia",
+              });
+            }
+          } else {
+            const adminPhone = await getWhatsAppAdminPhone();
+            if (adminPhone) {
+              await sendWhatsAppDocumentNotification({
+                config: waConfig,
+                phone: adminPhone,
+                recipientName: "Admin",
+                projectTitle: proj.title,
+                ticketNumber: proj.ticketNumber || "",
+                documentName: doc.name,
+                uploadedBy: user?.name || "Integrador",
+              });
+            }
+          }
+        } catch (err) { console.error("[whatsapp] Erro ao notificar documento:", err); }
+      })();
+
       res.status(201).json(doc);
     } catch (err: any) { res.status(400).json({ error: err.message }); }
   });
@@ -1287,6 +1392,43 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           }
         }
       }
+
+      // WhatsApp: notify about timeline note
+      (async () => {
+        try {
+          const waConfig = await getWhatsAppConfig();
+          if (!waConfig.enabled) return;
+          const proj = await storage.getProject((req.params.id as string));
+          if (!proj) return;
+          if (isAdminAction) {
+            const intPhone = proj.integrador?.phone || proj.client?.phone;
+            if (intPhone) {
+              await sendWhatsAppTimelineNotification({
+                config: waConfig,
+                phone: intPhone,
+                recipientName: proj.integrador?.name || proj.client?.name || "Integrador",
+                projectTitle: proj.title,
+                ticketNumber: proj.ticketNumber || "",
+                event: req.body.event,
+                details: req.body.details,
+              });
+            }
+          } else {
+            const adminPhone = await getWhatsAppAdminPhone();
+            if (adminPhone) {
+              await sendWhatsAppTimelineNotification({
+                config: waConfig,
+                phone: adminPhone,
+                recipientName: "Admin",
+                projectTitle: proj.title,
+                ticketNumber: proj.ticketNumber || "",
+                event: req.body.event,
+                details: req.body.details,
+              });
+            }
+          }
+        } catch (err) { console.error("[whatsapp] Erro ao notificar timeline:", err); }
+      })();
 
       res.status(201).json(entry);
     } catch (err: any) { res.status(400).json({ error: err.message }); }
@@ -1396,6 +1538,30 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           config: emailConfig,
         })).catch(err => console.error("[email] Falha ao enviar:", err));
       }
+
+      // WhatsApp: notify both admin and integrador about payment
+      (async () => {
+        try {
+          const waConfig = await getWhatsAppConfig();
+          if (!waConfig.enabled) return;
+          const intPhone = project.integrador?.phone || project.client?.phone;
+          const intName = project.integrador?.name || project.client?.name || "Integrador";
+          const valor = paidValue.toFixed(2).replace(".", ",");
+          if (intPhone) {
+            await sendWhatsAppPaymentNotification({
+              config: waConfig, phone: intPhone, recipientName: intName,
+              projectTitle: project.title, ticketNumber: project.ticketNumber || "", valor,
+            });
+          }
+          const adminPhone = await getWhatsAppAdminPhone();
+          if (adminPhone) {
+            await sendWhatsAppPaymentNotification({
+              config: waConfig, phone: adminPhone, recipientName: "Admin",
+              projectTitle: project.title, ticketNumber: project.ticketNumber || "", valor,
+            });
+          }
+        } catch (err) { console.error("[whatsapp] Erro ao notificar pagamento:", err); }
+      })();
 
       console.log(`[mercadopago] ✓ Projeto ${projectId} avançado para projeto_tecnico`);
       return { projectId, status: paymentStatus, advanced: true };
@@ -1688,6 +1854,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const MASKED_KEYS = new Set([
         "email_smtp_pass", "mp_access_token", "mp_webhook_secret",
         "inter_client_secret", "inter_certificate", "inter_private_key", "inter_webhook_key", "inter_webhook_cert",
+        "whatsapp_api_key",
       ]);
       for (const s of settings) {
         if (!s.value) continue;
@@ -1710,12 +1877,37 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const MASKED_KEYS = new Set([
         "email_smtp_pass", "mp_access_token", "mp_webhook_secret",
         "inter_client_secret", "inter_certificate", "inter_private_key", "inter_webhook_key", "inter_webhook_cert",
+        "whatsapp_api_key",
       ]);
       if (MASKED_KEYS.has(key) && value === "••••••••") {
         return res.json({ key, value });
       }
       res.json(await storage.setSiteSetting(key, value));
     } catch { res.status(500).json({ error: "Erro" }); }
+  });
+
+  // ── WHATSAPP TEST CONNECTION ──────────────────────────────────────
+  app.post("/api/whatsapp/test", requireAuth, async (req, res) => {
+    try {
+      const user = await getCurrentUser(req);
+      if (user?.role !== "admin") return res.status(403).json({ error: "Sem permissão" });
+      const { apiUrl, apiKey, instanceName } = req.body;
+      const settingsMap = await getSettingsMap();
+      const config: WhatsAppConfig = {
+        enabled: true,
+        apiUrl: apiUrl || "",
+        apiKey: (apiKey && apiKey !== "••••••••") ? apiKey : (settingsMap["whatsapp_api_key"] || ""),
+        instanceName: instanceName || "",
+      };
+      const result = await testWhatsAppConnection(config);
+      if (result.ok) {
+        res.json({ ok: true, message: result.message });
+      } else {
+        res.status(400).json({ error: result.message });
+      }
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "Erro ao testar WhatsApp" });
+    }
   });
 
   // ── INTER TEST CONNECTION ──────────────────────────────────────────
@@ -1901,6 +2093,30 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           config: emailConfig,
         })).catch(err => console.error("[email] Falha ao enviar:", err));
       }
+
+      // WhatsApp: notify both admin and integrador about Inter payment
+      (async () => {
+        try {
+          const waConfig = await getWhatsAppConfig();
+          if (!waConfig.enabled) return;
+          const intPhone = project.integrador?.phone || project.client?.phone;
+          const intName = project.integrador?.name || project.client?.name || "Integrador";
+          const valor = paidValue ? paidValue.toFixed(2).replace(".", ",") : "N/A";
+          if (intPhone) {
+            await sendWhatsAppPaymentNotification({
+              config: waConfig, phone: intPhone, recipientName: intName,
+              projectTitle: project.title, ticketNumber: project.ticketNumber || "", valor,
+            });
+          }
+          const adminPhone = await getWhatsAppAdminPhone();
+          if (adminPhone) {
+            await sendWhatsAppPaymentNotification({
+              config: waConfig, phone: adminPhone, recipientName: "Admin",
+              projectTitle: project.title, ticketNumber: project.ticketNumber || "", valor,
+            });
+          }
+        } catch (err) { console.error("[whatsapp] Erro ao notificar pagamento Inter:", err); }
+      })();
 
       console.log(`[inter] ✓ Projeto ${project.id} avançado para projeto_tecnico via PIX ${txid}`);
     } catch (err) {

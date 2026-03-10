@@ -25,6 +25,7 @@ import { eq, desc, count, isNull, not, gte, lte, and, or, ilike } from "drizzle-
 export type IntegradorInfo = {
   name: string;
   email: string | null;
+  phone: string | null;
   cpfCnpj: string | null;
   rua: string | null;
   numero: string | null;
@@ -206,6 +207,7 @@ export class DatabaseStorage implements IStorage {
         const [u] = await db.select({
           name: users.name,
           email: users.email,
+          phone: users.phone,
           cpfCnpj: users.cpfCnpj,
           rua: users.rua,
           numero: users.numero,
@@ -217,6 +219,7 @@ export class DatabaseStorage implements IStorage {
         if (u) integrador = {
           name: u.name,
           email: u.email,
+          phone: u.phone,
           cpfCnpj: u.cpfCnpj,
           rua: u.rua,
           numero: u.numero,

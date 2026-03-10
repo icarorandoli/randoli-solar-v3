@@ -345,6 +345,13 @@ export default function SettingsPage() {
   const [supportButtonText, setSupportButtonText] = useState("Falar com Engenheiro");
   const [supportWhatsappUrl, setSupportWhatsappUrl] = useState("https://wa.me/seunumerowhatsapp");
 
+  const [whatsappEnabled, setWhatsappEnabled] = useState(false);
+  const [whatsappApiUrl, setWhatsappApiUrl] = useState("");
+  const [whatsappApiKey, setWhatsappApiKey] = useState("");
+  const [whatsappInstanceName, setWhatsappInstanceName] = useState("");
+  const [whatsappAdminPhone, setWhatsappAdminPhone] = useState("");
+  const [showWhatsappKey, setShowWhatsappKey] = useState(false);
+
   const [faviconUrl, setFaviconUrl] = useState("");
   const [initialized, setInitialized] = useState(false);
 
@@ -389,6 +396,11 @@ export default function SettingsPage() {
     if (settings.support_description) setSupportDescription(settings.support_description);
     if (settings.support_button_text) setSupportButtonText(settings.support_button_text);
     if (settings.support_whatsapp_url) setSupportWhatsappUrl(settings.support_whatsapp_url);
+    setWhatsappEnabled(settings.whatsapp_enabled === "true");
+    setWhatsappApiUrl(settings.whatsapp_api_url || "");
+    setWhatsappApiKey(settings.whatsapp_api_key || "");
+    setWhatsappInstanceName(settings.whatsapp_instance_name || "");
+    setWhatsappAdminPhone(settings.whatsapp_admin_phone || "");
     setInitialized(true);
   }
 
@@ -452,7 +464,14 @@ export default function SettingsPage() {
         { key: "support_description", value: supportDescription },
         { key: "support_button_text", value: supportButtonText },
         { key: "support_whatsapp_url", value: supportWhatsappUrl },
+        { key: "whatsapp_enabled", value: whatsappEnabled ? "true" : "false" },
+        { key: "whatsapp_api_url", value: whatsappApiUrl },
+        { key: "whatsapp_instance_name", value: whatsappInstanceName },
+        { key: "whatsapp_admin_phone", value: whatsappAdminPhone },
       );
+      if (whatsappApiKey && whatsappApiKey !== "••••••••") {
+        pairs.push({ key: "whatsapp_api_key", value: whatsappApiKey });
+      }
       await Promise.all(pairs.map(p => apiRequest("POST", "/api/settings", p)));
     },
     onSuccess: () => {
@@ -472,6 +491,25 @@ export default function SettingsPage() {
     },
     onError: async (err: any) => {
       let msg = "Erro ao enviar e-mail de teste";
+      try { const body = await err.json?.(); if (body?.error) msg = body.error; } catch {}
+      toast({ title: msg, variant: "destructive" });
+    },
+  });
+
+  const testWhatsappMut = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/whatsapp/test", {
+        apiUrl: whatsappApiUrl,
+        apiKey: whatsappApiKey !== "••••••••" ? whatsappApiKey : undefined,
+        instanceName: whatsappInstanceName,
+      });
+      return res.json();
+    },
+    onSuccess: (data: any) => {
+      toast({ title: data.message || "Conexão testada com sucesso!" });
+    },
+    onError: async (err: any) => {
+      let msg = "Erro ao testar conexão WhatsApp";
       try { const body = await err.json?.(); if (body?.error) msg = body.error; } catch {}
       toast({ title: msg, variant: "destructive" });
     },
@@ -581,6 +619,9 @@ export default function SettingsPage() {
                 </TabsTrigger>
                 <TabsTrigger value="notifications" className="w-full justify-start px-4 py-2 h-10 data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-lg transition-all border border-transparent data-[state=active]:border-primary/20">
                   <Mail className="h-4 w-4 mr-2" /> Notificações
+                </TabsTrigger>
+                <TabsTrigger value="whatsapp" className="w-full justify-start px-4 py-2 h-10 data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-lg transition-all border border-transparent data-[state=active]:border-primary/20">
+                  <Send className="h-4 w-4 mr-2" /> WhatsApp
                 </TabsTrigger>
                 <TabsTrigger value="integrations" className="w-full justify-start px-4 py-2 h-10 data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-lg transition-all border border-transparent data-[state=active]:border-primary/20">
                   <CreditCard className="h-4 w-4 mr-2" /> Pagamentos
@@ -747,6 +788,78 @@ export default function SettingsPage() {
                         {testEmailMut.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
                         Testar SMTP
                       </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="whatsapp" className="mt-0 space-y-6">
+                <Card className="border-muted/40 shadow-md">
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <Send className="h-4 w-4 text-green-600" />
+                      <CardTitle className="text-lg">WhatsApp (Evolution API)</CardTitle>
+                    </div>
+                    <CardDescription>Configure notificações automáticas via WhatsApp usando a Evolution API.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-muted/40 mb-2">
+                      <div className="space-y-0.5">
+                        <Label className="text-base font-semibold">WhatsApp Ativo</Label>
+                        <p className="text-xs text-muted-foreground">Habilitar envio automático de mensagens via WhatsApp.</p>
+                      </div>
+                      <Switch checked={whatsappEnabled} onCheckedChange={setWhatsappEnabled} data-testid="switch-whatsapp-enabled" />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>URL da API (Evolution)</Label>
+                        <Input value={whatsappApiUrl} onChange={e => setWhatsappApiUrl(e.target.value)} placeholder="https://sua-evolution-api.com" data-testid="input-whatsapp-api-url" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Nome da Instância</Label>
+                        <Input value={whatsappInstanceName} onChange={e => setWhatsappInstanceName(e.target.value)} placeholder="randoli-solar" data-testid="input-whatsapp-instance" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>API Key</Label>
+                        <div className="relative">
+                          <Input
+                            type={showWhatsappKey ? "text" : "password"}
+                            value={whatsappApiKey}
+                            onChange={e => setWhatsappApiKey(e.target.value)}
+                            placeholder="••••••••"
+                            className="pr-10"
+                            data-testid="input-whatsapp-api-key"
+                          />
+                          <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" onClick={() => setShowWhatsappKey(!showWhatsappKey)}>
+                            {showWhatsappKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Telefone do Admin (notificações)</Label>
+                        <Input value={whatsappAdminPhone} onChange={e => setWhatsappAdminPhone(e.target.value)} placeholder="(62) 99999-9999" data-testid="input-whatsapp-admin-phone" />
+                        <p className="text-[10px] text-muted-foreground">Número que receberá notificações de novos projetos.</p>
+                      </div>
+                    </div>
+                    <div className="pt-4 border-t border-muted/40">
+                      <Button
+                        variant="outline"
+                        onClick={() => testWhatsappMut.mutate()}
+                        disabled={testWhatsappMut.isPending}
+                        data-testid="button-test-whatsapp"
+                      >
+                        {testWhatsappMut.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
+                        Testar Conexão
+                      </Button>
+                    </div>
+                    <div className="rounded-lg bg-muted/30 p-4 border border-muted/40">
+                      <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Quando o WhatsApp notifica:</p>
+                      <ul className="text-xs text-muted-foreground space-y-1">
+                        <li>• Admin recebe aviso quando integrador cadastra um novo projeto</li>
+                        <li>• Integrador recebe aviso quando admin altera o status do projeto</li>
+                        <li>• Integrador recebe aviso quando admin adiciona documento ou nota na timeline</li>
+                        <li>• Integrador e admin recebem aviso quando pagamento é confirmado</li>
+                      </ul>
                     </div>
                   </CardContent>
                 </Card>

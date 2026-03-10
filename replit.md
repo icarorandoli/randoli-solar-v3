@@ -139,6 +139,7 @@ server/
   websocket.ts   — WebSocket server (auth, mapa de conexões, broadcast por userId/admin)
   mercadopago.ts — Integração Mercado Pago (criar preferência, verificar pagamento, validar webhook)
   email.ts       — Envio de e-mails SMTP (notificações de status + link de pagamento)
+  whatsapp.ts    — WhatsApp via Evolution API (notificações de status, projetos, documentos, timeline, pagamento)
   seed.ts        — Dados de exemplo (inclui seed de pricing_ranges)
   db.ts          — Conexão PostgreSQL
 
@@ -154,6 +155,7 @@ shared/
 - Object Storage: `DEFAULT_OBJECT_STORAGE_BUCKET_ID`, `PRIVATE_OBJECT_DIR`, `PUBLIC_OBJECT_SEARCH_PATHS`
 - Mercado Pago: `MP_ACCESS_TOKEN` (env var ou site_settings)
 - Inter Cobrança: certificado mTLS + client_id/secret via site_settings; scopes necessários: `boleto-cobranca.write` + `boleto-cobranca.read`
+- WhatsApp (Evolution API): `whatsapp_api_url`, `whatsapp_api_key` (masked), `whatsapp_instance_name`, `whatsapp_admin_phone`, `whatsapp_enabled` via site_settings
 - GitHub: repo `icarorandoli/Novo-crm-projetos`, VPS: `cd /root/randoli-solar && git pull origin main && npm run build && pm2 restart all`
 
 ## Segurança (Auditoria Março/2026)
@@ -166,6 +168,7 @@ shared/
 - Rate limiting no login: máx 10 tentativas por IP a cada 15min
 
 ## Funcionalidades Recentes
+- WhatsApp (Evolution API): notificações automáticas para admin (novo projeto) e integrador (mudança de status, documentos, timeline, pagamento); aba "WhatsApp" em Configurações com teste de conexão
 - Filtros avançados na lista de projetos: por cliente, concessionária, status
 - Busca melhorada: ticket number, endereço, nº instalação
 - Exportação CSV dos projetos filtrados (com UTF-8 BOM para Excel)

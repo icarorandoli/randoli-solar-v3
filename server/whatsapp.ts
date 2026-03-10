@@ -26,7 +26,7 @@ async function sendEvolutionMessage(config: WhatsAppConfig, phone: string, text:
       },
       body: JSON.stringify({
         number,
-        text,
+        textMessage: { text },
       }),
     });
 

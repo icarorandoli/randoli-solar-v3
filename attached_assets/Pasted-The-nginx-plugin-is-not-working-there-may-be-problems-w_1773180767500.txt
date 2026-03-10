@@ -1,0 +1,42 @@
+The nginx plugin is not working; there may be problems with your existing configuration.
+The error was: MisconfigurationError('Error while running nginx -c /etc/nginx/nginx.conf -t.\n\n2026/03/10 22:10:44 [emerg] 3921#3921: open() "/etc/nginx/sites-enabled/evolution" failed (2: No such file or directory) in /etc/nginx/nginx.conf:60\nnginx: configuration file /etc/nginx/nginx.conf test failed\n')
+root@srv1235745:~# rm /etc/nginx/sites-enabled/evolution
+root@srv1235745:~# cat > /etc/nginx/sites-available/api-evolution << 'EOF'
+> server {
+>     listen 80;
+>     server_name api.randolisolar.com.br;
+>
+>     location / {
+>         proxy_pass http://localhost:8080;
+>         proxy_http_version 1.1;
+>         proxy_set_header Upgrade $http_upgrade;
+>         proxy_set_header Connection 'upgrade';
+>         proxy_set_header Host $host;
+>         proxy_cache_bypass $http_upgrade;
+>     }
+> }
+> EOF
+root@srv1235745:~# ln -s /etc/nginx/sites-available/api-evolution /etc/nginx/sites-enabled/ && nginx -t && systemctl reload nginx
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+root@srv1235745:~# certbot --nginx -d api.randolisolar.com.br
+Saving debug log to /var/log/letsencrypt/letsencrypt.log
+Requesting a certificate for api.randolisolar.com.br
+
+Successfully received certificate.
+Certificate is saved at: /etc/letsencrypt/live/api.randolisolar.com.br/fullchain.pem
+Key is saved at:         /etc/letsencrypt/live/api.randolisolar.com.br/privkey.pem
+This certificate expires on 2026-06-08.
+These files will be updated when the certificate renews.
+Certbot has set up a scheduled task to automatically renew this certificate in the background.
+
+Deploying certificate
+Successfully deployed certificate for api.randolisolar.com.br to /etc/nginx/sites-enabled/api-evolution
+Congratulations! You have successfully enabled HTTPS on https://api.randolisolar.com.br
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+If you like Certbot, please consider supporting our work by:
+ * Donating to ISRG / Let's Encrypt:   https://letsencrypt.org/donate
+ * Donating to EFF:                    https://eff.org/donate-le
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+root@srv1235745:~#

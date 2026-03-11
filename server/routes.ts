@@ -794,6 +794,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
                 valor: valorStr,
                 integradorEmail: intEmail || undefined,
                 integradorName: intName || undefined,
+                integradorCpfCnpj: intCpfCnpjAuto || undefined,
                 webhookUrl,
               };
               const pref = await createPaymentPreference(paymentArgs);
@@ -919,6 +920,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
                 valor: data.valor,
                 integradorEmail: intEmail2 || undefined,
                 integradorName: intName2 || undefined,
+                integradorCpfCnpj: intCpfCnpj2 || undefined,
                 webhookUrl,
               };
               const pref = await createPaymentPreference(paymentArgs);
@@ -1124,6 +1126,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             valor: project.valor,
             integradorEmail: intEmail || undefined,
             integradorName: intName || undefined,
+            integradorCpfCnpj: intCpfCnpj || undefined,
             webhookUrl,
           };
           const pref = await createPaymentPreference(paymentArgs);

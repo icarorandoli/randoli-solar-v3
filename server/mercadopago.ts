@@ -119,6 +119,7 @@ export async function createPixPayment({
   valor,
   integradorEmail,
   integradorName,
+  integradorCpfCnpj,
   webhookUrl,
 }: {
   accessToken: string;
@@ -128,6 +129,7 @@ export async function createPixPayment({
   valor: string;
   integradorEmail?: string;
   integradorName?: string;
+  integradorCpfCnpj?: string;
   webhookUrl?: string;
 }): Promise<PixPaymentResult> {
   const numericValue = parseFloat(
@@ -139,16 +141,28 @@ export async function createPixPayment({
   }
 
   const ticket = ticketNumber || projectId.slice(0, 8);
+
+  // Build payer object — MP production requires identification for PIX
+  const payer: any = {
+    email: integradorEmail || "cliente@randolisolar.com.br",
+    first_name: integradorName?.split(" ")[0] || "Cliente",
+    last_name: integradorName?.split(" ").slice(1).join(" ") || "Solar",
+  };
+  if (integradorCpfCnpj) {
+    const digits = integradorCpfCnpj.replace(/\D/g, "");
+    if (digits.length === 11) {
+      payer.identification = { type: "CPF", number: digits };
+    } else if (digits.length === 14) {
+      payer.identification = { type: "CNPJ", number: digits };
+    }
+  }
+
   const body: any = {
     transaction_amount: numericValue,
     payment_method_id: "pix",
     description: `Projeto Solar — ${projectTitle} (${ticket})`,
     external_reference: projectId,
-    payer: {
-      email: integradorEmail || "cliente@randolisolar.com.br",
-      first_name: integradorName?.split(" ")[0] || "Cliente",
-      last_name: integradorName?.split(" ").slice(1).join(" ") || "Solar",
-    },
+    payer,
   };
 
   if (webhookUrl) {

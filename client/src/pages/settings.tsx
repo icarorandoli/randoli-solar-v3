@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import {
-  Save, Upload, Zap, Building2, ImageOff, Mail, Send, Eye, EyeOff,
+  Save, Upload, Zap, ImageOff, Mail, Send, Eye, EyeOff,
   CreditCard, MonitorPlay, Image, Settings2, Globe, ShieldCheck, Palette, ArrowRight,
   CheckCircle2, XCircle, Loader2, FolderOpen, FileKey, FileBadge, FileText, Receipt
 } from "lucide-react";
@@ -309,23 +309,6 @@ export default function SettingsPage() {
   const [mpWebhookSecret, setMpWebhookSecret] = useState("");
   const [showMpToken, setShowMpToken] = useState(false);
 
-  const [interEnabled, setInterEnabled] = useState(false);
-  const [interEnvironment, setInterEnvironment] = useState<"sandbox" | "production">("production");
-  const [interClientId, setInterClientId] = useState("");
-  const [interClientSecret, setInterClientSecret] = useState("");
-  const [interCertificate, setInterCertificate] = useState("");
-  const [interPrivateKey, setInterPrivateKey] = useState("");
-  const [interPixKey, setInterPixKey] = useState("");
-  const [interWebhookKey, setInterWebhookKey] = useState("");
-  const [interWebhookCert, setInterWebhookCert] = useState("");
-  const [showInterSecret, setShowInterSecret] = useState(false);
-  const [showInterCert, setShowInterCert] = useState(false);
-  const [showInterKey, setShowInterKey] = useState(false);
-  const [showInterWebhookCert, setShowInterWebhookCert] = useState(false);
-  const [certUploadLoading, setCertUploadLoading] = useState(false);
-  const zipFileRef = useRef<HTMLInputElement>(null);
-  const certFileRef = useRef<HTMLInputElement>(null);
-  const keyFileRef = useRef<HTMLInputElement>(null);
 
   const [loginBadgeText, setLoginBadgeText] = useState("Portal SaaS de Homologação");
   const [loginHeadline, setLoginHeadline] = useState("Gerencie projetos de energia solar de forma simples e eficiente");
@@ -372,15 +355,6 @@ export default function SettingsPage() {
     setMpAccessToken(settings.mp_access_token || "");
     setMpPublicKey(settings.mp_public_key || "");
     setMpWebhookSecret(settings.mp_webhook_secret || "");
-    setInterEnabled(settings.inter_enabled === "true");
-    setInterEnvironment((settings.inter_environment as "sandbox" | "production") || "production");
-    setInterClientId(settings.inter_client_id || "");
-    setInterClientSecret(settings.inter_client_secret || "");
-    setInterCertificate(settings.inter_certificate || "");
-    setInterPrivateKey(settings.inter_private_key || "");
-    setInterPixKey(settings.inter_pix_key || "");
-    setInterWebhookKey(settings.inter_webhook_key || "");
-    setInterWebhookCert(settings.inter_webhook_cert || "");
     if (settings.login_badge_text) setLoginBadgeText(settings.login_badge_text);
     if (settings.login_headline) setLoginHeadline(settings.login_headline);
     if (settings.login_headline_highlight) setLoginHighlight(settings.login_headline_highlight);
@@ -427,25 +401,6 @@ export default function SettingsPage() {
       }
       if (mpWebhookSecret && mpWebhookSecret !== "••••••••") {
         pairs.push({ key: "mp_webhook_secret", value: mpWebhookSecret });
-      }
-      pairs.push({ key: "inter_enabled", value: interEnabled ? "true" : "false" });
-      pairs.push({ key: "inter_environment", value: interEnvironment });
-      pairs.push({ key: "inter_client_id", value: interClientId });
-      pairs.push({ key: "inter_pix_key", value: interPixKey });
-      if (interClientSecret && interClientSecret !== "••••••••") {
-        pairs.push({ key: "inter_client_secret", value: interClientSecret });
-      }
-      if (interCertificate && interCertificate !== "••••••••") {
-        pairs.push({ key: "inter_certificate", value: interCertificate });
-      }
-      if (interPrivateKey && interPrivateKey !== "••••••••") {
-        pairs.push({ key: "inter_private_key", value: interPrivateKey });
-      }
-      if (interWebhookKey && interWebhookKey !== "••••••••") {
-        pairs.push({ key: "inter_webhook_key", value: interWebhookKey });
-      }
-      if (interWebhookCert && interWebhookCert !== "••••••••") {
-        pairs.push({ key: "inter_webhook_cert", value: interWebhookCert });
       }
       pairs.push({ key: "favicon_url", value: faviconUrl });
       pairs.push(
@@ -514,76 +469,6 @@ export default function SettingsPage() {
       toast({ title: msg, variant: "destructive" });
     },
   });
-
-  const testInterMut = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/inter/test", {
-        clientId: interClientId,
-        clientSecret: interClientSecret !== "••••••••" ? interClientSecret : undefined,
-        certificate: interCertificate !== "••••••••" ? interCertificate : undefined,
-        privateKey: interPrivateKey !== "••••••••" ? interPrivateKey : undefined,
-        pixKey: interPixKey,
-        environment: interEnvironment,
-      });
-      return res.json();
-    },
-    onSuccess: (data: { ok: boolean; message: string }) => {
-      if (data.ok) {
-        toast({ title: "Banco Inter conectado!", description: data.message });
-      } else {
-        toast({ title: "Falha na conexão", description: data.message, variant: "destructive" });
-      }
-    },
-    onError: () => toast({ title: "Erro ao testar conexão Inter", variant: "destructive" }),
-  });
-
-  const [interDiagResult, setInterDiagResult] = useState<any>(null);
-  const diagInterMut = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/inter/diagnose", {
-        clientId: interClientId,
-        environment: interEnvironment,
-      });
-      return res.json();
-    },
-    onSuccess: (data: any) => { setInterDiagResult(data); },
-    onError: () => toast({ title: "Erro ao diagnosticar API Inter", variant: "destructive" }),
-  });
-
-  // Handler for ZIP / .crt / .key file upload
-  const handleCertFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setCertUploadLoading(true);
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const res = await fetch("/api/inter/upload-cert", {
-        method: "POST",
-        credentials: "include",
-        body: formData,
-      });
-      const data = await res.json();
-      if (!res.ok) { toast({ title: data.error || "Erro ao processar arquivo", variant: "destructive" }); return; }
-      if (data.certificate) { setInterCertificate(data.certificate); setShowInterCert(false); }
-      if (data.privateKey) { setInterPrivateKey(data.privateKey); setShowInterKey(false); }
-      if (data.webhookCert) { setInterWebhookCert(data.webhookCert); }
-      if (data.source === "zip") {
-        const parts = [];
-        if (data.certificate) parts.push("certificado da empresa (.crt)");
-        if (data.privateKey) parts.push("chave privada (.key)");
-        if (data.webhookCert) parts.push("CA do Inter (webhook)");
-        toast({ title: "ZIP extraído com sucesso!", description: `Encontrado: ${parts.join(", ")}. Clique em Salvar para confirmar.` });
-      } else {
-        toast({ title: "Arquivo carregado!", description: "Clique em Salvar para confirmar." });
-      }
-    } catch {
-      toast({ title: "Erro ao enviar arquivo", variant: "destructive" });
-    } finally {
-      setCertUploadLoading(false);
-      e.target.value = "";
-    }
-  };
 
   return (
     <div className="p-6 space-y-6 max-w-5xl mx-auto">
@@ -914,242 +799,6 @@ export default function SettingsPage() {
                   </CardContent>
                 </Card>
 
-                <Card className="border-muted/40 shadow-md">
-                  <CardHeader>
-                    <div className="flex items-center gap-2">
-                      <Building2 className="h-4 w-4 text-primary" />
-                      <CardTitle className="text-lg">Banco Inter (API PIX)</CardTitle>
-                    </div>
-                    <CardDescription>Integração direta com Banco Inter para recebimento de PIX com taxas menores.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-muted/40 mb-2">
-                      <div className="space-y-0.5">
-                        <div className="flex items-center gap-2">
-                          <Label className="text-base font-semibold">Banco Inter Ativo</Label>
-                          {interEnabled ? (
-                            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[10px] font-bold h-5">CONFIGURADO</Badge>
-                          ) : (
-                            <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-[10px] font-bold h-5">PENDENTE</Badge>
-                          )}
-                        </div>
-                        <p className="text-xs text-muted-foreground">Utilizar Banco Inter para geração dinâmica de PIX.</p>
-                      </div>
-                      <Switch checked={interEnabled} onCheckedChange={setInterEnabled} data-testid="switch-inter-enabled" />
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Ambiente</Label>
-                        <Select value={interEnvironment} onValueChange={(v: any) => setInterEnvironment(v)}>
-                          <SelectTrigger data-testid="select-inter-env">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="sandbox">Sandbox (Testes)</SelectItem>
-                            <SelectItem value="production">Produção</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Chave PIX</Label>
-                        <Input value={interPixKey} onChange={e => setInterPixKey(e.target.value)} placeholder="Chave PIX cadastrada no Inter" data-testid="input-inter-pix-key" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Client ID</Label>
-                        <Input value={interClientId} onChange={e => setInterClientId(e.target.value)} placeholder="..." data-testid="input-inter-client-id" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Client Secret</Label>
-                        <div className="relative">
-                          <Input
-                            type={showInterSecret ? "text" : "password"}
-                            value={interClientSecret}
-                            onChange={e => setInterClientSecret(e.target.value)}
-                            placeholder="••••••••"
-                            className="pr-10"
-                            data-testid="input-inter-client-secret"
-                          />
-                          <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" onClick={() => setShowInterSecret(!showInterSecret)}>
-                            {showInterSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* ── CERTIFICADO mTLS INTER ── */}
-                    <div className="space-y-4 pt-4 border-t border-muted/40">
-                      <Label className="flex items-center gap-2 text-sm font-bold">
-                        <ShieldCheck className="h-4 w-4 text-orange-500" />
-                        Certificado mTLS do Banco Inter
-                      </Label>
-
-                      {/* Upload card */}
-                      <div className="p-4 rounded-xl border-2 border-dashed border-orange-200 dark:border-orange-700/40 bg-orange-50/50 dark:bg-orange-900/10 space-y-3">
-                        <p className="text-xs text-muted-foreground leading-relaxed">
-                          Baixe o arquivo <strong>ZIP</strong> no portal do Inter (<code className="bg-muted px-1 rounded text-[10px]">developers.inter.co → Minhas Integrações</code>) e clique em <strong>Selecionar arquivo</strong>. O sistema extrai o certificado e a chave automaticamente.
-                        </p>
-
-                        {/* Status badges */}
-                        <div className="flex flex-wrap gap-2">
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${interCertificate ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-muted text-muted-foreground"}`}>
-                            <FileBadge className="h-3 w-3" />
-                            Certificado (.crt): {interCertificate ? "Configurado ✓" : "Não configurado"}
-                          </span>
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${interPrivateKey ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-muted text-muted-foreground"}`}>
-                            <FileKey className="h-3 w-3" />
-                            Chave Privada (.key): {interPrivateKey ? "Configurada ✓" : "Não configurada"}
-                          </span>
-                        </div>
-
-                        {/* Hidden file inputs */}
-                        <input ref={zipFileRef} type="file" accept=".zip,application/zip,application/x-zip-compressed,application/octet-stream" className="hidden" onChange={handleCertFileUpload} data-testid="input-inter-cert-zip" />
-                        <input ref={certFileRef} type="file" accept=".crt,.pem,application/x-pem-file" className="hidden" onChange={handleCertFileUpload} data-testid="input-inter-cert-file" />
-                        <input ref={keyFileRef} type="file" accept=".key,.pem,application/x-pem-file" className="hidden" onChange={handleCertFileUpload} data-testid="input-inter-key-file" />
-
-                        {/* Primary button */}
-                        <Button
-                          type="button"
-                          variant="default"
-                          disabled={certUploadLoading}
-                          onClick={() => zipFileRef.current?.click()}
-                          className="w-full gap-2 bg-orange-600 hover:bg-orange-700 text-white h-10"
-                          data-testid="button-upload-inter-zip"
-                        >
-                          {certUploadLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FolderOpen className="h-4 w-4" />}
-                          {certUploadLoading ? "Processando arquivo..." : "Selecionar arquivo (ZIP, .crt ou .key)"}
-                        </Button>
-
-                        {/* Individual file buttons */}
-                        <div className="flex gap-2">
-                          <Button type="button" variant="outline" size="sm" disabled={certUploadLoading} onClick={() => certFileRef.current?.click()} className="gap-1.5 flex-1 text-xs" data-testid="button-upload-inter-crt">
-                            <FileBadge className="h-3.5 w-3.5 text-orange-500" /> Somente .crt
-                          </Button>
-                          <Button type="button" variant="outline" size="sm" disabled={certUploadLoading} onClick={() => keyFileRef.current?.click()} className="gap-1.5 flex-1 text-xs" data-testid="button-upload-inter-key">
-                            <FileKey className="h-3.5 w-3.5 text-orange-500" /> Somente .key
-                          </Button>
-                        </div>
-                      </div>
-
-                      {/* Manual paste fallback */}
-                      <details className="group">
-                        <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground select-none flex items-center gap-1">
-                          <span className="group-open:rotate-90 transition-transform inline-block">▶</span>
-                          Colar manualmente (alternativa ao upload)
-                        </summary>
-                        <div className="space-y-3 mt-3">
-                          <div className="space-y-1.5">
-                            <Label className="text-xs text-muted-foreground">Conteúdo do Certificado (.crt)</Label>
-                            <div className="relative">
-                              <Textarea
-                                value={showInterCert ? interCertificate : (interCertificate && interCertificate !== "••••••••" ? "••••••••" : interCertificate)}
-                                onChange={e => setInterCertificate(e.target.value)}
-                                onFocus={() => setShowInterCert(true)}
-                                placeholder="-----BEGIN CERTIFICATE----- ..."
-                                className="font-mono text-[10px] min-h-[80px]"
-                                data-testid="textarea-inter-cert"
-                              />
-                              <button type="button" className="absolute right-3 top-2 text-muted-foreground" onClick={() => setShowInterCert(!showInterCert)}>
-                                {showInterCert ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                              </button>
-                            </div>
-                          </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-xs text-muted-foreground">Conteúdo da Chave Privada (.key)</Label>
-                            <div className="relative">
-                              <Textarea
-                                value={showInterKey ? interPrivateKey : (interPrivateKey && interPrivateKey !== "••••••••" ? "••••••••" : interPrivateKey)}
-                                onChange={e => setInterPrivateKey(e.target.value)}
-                                onFocus={() => setShowInterKey(true)}
-                                placeholder="-----BEGIN PRIVATE KEY----- ..."
-                                className="font-mono text-[10px] min-h-[80px]"
-                                data-testid="textarea-inter-key"
-                              />
-                              <button type="button" className="absolute right-3 top-2 text-muted-foreground" onClick={() => setShowInterKey(!showInterKey)}>
-                                {showInterKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </details>
-                    </div>
-
-                    <div className="space-y-4 pt-4 border-t border-muted/40 bg-muted/20 p-3 rounded-lg">
-                      <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Configurações de Webhook (Opcional)</Label>
-                      <div className="space-y-2">
-                        <Label>Webhook Secret / Key</Label>
-                        <Input value={interWebhookKey} onChange={e => setInterWebhookKey(e.target.value)} placeholder="..." data-testid="input-inter-webhook-key" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Webhook Certificado (Inter)</Label>
-                        <div className="relative">
-                          <Textarea
-                            value={interWebhookCert}
-                            onChange={e => setInterWebhookCert(e.target.value)}
-                            placeholder="-----BEGIN CERTIFICATE----- ..."
-                            className="font-mono text-[10px] min-h-[80px]"
-                            data-testid="textarea-inter-webhook-cert"
-                          />
-                          <button type="button" className="absolute right-3 top-2 text-muted-foreground" onClick={() => setShowInterWebhookCert(!showInterWebhookCert)}>
-                            {showInterWebhookCert ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="pt-2 flex flex-wrap gap-2 justify-end">
-                      <Button variant="outline" size="sm" onClick={() => testInterMut.mutate()} disabled={testInterMut.isPending} data-testid="button-test-inter">
-                        {testInterMut.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
-                        Testar Conexão
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => diagInterMut.mutate()} disabled={diagInterMut.isPending} data-testid="button-diagnose-inter">
-                        {diagInterMut.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Settings2 className="h-4 w-4 mr-2" />}
-                        Diagnosticar API
-                      </Button>
-                    </div>
-
-                    {interDiagResult && (
-                      <div className="mt-4 rounded-xl border bg-muted/40 p-4 space-y-3 text-xs font-mono">
-                        <p className="font-bold text-sm font-sans">Resultado do Diagnóstico</p>
-
-                        <div>
-                          <p className="font-semibold text-muted-foreground uppercase tracking-wide mb-1">OAuth Escopos</p>
-                          {interDiagResult.oauthTests?.map((t: any) => (
-                            <div key={t.scope} className="flex items-center gap-2">
-                              {t.ok
-                                ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0" />
-                                : <XCircle className="h-3.5 w-3.5 text-red-500 shrink-0" />}
-                              <span className={t.ok ? "text-green-700" : "text-red-700"}>
-                                {t.scope} — HTTP {t.status}{t.error ? `: ${t.error}` : ""}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-
-                        {interDiagResult.pathTests?.length > 0 && (
-                          <div>
-                            <p className="font-semibold text-muted-foreground uppercase tracking-wide mb-1">Paths da API</p>
-                            {interDiagResult.pathTests?.map((t: any) => (
-                              <div key={t.path} className={`flex items-start gap-2 ${t.status === 200 || t.status === 201 || (t.status >= 400 && t.status < 500 && t.status !== 404) ? "text-green-700" : "text-red-700"}`}>
-                                {(t.status !== 404 && t.status !== 0) ? <CheckCircle2 className="h-3.5 w-3.5 shrink-0 mt-0.5" /> : <XCircle className="h-3.5 w-3.5 shrink-0 mt-0.5 text-red-500" />}
-                                <span>{t.path} — HTTP {t.status}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        <div className="border-t pt-2">
-                          <p className="font-semibold text-muted-foreground uppercase tracking-wide mb-1">Recomendação</p>
-                          <p className="text-foreground font-sans">{interDiagResult.recommendation}</p>
-                        </div>
-
-                        <Button variant="ghost" size="sm" className="text-xs h-6" onClick={() => setInterDiagResult(null)}>
-                          Fechar
-                        </Button>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
               </TabsContent>
 
               <TabsContent value="nfse" className="mt-0 space-y-6">

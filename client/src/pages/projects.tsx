@@ -20,7 +20,7 @@ import {
   Plus, Search, Pencil, Trash2, FolderOpen, Zap, Eye,
   MapPin, Cpu, Sun, User, FileText, Activity, Building,
   ExternalLink, Upload, Hash, CheckCircle2, Archive, RotateCcw, CreditCard, RefreshCw,
-  LayoutGrid, List, Banknote, QrCode, XCircle, ArrowLeftRight
+  LayoutGrid, List, XCircle, ArrowLeftRight
 } from "lucide-react";
 import { useForm, Controller } from "react-hook-form";
 import type { Project, Client, Document, Timeline, StatusConfig } from "@shared/schema";
@@ -78,14 +78,11 @@ function ProjectDetailSheet({
   const [assignEngineerId, setAssignEngineerId] = useState<string>("");
   const [assignInstallerId, setAssignInstallerId] = useState<string>("");
   const [assignManagerId, setAssignManagerId] = useState<string>("");
-  const [paymentMethodDialog, setPaymentMethodDialog] = useState(false);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<"inter" | "mp" | "both">("both");
 
   useProjectWebSocket(user?.id ?? null, user?.role ?? null, project?.id ?? "");
 
   const { data: statusConfigs = [] } = useQuery<StatusConfig[]>({ queryKey: ["/api/status-configs"] });
   const { data: siteSettings } = useQuery<Record<string, string>>({ queryKey: ["/api/settings"] });
-  const hasInter = siteSettings?.inter_enabled === "true";
   const hasMp = siteSettings?.mp_enabled !== "false" && !!siteSettings?.mp_access_token;
   const { data: internalUsers = [] } = useQuery<{ id: string; name: string; role: string }[]>({
     queryKey: ["/api/users"],
@@ -128,13 +125,12 @@ function ProjectDetailSheet({
   });
 
   const generatePaymentMut = useMutation({
-    mutationFn: ({ projectId, method }: { projectId: string; method: "inter" | "mp" | "both" }) =>
-      apiRequest("POST", `/api/projects/${projectId}/generate-payment`, { method }),
+    mutationFn: (projectId: string) =>
+      apiRequest("POST", `/api/projects/${projectId}/generate-payment`, { method: "mp" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
       queryClient.invalidateQueries({ queryKey: ["/api/projects", "archived"] });
       queryClient.invalidateQueries({ queryKey: ["/api/projects", project?.id, "timeline"] });
-      setPaymentMethodDialog(false);
       toast({ title: "Cobrança gerada com sucesso!" });
     },
     onError: (err: any) => toast({ title: err?.message || "Erro ao gerar pagamento", variant: "destructive" }),
@@ -146,26 +142,13 @@ function ProjectDetailSheet({
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
       queryClient.invalidateQueries({ queryKey: ["/api/projects", "archived"] });
       queryClient.invalidateQueries({ queryKey: ["/api/projects", project?.id, "timeline"] });
-      if (hasInter && hasMp) {
-        toast({ title: "Cobrança cancelada. Escolha o novo método." });
-        setPaymentMethodDialog(true);
-      } else {
-        const method = hasInter ? "inter" : "mp";
-        generatePaymentMut.mutate({ projectId, method });
-      }
+      generatePaymentMut.mutate(projectId);
     },
     onError: (err: any) => toast({ title: err?.message || "Erro ao cancelar cobrança", variant: "destructive" }),
   });
 
   const handleGeneratePayment = (projectId: string) => {
-    const both = hasInter && hasMp;
-    if (both) {
-      setSelectedPaymentMethod("both");
-      setPaymentMethodDialog(true);
-    } else {
-      const method = hasInter ? "inter" : "mp";
-      generatePaymentMut.mutate({ projectId, method });
-    }
+    generatePaymentMut.mutate(projectId);
   };
 
   const verifyPaymentMut = useMutation({
@@ -388,22 +371,15 @@ function ProjectDetailSheet({
                         )}
                         <div className="space-y-2">
                           {/* Active payment methods badges */}
-                          {(project.interPixTxid || project.paymentId) && project.paymentStatus !== "approved" && (
+                          {project.paymentId && project.paymentStatus !== "approved" && (
                             <div className="flex flex-wrap gap-1.5 mb-1">
-                              {project.interPixTxid && (
-                                <Badge variant="outline" className="text-[10px] bg-blue-50 border-blue-200 text-blue-700 font-bold gap-1">
-                                  <QrCode className="h-2.5 w-2.5" /> PIX Inter
-                                </Badge>
-                              )}
-                              {project.paymentId && (
-                                <Badge variant="outline" className="text-[10px] bg-sky-50 border-sky-200 text-sky-700 font-bold gap-1">
-                                  <CreditCard className="h-2.5 w-2.5" /> Mercado Pago
-                                </Badge>
-                              )}
+                              <Badge variant="outline" className="text-[10px] bg-sky-50 border-sky-200 text-sky-700 font-bold gap-1">
+                                <CreditCard className="h-2.5 w-2.5" /> Mercado Pago
+                              </Badge>
                             </div>
                           )}
                           <div className="flex gap-2">
-                            {project.status === "aprovado_pagamento_pendente" && !project.paymentId && !project.interPixTxid && (
+                            {project.status === "aprovado_pagamento_pendente" && !project.paymentId && (
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -416,7 +392,7 @@ function ProjectDetailSheet({
                                 {generatePaymentMut.isPending ? "Gerando..." : "Gerar Pagamento"}
                               </Button>
                             )}
-                            {(project.paymentId || project.interPixTxid) && project.paymentStatus !== "approved" && (
+                            {project.paymentId && project.paymentStatus !== "approved" && (
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -793,92 +769,6 @@ function ProjectDetailSheet({
         </div>
       </SheetContent>
 
-      {/* Payment Method Selection Dialog */}
-      <Dialog open={paymentMethodDialog} onOpenChange={setPaymentMethodDialog}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Escolher Método de Cobrança</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            Selecione qual método será gerado para o integrador pagar.
-          </p>
-          <div className="grid gap-3 py-2">
-            {hasInter && (
-              <button
-                type="button"
-                data-testid="method-inter"
-                onClick={() => setSelectedPaymentMethod("inter")}
-                className={`flex items-center gap-3 rounded-xl border-2 p-4 text-left transition-all ${
-                  selectedPaymentMethod === "inter"
-                    ? "border-blue-500 bg-blue-50"
-                    : "border-border hover:border-blue-300"
-                }`}
-              >
-                <QrCode className="h-5 w-5 text-blue-600 shrink-0" />
-                <div>
-                  <p className="font-semibold text-sm">PIX Banco Inter</p>
-                  <p className="text-xs text-muted-foreground">Cobrança PIX via API do Banco Inter</p>
-                </div>
-                {selectedPaymentMethod === "inter" && <CheckCircle2 className="h-4 w-4 text-blue-500 ml-auto shrink-0" />}
-              </button>
-            )}
-            {hasMp && (
-              <button
-                type="button"
-                data-testid="method-mp"
-                onClick={() => setSelectedPaymentMethod("mp")}
-                className={`flex items-center gap-3 rounded-xl border-2 p-4 text-left transition-all ${
-                  selectedPaymentMethod === "mp"
-                    ? "border-sky-500 bg-sky-50"
-                    : "border-border hover:border-sky-300"
-                }`}
-              >
-                <CreditCard className="h-5 w-5 text-sky-600 shrink-0" />
-                <div>
-                  <p className="font-semibold text-sm">Mercado Pago</p>
-                  <p className="text-xs text-muted-foreground">Link de pagamento + PIX Mercado Pago</p>
-                </div>
-                {selectedPaymentMethod === "mp" && <CheckCircle2 className="h-4 w-4 text-sky-500 ml-auto shrink-0" />}
-              </button>
-            )}
-            {hasInter && hasMp && (
-              <button
-                type="button"
-                data-testid="method-both"
-                onClick={() => setSelectedPaymentMethod("both")}
-                className={`flex items-center gap-3 rounded-xl border-2 p-4 text-left transition-all ${
-                  selectedPaymentMethod === "both"
-                    ? "border-emerald-500 bg-emerald-50"
-                    : "border-border hover:border-emerald-300"
-                }`}
-              >
-                <Banknote className="h-5 w-5 text-emerald-600 shrink-0" />
-                <div>
-                  <p className="font-semibold text-sm">Ambos os Métodos</p>
-                  <p className="text-xs text-muted-foreground">PIX Inter + Link Mercado Pago simultaneamente</p>
-                </div>
-                {selectedPaymentMethod === "both" && <CheckCircle2 className="h-4 w-4 text-emerald-500 ml-auto shrink-0" />}
-              </button>
-            )}
-          </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              variant="outline"
-              onClick={() => setPaymentMethodDialog(false)}
-              data-testid="button-payment-dialog-cancel"
-            >
-              Cancelar
-            </Button>
-            <Button
-              disabled={generatePaymentMut.isPending}
-              onClick={() => project && generatePaymentMut.mutate({ projectId: project.id, method: selectedPaymentMethod })}
-              data-testid="button-payment-dialog-confirm"
-            >
-              {generatePaymentMut.isPending ? "Gerando..." : "Gerar Cobrança"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </Sheet>
   );
 }

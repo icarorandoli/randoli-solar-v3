@@ -15,7 +15,6 @@ import {
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { sendStatusEmail, sendTestEmail, sendPasswordResetEmail, sendDocumentEmail, sendTimelineEmail, type EmailConfig } from "./email";
 import { createPaymentPreference, createPixPayment, getPaymentInfo, getMerchantOrder, verifyWebhookSignature } from "./mercadopago";
-import { createInterPixCharge, getInterPixStatus, testInterConnection, diagnoseInterApi, cleanPem, clearInterTokenCache, type InterConfig } from "./inter";
 import { testWhatsAppConnection, type WhatsAppConfig, sendWhatsAppNewProjectNotification, sendWhatsAppAdminCreatedProjectNotification, sendWhatsAppStatusNotification, sendWhatsAppTimelineNotification, sendWhatsAppDocumentNotification, sendWhatsAppPaymentNotification } from "./whatsapp";
 import { emitirNfse, getNfseConfig } from "./nfse";
 import { registerUploadRoutes } from "./upload";
@@ -119,24 +118,6 @@ function getMpAccessToken(settingsMap?: Record<string, string>): string | null {
   return settingsMap?.["mp_access_token"] || process.env.MP_ACCESS_TOKEN || null;
 }
 
-function getInterConfig(settingsMap?: Record<string, string>): InterConfig | null {
-  if (!settingsMap) return null;
-  if (settingsMap["inter_enabled"] === "false") return null;
-  const clientId = settingsMap["inter_client_id"] || process.env.INTER_CLIENT_ID || "";
-  const clientSecret = settingsMap["inter_client_secret"] || process.env.INTER_CLIENT_SECRET || "";
-  const certificate = settingsMap["inter_certificate"] || process.env.INTER_CERTIFICATE || "";
-  const privateKey = settingsMap["inter_private_key"] || process.env.INTER_PRIVATE_KEY || "";
-  const pixKey = settingsMap["inter_pix_key"] || process.env.INTER_PIX_KEY || "";
-  if (!clientId || !clientSecret || !certificate || !privateKey || !pixKey) return null;
-  return {
-    clientId,
-    clientSecret,
-    certificate,
-    privateKey,
-    pixKey,
-    environment: (settingsMap["inter_environment"] as "sandbox" | "production") || "production",
-  };
-}
 
 export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {
   // ── Session setup ──────────────────────────────────────────────────
@@ -820,42 +801,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             }
           }
 
-          // ── Banco Inter PIX ──────────────────────────────────────
-          const interCfg = getInterConfig(settingsMap);
-          if (interCfg) {
-            try {
-              const interPix = await createInterPixCharge({
-                config: interCfg,
-                projectId: (req.params.id as string),
-                projectTitle: current.title,
-                ticketNumber: current.ticketNumber,
-                valor: valorStr,
-                integradorName: intName || undefined,
-                integradorCpfCnpj: intCpfCnpjAuto || undefined,
-                integradorAddress: current.integrador || undefined,
-              });
-              await storage.updateProject((req.params.id as string), {
-                interPixTxid: interPix.txid,
-                interPixCopiaECola: interPix.pixCopiaECola,
-                interPixQrCodeBase64: interPix.qrCodeBase64,
-                interPixStatus: interPix.status,
-                interBoletoLinhaDigitavel: interPix.linhaDigitavel || null,
-              } as any);
-              console.log(`[inter] ✓ PIX Inter criado para projeto ${(req.params.id as string)}`);
-            } catch (err) {
-              console.error("[inter] Erro ao criar PIX Inter:", err);
-            }
-          }
-
           // Timeline entry for payment
-          if (mpToken || interCfg) {
+          if (mpToken) {
             await storage.addTimelineEntry({
               projectId: (req.params.id as string),
               event: "Pagamento disponível",
-              details: [
-                mpToken ? "Mercado Pago (PIX e Cartão)" : null,
-                interCfg ? "PIX Banco Inter" : null,
-              ].filter(Boolean).join(" e ") + " disponíveis para pagamento.",
+              details: "Mercado Pago (PIX e Cartão) disponível para pagamento.",
               createdByRole: "admin",
             });
           }
@@ -902,7 +853,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         try {
           const settingsMap2 = await getSettingsMap();
           const mpToken2 = getMpAccessToken(settingsMap2);
-          const interCfg2 = getInterConfig(settingsMap2);
           const intEmail2 = current.integrador?.email || current.client?.email;
           const intName2 = current.integrador?.name || current.client?.name;
           const intCpfCnpj2 = current.integrador?.cpfCnpj || current.client?.cpfCnpj || (current as any).cpfCnpjCliente || undefined;
@@ -940,28 +890,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             }
           }
 
-          if (interCfg2) {
-            try {
-              const interPix2 = await createInterPixCharge({
-                config: interCfg2,
-                projectId: (req.params.id as string),
-                projectTitle: current.title,
-                ticketNumber: current.ticketNumber,
-                valor: data.valor,
-                integradorName: intName2 || undefined,
-                integradorCpfCnpj: intCpfCnpj2 || undefined,
-                integradorAddress: current.integrador || undefined,
-              });
-              regenUpdate.interPixTxid = interPix2.txid;
-              regenUpdate.interPixCopiaECola = interPix2.pixCopiaECola;
-              regenUpdate.interPixQrCodeBase64 = interPix2.qrCodeBase64;
-              regenUpdate.interPixStatus = interPix2.status;
-              (regenUpdate as any).interBoletoLinhaDigitavel = interPix2.linhaDigitavel || null;
-              console.log(`[inter] ✓ PIX Inter regenerado para projeto ${(req.params.id as string)}`);
-            } catch (interErr) {
-              console.error("[inter] Erro ao regenerar PIX Inter:", interErr);
-            }
-          }
 
           if (Object.keys(regenUpdate).length > 0) {
             await storage.updateProject((req.params.id as string), regenUpdate);
@@ -996,8 +924,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       await storage.updateProject((req.params.id as string), {
         paymentLink: null, paymentId: null, paymentStatus: null,
         pixQrCode: null, pixQrCodeBase64: null, pixPaymentId: null,
-        interPixTxid: null, interPixCopiaECola: null,
-        interPixQrCodeBase64: null, interPixStatus: null,
       } as any);
       await storage.addTimelineEntry({
         projectId: (req.params.id as string),
@@ -1012,69 +938,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
-  // ── INTER PIX REFRESH ─────────────────────────────────────────────
-  // Fetches existing Inter charge data (QR code) without creating a new charge
-  app.post("/api/projects/:id/inter-refresh-pix", requireAuth, async (req, res) => {
-    try {
-      const project = await storage.getProject(req.params.id as string);
-      if (!project) return res.status(404).json({ error: "Projeto não encontrado" });
-      if (!project.interPixTxid) return res.status(400).json({ error: "Nenhuma cobrança Inter ativa" });
-
-      const settingsMap = await getSettingsMap();
-      const interCfg = getInterConfig(settingsMap);
-      if (!interCfg) return res.status(400).json({ error: "Inter não configurado" });
-
-      const result = await getInterPixStatus(interCfg, project.interPixTxid);
-      console.log("[inter-refresh] status:", result.status, "| pixCopiaECola:", result.pixCopiaECola ? result.pixCopiaECola.slice(0, 30) + "..." : "(vazio)");
-
-      const updateData: any = { interPixStatus: result.status };
-      if (result.pixCopiaECola) updateData.interPixCopiaECola = result.pixCopiaECola;
-      if (result.qrCodeBase64) updateData.interPixQrCodeBase64 = result.qrCodeBase64;
-      if (result.linhaDigitavel) (updateData as any).interBoletoLinhaDigitavel = result.linhaDigitavel;
-
-      // If payment confirmed, advance project status
-      if (result.status === "PAGO" && project.status === "aprovado_pagamento_pendente") {
-        updateData.status = "projeto_tecnico";
-        updateData.paymentStatus = "approved";
-        await storage.addTimelineEntry({
-          projectId: project.id,
-          event: "Pagamento Inter confirmado",
-          details: `PIX ${project.interPixTxid} confirmado via consulta manual.`,
-          createdByRole: "admin",
-        });
-      }
-
-      await storage.updateProject(project.id, updateData);
-      const updated = await storage.getProject(project.id);
-      res.json(updated);
-    } catch (err: any) {
-      res.status(500).json({ error: err.message || "Erro ao atualizar cobrança Inter" });
-    }
-  });
-
-  // ── Boleto PDF proxy — streams Inter boleto PDF directly to client ────────
-  app.get("/api/projects/:id/inter-boleto-pdf", requireAuth, async (req, res) => {
-    try {
-      const project = await storage.getProject(req.params.id as string);
-      if (!project) return res.status(404).json({ error: "Projeto não encontrado" });
-      if (!project.interPixTxid) return res.status(400).json({ error: "Nenhuma cobrança Inter ativa" });
-
-      const settingsMap = await getSettingsMap();
-      const interCfg = getInterConfig(settingsMap);
-      if (!interCfg) return res.status(400).json({ error: "Inter não configurado" });
-
-      const { fetchInterBoletoPdf } = await import("./inter");
-      const pdfBuffer = await fetchInterBoletoPdf(interCfg, project.interPixTxid);
-
-      res.setHeader("Content-Type", "application/pdf");
-      res.setHeader("Content-Disposition", `inline; filename="boleto-${project.interPixTxid}.pdf"`);
-      res.setHeader("Content-Length", pdfBuffer.length.toString());
-      res.send(pdfBuffer);
-    } catch (err: any) {
-      console.error("[inter] PDF proxy error:", err.message);
-      res.status(500).json({ error: err.message || "Erro ao buscar PDF do boleto" });
-    }
-  });
 
   app.post("/api/projects/:id/generate-payment", requireAuth, async (req, res) => {
     try {
@@ -1092,87 +955,37 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
       const settingsMap = await getSettingsMap();
       const mpToken = getMpAccessToken(settingsMap);
-      const interCfg = getInterConfig(settingsMap);
 
-      if (!mpToken && !interCfg) {
-        return res.status(400).json({ error: "Nenhuma forma de pagamento configurada (Mercado Pago ou Banco Inter)" });
+      if (!mpToken) {
+        return res.status(400).json({ error: "Mercado Pago não está configurado" });
       }
-
-      // method: 'inter' | 'mp' | 'both' — defaults to 'both' if not specified
-      const method = (req.body?.method as string) || "both";
-      const useInter = interCfg && (method === "inter" || method === "both");
-      const useMp = mpToken && (method === "mp" || method === "both");
 
       const intEmail = (project as any).integrador?.email || (project as any).client?.email;
       const intName = (project as any).integrador?.name || (project as any).client?.name;
       const intCpfCnpj = (project as any).integrador?.cpfCnpj || (project as any).client?.cpfCnpj || (project as any).cpfCnpjCliente || undefined;
       const updateData: any = {};
-      const methods: string[] = [];
 
-      if (!useMp && !useInter) {
-        return res.status(400).json({ error: `Método "${method}" não está configurado` });
-      }
-
-      // ── Mercado Pago ─────────────────────────────────────────────
-      if (useMp && mpToken) {
-        try {
-          const portalUrl = settingsMap["email_portal_url"] || "https://projetos.randolisolar.com.br";
-          const webhookUrl = `${portalUrl}/api/mercadopago/webhook`;
-          const paymentArgs = {
-            accessToken: mpToken,
-            projectId: (req.params.id as string),
-            projectTitle: project.title,
-            ticketNumber: project.ticketNumber,
-            valor: project.valor,
-            integradorEmail: intEmail || undefined,
-            integradorName: intName || undefined,
-            integradorCpfCnpj: intCpfCnpj || undefined,
-            webhookUrl,
-          };
-          const pref = await createPaymentPreference(paymentArgs);
-          updateData.paymentLink = pref.initPoint;
-          updateData.paymentId = pref.id;
-          updateData.paymentStatus = "pending";
-          methods.push("Mercado Pago (Cartão)");
-          try {
-            const pix = await createPixPayment(paymentArgs);
-            updateData.pixQrCode = pix.qrCode;
-            updateData.pixQrCodeBase64 = pix.qrCodeBase64;
-            updateData.pixPaymentId = pix.paymentId;
-            methods.push("PIX Mercado Pago");
-          } catch (pixErr) {
-            console.error("[mercadopago] Erro ao criar PIX (continuando):", pixErr);
-          }
-        } catch (mpErr: any) {
-          console.error("[mercadopago] Erro ao gerar pagamento MP:", mpErr);
-          if (!useInter) return res.status(500).json({ error: mpErr.message || "Erro ao gerar cobrança Mercado Pago" });
-        }
-      }
-
-      // ── Banco Inter PIX ──────────────────────────────────────────
-      if (useInter && interCfg) {
-        try {
-          const interPix = await createInterPixCharge({
-            config: interCfg,
-            projectId: (req.params.id as string),
-            projectTitle: project.title,
-            ticketNumber: project.ticketNumber,
-            valor: project.valor,
-            integradorName: intName || undefined,
-            integradorCpfCnpj: intCpfCnpj || undefined,
-            integradorAddress: (project as any).integrador || undefined,
-          });
-          updateData.interPixTxid = interPix.txid;
-          updateData.interPixCopiaECola = interPix.pixCopiaECola;
-          updateData.interPixQrCodeBase64 = interPix.qrCodeBase64;
-          updateData.interPixStatus = interPix.status;
-          (updateData as any).interBoletoLinhaDigitavel = interPix.linhaDigitavel || null;
-          methods.push("PIX Banco Inter");
-          console.log(`[inter] ✓ PIX Inter criado para projeto ${(req.params.id as string)}`);
-        } catch (interErr: any) {
-          console.error("[inter] Erro ao gerar PIX Inter:", interErr);
-          if (!useMp) return res.status(500).json({ error: interErr.message || "Erro ao gerar cobrança Inter" });
-        }
+      try {
+        const portalUrl = settingsMap["email_portal_url"] || "https://projetos.randolisolar.com.br";
+        const webhookUrl = `${portalUrl}/api/mercadopago/webhook`;
+        const paymentArgs = {
+          accessToken: mpToken,
+          projectId: (req.params.id as string),
+          projectTitle: project.title,
+          ticketNumber: project.ticketNumber,
+          valor: project.valor,
+          integradorEmail: intEmail || undefined,
+          integradorName: intName || undefined,
+          integradorCpfCnpj: intCpfCnpj || undefined,
+          webhookUrl,
+        };
+        const pref = await createPaymentPreference(paymentArgs);
+        updateData.paymentLink = pref.initPoint;
+        updateData.paymentId = pref.id;
+        updateData.paymentStatus = "pending";
+      } catch (mpErr: any) {
+        console.error("[mercadopago] Erro ao gerar pagamento MP:", mpErr);
+        return res.status(500).json({ error: mpErr.message || "Erro ao gerar cobrança Mercado Pago" });
       }
 
       await storage.updateProject((req.params.id as string), updateData);
@@ -1180,9 +993,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       await storage.addTimelineEntry({
         projectId: (req.params.id as string),
         event: "Pagamento gerado pelo administrador",
-        details: methods.length > 0
-          ? `Métodos disponíveis: ${methods.join(", ")}.`
-          : "Pagamento gerado.",
+        details: "Mercado Pago disponível para pagamento.",
         createdByRole: "admin",
       });
 
@@ -1922,7 +1733,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const map: Record<string, string> = {};
       const MASKED_KEYS = new Set([
         "email_smtp_pass", "mp_access_token", "mp_webhook_secret",
-        "inter_client_secret", "inter_certificate", "inter_private_key", "inter_webhook_key", "inter_webhook_cert",
         "whatsapp_api_key",
       ]);
       for (const s of settings) {
@@ -1945,7 +1755,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       if (!key || value === undefined) return res.status(400).json({ error: "key e value obrigatórios" });
       const MASKED_KEYS = new Set([
         "email_smtp_pass", "mp_access_token", "mp_webhook_secret",
-        "inter_client_secret", "inter_certificate", "inter_private_key", "inter_webhook_key", "inter_webhook_cert",
         "whatsapp_api_key",
       ]);
       if (MASKED_KEYS.has(key) && value === "••••••••") {
@@ -1979,305 +1788,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
-  // ── INTER TEST CONNECTION ──────────────────────────────────────────
-  app.post("/api/inter/test", requireAuth, async (req, res) => {
-    try {
-      const user = await getCurrentUser(req);
-      if (user?.role !== "admin") return res.status(403).json({ error: "Sem permissão" });
-      clearInterTokenCache();
-      const body = req.body;
-      const settingsMap = await getSettingsMap();
-
-      // Fall back to DB values for masked fields
-      const resolve = (field: string, dbKey: string) =>
-        (field && field !== "••••••••") ? field : (settingsMap[dbKey] || "");
-
-      const clientId     = resolve(body.clientId,     "inter_client_id");
-      const clientSecret = resolve(body.clientSecret, "inter_client_secret");
-      const certificate  = resolve(body.certificate,  "inter_certificate");
-      const privateKey   = resolve(body.privateKey,   "inter_private_key");
-      const pixKey       = resolve(body.pixKey,       "inter_pix_key");
-      const environment  = body.environment || settingsMap["inter_environment"] || "production";
-
-      const missing: string[] = [];
-      if (!clientId)     missing.push("Client ID");
-      if (!clientSecret) missing.push("Client Secret");
-      if (!certificate)  missing.push("Certificado (.crt)");
-      if (!privateKey)   missing.push("Chave Privada (.key)");
-
-      if (missing.length) {
-        return res.status(400).json({ ok: false, message: `Campos obrigatórios não configurados: ${missing.join(", ")}` });
-      }
-
-      const config: InterConfig = { clientId, clientSecret, certificate, privateKey, pixKey: pixKey || "", environment: environment as "sandbox" | "production" };
-      const result = await testInterConnection(config);
-      res.json(result);
-    } catch (err: any) {
-      res.status(500).json({ ok: false, message: err.message || "Erro ao testar conexão" });
-    }
-  });
-
-  // ── INTER DIAGNOSE PATHS ───────────────────────────────────────────
-  app.post("/api/inter/diagnose", requireAuth, async (req, res) => {
-    try {
-      const user = await getCurrentUser(req);
-      if (user?.role !== "admin") return res.status(403).json({ error: "Sem permissão" });
-      clearInterTokenCache();
-
-      const body = req.body;
-      const settingsMap = await getSettingsMap();
-      const resolve = (field: string, dbKey: string) =>
-        (field && field !== "••••••••") ? field : (settingsMap[dbKey] || "");
-
-      const clientId     = resolve(body.clientId,     "inter_client_id");
-      const clientSecret = resolve(body.clientSecret, "inter_client_secret");
-      const certificate  = resolve(body.certificate,  "inter_certificate");
-      const privateKey   = resolve(body.privateKey,   "inter_private_key");
-      const pixKey       = resolve(body.pixKey,       "inter_pix_key");
-      const environment  = body.environment || settingsMap["inter_environment"] || "production";
-
-      if (!clientId || !clientSecret || !certificate || !privateKey) {
-        return res.status(400).json({ error: "Credenciais Inter incompletas" });
-      }
-
-      const config: InterConfig = { clientId, clientSecret, certificate, privateKey, pixKey: pixKey || "", environment: environment as "sandbox" | "production" };
-      const result = await diagnoseInterApi(config);
-      res.json(result);
-    } catch (err: any) {
-      res.status(500).json({ error: err.message || "Erro ao diagnosticar" });
-    }
-  });
-
-  // ── INTER PIX WEBHOOK ─────────────────────────────────────────────
-  app.post("/api/inter/webhook", async (req, res) => {
-    try {
-      res.sendStatus(200);
-      const body = req.body;
-      console.log("[inter] Webhook recebido:", JSON.stringify(body).slice(0, 500));
-
-      const settingsMap = await getSettingsMap();
-
-      // Verificação mTLS via Nginx (ssl_verify_client + ssl_client_certificate)
-      // Nginx passa o resultado da verificação no header X-SSL-Client-Verify
-      const webhookCertConfigured = !!(settingsMap["inter_webhook_cert"] || process.env.INTER_WEBHOOK_CERT);
-      if (webhookCertConfigured) {
-        const sslVerify = req.headers["x-ssl-client-verify"] as string | undefined;
-        if (sslVerify !== undefined) {
-          // Nginx está passando o header — verificação mTLS ativa
-          if (sslVerify !== "SUCCESS") {
-            console.warn(`[inter] Webhook: certificado do cliente inválido (${sslVerify}). Requisição rejeitada.`);
-            return;
-          }
-          console.log("[inter] Webhook: certificado mTLS verificado pelo Nginx com sucesso");
-        } else {
-          // Nginx não está configurado com mTLS ainda — aceitar mas avisar
-          console.log("[inter] Webhook: CA configurada mas Nginx sem mTLS ainda (x-ssl-client-verify ausente). Processando.");
-        }
-      }
-
-      // Support both boleto+PIX format (nossoNumero/situacao) and legacy PIX format (pix[].txid)
-      let txid: string | null = null;
-      let paidValue = 0;
-      let isPago = false;
-
-      if (body?.nossoNumero) {
-        // Boleto+PIX API webhook format
-        txid = body.nossoNumero;
-        isPago = body.situacao === "PAGO";
-        paidValue = parseFloat(body.valorPago || body.valorNominal || "0");
-      } else if (body?.pix && Array.isArray(body.pix) && body.pix.length > 0) {
-        // Legacy PIX API webhook format
-        txid = body.pix[0]?.txid || null;
-        isPago = true;
-        paidValue = parseFloat(body.pix[0]?.valor || "0");
-      } else if (body?.txid) {
-        txid = body.txid;
-        isPago = true;
-      }
-
-      if (!txid) {
-        console.log("[inter] Webhook: identificador não encontrado no body");
-        return;
-      }
-
-      if (!isPago) {
-        console.log(`[inter] Webhook: evento não é pagamento (situacao: ${body.situacao}), ignorado`);
-        return;
-      }
-
-      const projects = await storage.getProjects();
-      const project = projects.find((p: any) => p.interPixTxid === txid);
-      if (!project) {
-        console.log(`[inter] Webhook: projeto com nossoNumero/txid ${txid} não encontrado`);
-        return;
-      }
-
-      if (project.status !== "aprovado_pagamento_pendente") {
-        console.log(`[inter] Webhook: projeto ${project.id} já avançado (${project.status}), ignorado`);
-        return;
-      }
-
-      await storage.updateProject(project.id, {
-        status: "projeto_tecnico",
-        interPixStatus: "CONCLUIDA",
-        paymentStatus: "approved",
-      } as any);
-
-      await storage.addTimelineEntry({
-        projectId: project.id,
-        event: "Pagamento PIX confirmado via Banco Inter",
-        details: `PIX ${txid} recebido${paidValue ? ` (R$ ${paidValue.toFixed(2).replace(".", ",")})` : ""}. Status avançado automaticamente para Projeto Técnico.`,
-        createdByRole: "admin",
-      });
-
-      storage.createNotification({
-        type: "payment",
-        title: "PIX Inter recebido",
-        body: `Pagamento PIX${paidValue ? ` de R$ ${paidValue.toFixed(2).replace(".", ",")}` : ""} confirmado pelo Banco Inter no projeto ${project.ticketNumber || project.title}.`,
-        projectId: project.id,
-        projectTitle: project.title,
-        ticketNumber: project.ticketNumber,
-      }).catch(() => {});
-
-      storage.createAuditLog({
-        userId: null,
-        userName: "Banco Inter",
-        userRole: "system",
-        action: "payment.approved",
-        entityType: "project",
-        entityId: project.id,
-        entityLabel: `${project.ticketNumber || ""} ${project.title}`.trim(),
-        payload: JSON.stringify({ txid, amount: paidValue }),
-      }).catch(() => {});
-
-      const integradorEmail = project.integrador?.email || project.client?.email;
-      const integradorName = project.integrador?.name || project.client?.name || "Integrador";
-      if (integradorEmail) {
-        getEmailConfig().then(emailConfig => sendStatusEmail({
-          to: integradorEmail,
-          integradorName,
-          projectTitle: project.title,
-          ticketNumber: project.ticketNumber,
-          newStatus: "projeto_tecnico",
-          config: emailConfig,
-        })).catch(err => console.error("[email] Falha ao enviar:", err));
-      }
-
-      // WhatsApp: notify both admin and integrador about Inter payment
-      (async () => {
-        try {
-          const waConfig = await getWhatsAppConfig();
-          if (!waConfig.enabled) return;
-          const intPhone = project.integrador?.phone || project.client?.phone;
-          const intName = project.integrador?.name || project.client?.name || "Integrador";
-          const valor = paidValue ? paidValue.toFixed(2).replace(".", ",") : "N/A";
-          if (intPhone) {
-            await sendWhatsAppPaymentNotification({
-              config: waConfig, phone: intPhone, recipientName: intName,
-              projectTitle: project.title, ticketNumber: project.ticketNumber || "", valor,
-            });
-          }
-          const adminPhone = await getWhatsAppAdminPhone();
-          if (adminPhone) {
-            await sendWhatsAppPaymentNotification({
-              config: waConfig, phone: adminPhone, recipientName: "Admin",
-              projectTitle: project.title, ticketNumber: project.ticketNumber || "", valor,
-            });
-          }
-        } catch (err) { console.error("[whatsapp] Erro ao notificar pagamento Inter:", err); }
-      })();
-
-      console.log(`[inter] ✓ Projeto ${project.id} avançado para projeto_tecnico via PIX ${txid}`);
-    } catch (err) {
-      console.error("[inter] Erro no webhook:", err);
-    }
-  });
-
-  // ── INTER WEBHOOK CA CERT DOWNLOAD ───────────────────────────────
-  app.get("/api/inter/webhook-ca.pem", requireAuth, async (req, res) => {
-    try {
-      const user = await getCurrentUser(req);
-      if (user?.role !== "admin") return res.status(403).json({ error: "Sem permissão" });
-      const settingsMap = await getSettingsMap();
-      const cert = settingsMap["inter_webhook_cert"] || process.env.INTER_WEBHOOK_CERT;
-      if (!cert) return res.status(404).json({ error: "Certificado Webhook do Inter não configurado" });
-      res.setHeader("Content-Type", "application/x-pem-file");
-      res.setHeader("Content-Disposition", "attachment; filename=inter_webhook_ca.pem");
-      res.send(cert);
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
-    }
-  });
-
-  // ── INTER CERTIFICATE ZIP UPLOAD ────────────────────────────────────
-  // Accepts the ZIP file downloaded from the Inter developer portal and
-  // extracts the .crt and .key file contents, returning them as plain text.
-  app.post("/api/inter/upload-cert", requireAuth, memUpload.single("file"), async (req, res) => {
-    try {
-      const user = await getCurrentUser(req);
-      if (user?.role !== "admin") return res.status(403).json({ error: "Sem permissão" });
-      if (!req.file) return res.status(400).json({ error: "Nenhum arquivo enviado" });
-
-      const buf = req.file.buffer;
-      const mime = req.file.mimetype;
-      const originalName = req.file.originalname.toLowerCase();
-
-      // Handle ZIP file — extract .crt and .key entries
-      const isZip = mime === "application/zip" || mime === "application/x-zip-compressed" ||
-                    mime === "application/octet-stream" && originalName.endsWith(".zip") ||
-                    buf.readUInt32LE(0) === 0x04034b50;
-
-      if (isZip) {
-        const entries = await extractZipEntries(buf);
-        let entityCert = "";
-        let caCert = "";
-        let key = "";
-        const filesFound: string[] = [];
-        for (const [name, content] of Object.entries(entries)) {
-          const n = name.toLowerCase();
-          const baseName = n.split("/").pop() || n;
-          filesFound.push(baseName);
-          if (n.endsWith(".key") || (n.endsWith(".pem") && content.includes("PRIVATE KEY"))) {
-            key = content.trim();
-          } else if (n.endsWith(".crt") || (n.endsWith(".pem") && content.includes("CERTIFICATE"))) {
-            // Distinguish entity cert from Inter CA cert by filename
-            // CA cert is typically named "inter-ca.crt", "ca.crt", or contains "-ca"
-            const isCA = baseName.includes("inter-ca") || baseName === "ca.crt" ||
-                         baseName.startsWith("ca-") || baseName.endsWith("-ca.crt");
-            if (isCA) {
-              caCert = content.trim();
-            } else {
-              entityCert = content.trim();
-            }
-          }
-        }
-        // Fallback: if only one cert found, it's the entity cert
-        if (!entityCert && caCert) {
-          entityCert = caCert;
-          caCert = "";
-        }
-        console.log("[inter] ZIP extracted files:", filesFound, "| entityCert:", !!entityCert, "| caCert:", !!caCert, "| key:", !!key);
-        if (!entityCert && !key) return res.status(422).json({
-          error: `Nenhum certificado ou chave encontrado no ZIP.${filesFound.length ? ` Arquivos encontrados: ${filesFound.join(", ")}` : " O arquivo parece vazio ou em formato não suportado."}`,
-          filesFound,
-        });
-        return res.json({ certificate: entityCert || null, webhookCert: caCert || null, privateKey: key || null, source: "zip", filesFound });
-      }
-
-      // Handle individual .crt or .key file
-      const content = buf.toString("utf8").trim();
-      if (content.includes("BEGIN CERTIFICATE")) {
-        return res.json({ certificate: content, privateKey: null, source: "crt" });
-      }
-      if (content.includes("BEGIN") && content.includes("KEY")) {
-        return res.json({ certificate: null, privateKey: content, source: "key" });
-      }
-
-      return res.status(422).json({ error: "Arquivo não reconhecido. Envie o ZIP do Banco Inter, um arquivo .crt ou um arquivo .key" });
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
-    }
-  });
 
   // ── EMAIL TEST ──────────────────────────────────────────────────────
   app.post("/api/email/test", requireAuth, async (req, res) => {

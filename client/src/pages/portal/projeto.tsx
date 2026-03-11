@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import {
   ArrowLeft, Upload, FileText, Trash2, Activity,
   MapPin, Hash, Zap, Cpu, Sun, User, ExternalLink, Building, DollarSign, AlertCircle, CreditCard, Loader2,
-  QrCode, Copy, Check, Lock, RefreshCw, CheckCircle2
+  Copy, Check, Lock, CheckCircle2
 } from "lucide-react";
 import { Link } from "wouter";
 import type { Project, Client, Document, Timeline, StatusConfig } from "@shared/schema";
@@ -221,113 +221,6 @@ function MercadoPagoBrick({ preferenceId, paymentLink }: { preferenceId: string;
   );
 }
 
-function InterBoletoSection({
-  projectId,
-  copiaECola,
-  qrCodeBase64,
-  linhaDigitavel,
-}: {
-  projectId: string;
-  copiaECola?: string | null;
-  qrCodeBase64?: string | null;
-  linhaDigitavel?: string | null;
-}) {
-  const [copiedPix, setCopiedPix] = useState(false);
-  const [copiedLinha, setCopiedLinha] = useState(false);
-
-  const copyText = async (text: string, setter: (v: boolean) => void) => {
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch {
-      const el = document.createElement("textarea");
-      el.value = text;
-      document.body.appendChild(el);
-      el.select();
-      document.execCommand("copy");
-      document.body.removeChild(el);
-    }
-    setter(true);
-    setTimeout(() => setter(false), 3000);
-  };
-
-  return (
-    <div className="mt-4 p-4 rounded-lg border border-orange-200 bg-orange-50 dark:bg-orange-900/20 dark:border-orange-800 space-y-4">
-      <div className="flex items-center gap-2">
-        <QrCode className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-        <p className="text-sm font-semibold text-orange-800 dark:text-orange-300">Pagamento via Banco Inter</p>
-      </div>
-
-      {/* PIX QR Code */}
-      {copiaECola && (
-        <div className="space-y-2">
-          <p className="text-xs text-orange-700 dark:text-orange-400 font-semibold uppercase tracking-wide">PIX Copia e Cola</p>
-          {qrCodeBase64 && (
-            <div className="flex justify-center mb-2">
-              <img
-                src={`data:image/png;base64,${qrCodeBase64}`}
-                alt="QR Code PIX Banco Inter"
-                className="w-36 h-36 rounded-lg border border-orange-300 bg-white p-1.5"
-                data-testid="img-inter-pix-qrcode"
-              />
-            </div>
-          )}
-          <div className="flex gap-2">
-            <input
-              type="text"
-              readOnly
-              value={copiaECola}
-              className="flex-1 text-xs font-mono bg-white dark:bg-gray-800 border border-orange-300 dark:border-orange-700 rounded px-2 py-1.5 truncate"
-              data-testid="input-inter-pix-copiacola"
-            />
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => copyText(copiaECola, setCopiedPix)}
-              className="shrink-0 border-orange-400 text-orange-700 hover:bg-orange-100 dark:text-orange-400 dark:hover:bg-orange-900/40"
-              data-testid="button-copy-inter-pix"
-            >
-              {copiedPix ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-              <span className="ml-1 text-xs">{copiedPix ? "Copiado!" : "Copiar"}</span>
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Linha Digitável */}
-      {linhaDigitavel && (
-        <div className="space-y-2">
-          <p className="text-xs text-orange-700 dark:text-orange-400 font-semibold uppercase tracking-wide">Linha Digitável do Boleto</p>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              readOnly
-              value={linhaDigitavel}
-              className="flex-1 text-xs font-mono bg-white dark:bg-gray-800 border border-orange-300 dark:border-orange-700 rounded px-2 py-1.5 truncate"
-              data-testid="input-inter-linha-digitavel"
-            />
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => copyText(linhaDigitavel, setCopiedLinha)}
-              className="shrink-0 border-orange-400 text-orange-700 hover:bg-orange-100 dark:text-orange-400 dark:hover:bg-orange-900/40"
-              data-testid="button-copy-linha-digitavel"
-            >
-              {copiedLinha ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-              <span className="ml-1 text-xs">{copiedLinha ? "Copiado!" : "Copiar"}</span>
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {!copiaECola && !linhaDigitavel && (
-        <p className="text-[11px] text-orange-600 dark:text-orange-500 text-center">
-          Os dados do boleto serão carregados automaticamente. Se não aparecerem, clique em "verificar pagamento" abaixo.
-        </p>
-      )}
-    </div>
-  );
-}
-
 type ProjectDetail = Project & { client: Client | null };
 
 function InfoRow({ label, value, link }: { label: string; value?: string | null; link?: boolean }) {
@@ -511,65 +404,14 @@ export default function PortalProjetoPage() {
     },
   });
 
-  const interRefreshMut = useMutation({
-    mutationFn: () => apiRequest("POST", `/api/projects/${id}/inter-refresh-pix`),
-    onSuccess: (data: any) => {
-      queryClient.setQueryData(["/api/projects", id], data);
-      if (data?.status === "projeto_tecnico") {
-        toast({ title: "Pagamento confirmado!", description: "Seu projeto foi avançado automaticamente." });
-        queryClient.invalidateQueries({ queryKey: ["/api/projects", id, "timeline"] });
-      }
-    },
-    onError: (err: any) => {
-      const raw = err?.message || "";
-      const isScope = raw.includes("scope") || raw.includes("401");
-      const msg = isScope
-        ? "O cliente Inter não possui o escopo boleto-cobranca.read. Adicione essa permissão no portal de desenvolvedores do Inter."
-        : raw || "Não foi possível consultar o Banco Inter.";
-      toast({ title: "Erro ao consultar Inter", description: msg, variant: "destructive" });
-    },
-  });
-
-  const interScopeErrorRef = useRef(false);
-
-  const silentInterRefresh = async () => {
-    if (interScopeErrorRef.current) return;
-    try {
-      const data = await apiRequest("POST", `/api/projects/${id}/inter-refresh-pix`);
-      queryClient.setQueryData(["/api/projects", id], data);
-      if ((data as any)?.status === "projeto_tecnico") {
-        toast({ title: "Pagamento confirmado!", description: "Seu projeto foi avançado automaticamente." });
-        queryClient.invalidateQueries({ queryKey: ["/api/projects", id, "timeline"] });
-      }
-    } catch (err: any) {
-      const msg = err?.message || "";
-      if (msg.includes("scope") || msg.includes("401")) {
-        interScopeErrorRef.current = true;
-      }
-    }
-  };
-
-  useEffect(() => {
-    if (!project) return;
-    const hasLinha = !!(project as any).interBoletoLinhaDigitavel;
-    if (project.interPixTxid && (!project.interPixCopiaECola || !hasLinha) && project.status === "aprovado_pagamento_pendente") {
-      silentInterRefresh();
-    }
-  }, [project?.id, project?.interPixTxid, project?.interPixCopiaECola, (project as any)?.interBoletoLinhaDigitavel]);
-
   useEffect(() => {
     if (!project || project.status !== "aprovado_pagamento_pendente") return;
-    if (!project.interPixTxid && !project.paymentLink && !project.pixQrCode) return;
+    if (!project.paymentLink) return;
     const interval = setInterval(() => {
-      if (interScopeErrorRef.current) return;
-      if (project.interPixTxid) {
-        silentInterRefresh();
-      } else {
-        queryClient.invalidateQueries({ queryKey: ["/api/projects", id] });
-      }
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", id] });
     }, 30000);
     return () => clearInterval(interval);
-  }, [project?.status, project?.interPixTxid, project?.paymentLink, id]);
+  }, [project?.status, project?.paymentLink, id]);
 
   // Use status configs from DB (same as Kanban), sorted by sortOrder
   // Fall back to DEFAULT_STATUS_CONFIGS while loading
@@ -747,21 +589,6 @@ export default function PortalProjetoPage() {
                   </div>
 
                   <div className="space-y-4">
-                    {/* Banco Inter — mostra boleto + PIX quando txid existir */}
-                    {project.interPixTxid && (
-                      <InterBoletoSection
-                        projectId={project.id}
-                        copiaECola={project.interPixCopiaECola}
-                        qrCodeBase64={project.interPixQrCodeBase64}
-                        linhaDigitavel={(project as any).interBoletoLinhaDigitavel}
-                      />
-                    )}
-
-                    {/* PIX Padrão (Mercado Pago) */}
-                    {project.pixQrCode && project.pixQrCodeBase64 && (
-                      <PixSection qrCode={project.pixQrCode} qrCodeBase64={project.pixQrCodeBase64} />
-                    )}
-
                     {/* MP Checkout */}
                     {project.paymentLink && (
                       <MercadoPagoBrick
@@ -771,31 +598,12 @@ export default function PortalProjetoPage() {
                     )}
 
                     {/* Aguardando — nenhum método gerado ainda */}
-                    {!project.interPixTxid && !project.pixQrCode && !project.paymentLink && (
+                    {!project.paymentLink && (
                       <div className="flex flex-col items-center justify-center py-8 text-center bg-muted/30 rounded-2xl border border-dashed border-border/60">
                         <AlertCircle className="h-8 w-8 text-muted-foreground mb-3" />
                         <p className="text-sm font-bold">Aguardando geração da cobrança</p>
                         <p className="text-xs text-muted-foreground mt-1">Nossa equipe financeira está processando seu pedido.</p>
                       </div>
-                    )}
-
-                    {/* Verificar pagamento Inter */}
-                    {project.interPixTxid && project.status === "aprovado_pagamento_pendente" && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="w-full text-xs text-muted-foreground"
-                        onClick={() => interRefreshMut.mutate()}
-                        disabled={interRefreshMut.isPending}
-                        data-testid="button-inter-check-status"
-                      >
-                        {interRefreshMut.isPending ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
-                        ) : (
-                          <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
-                        )}
-                        Já paguei — verificar pagamento
-                      </Button>
                     )}
                   </div>
                 </div>

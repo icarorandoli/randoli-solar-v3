@@ -2701,7 +2701,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
   // ─── NFS-e ROUTES ────────────────────────────────────────────────────
   app.get("/api/nfse/notas", requireAuth, async (req, res) => {
-    if (!["admin", "financeiro"].includes((req.user as any)?.role)) return res.status(403).json({ error: "Sem permissão" });
+    const user = await getCurrentUser(req);
+    if (!user || !["admin", "financeiro"].includes(user.role)) return res.status(403).json({ error: "Sem permissão" });
     const notas = await storage.getNfseNotas();
     res.json(notas);
   });
@@ -2712,7 +2713,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   });
 
   app.post("/api/nfse/emitir/:projectId", requireAuth, async (req, res) => {
-    if (!["admin", "financeiro"].includes((req.user as any)?.role)) return res.status(403).json({ error: "Sem permissão" });
+    const user = await getCurrentUser(req);
+    if (!user || !["admin", "financeiro"].includes(user.role)) return res.status(403).json({ error: "Sem permissão" });
     try {
       const project = await storage.getProject(req.params.projectId);
       if (!project) return res.status(404).json({ error: "Projeto não encontrado" });
@@ -2779,7 +2781,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   });
 
   app.post("/api/nfse/cancelar/:notaId", requireAuth, async (req, res) => {
-    if (!["admin"].includes((req.user as any)?.role)) return res.status(403).json({ error: "Sem permissão" });
+    const user = await getCurrentUser(req);
+    if (!user || user.role !== "admin") return res.status(403).json({ error: "Sem permissão" });
     const nota = await storage.getNfseNota(req.params.notaId);
     if (!nota) return res.status(404).json({ error: "Nota não encontrada" });
     await storage.updateNfseNota(nota.id, { status: "cancelada" });
@@ -2787,13 +2790,15 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   });
 
   app.delete("/api/nfse/notas/:notaId", requireAuth, async (req, res) => {
-    if (!["admin"].includes((req.user as any)?.role)) return res.status(403).json({ error: "Sem permissão" });
+    const user = await getCurrentUser(req);
+    if (!user || user.role !== "admin") return res.status(403).json({ error: "Sem permissão" });
     await storage.deleteNfseNota(req.params.notaId);
     res.json({ success: true });
   });
 
   app.post("/api/nfse/upload-certificado", requireAuth, memUpload.single("certificado"), async (req, res) => {
-    if (!["admin"].includes((req.user as any)?.role)) return res.status(403).json({ error: "Sem permissão" });
+    const user = await getCurrentUser(req);
+    if (!user || user.role !== "admin") return res.status(403).json({ error: "Sem permissão" });
     if (!req.file) return res.status(400).json({ error: "Nenhum arquivo enviado" });
     const base64 = req.file.buffer.toString("base64");
     await storage.updateSetting("nfse_certificado_pfx", base64);
@@ -2801,7 +2806,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   });
 
   app.post("/api/nfse/testar-conexao", requireAuth, async (req, res) => {
-    if (!["admin"].includes((req.user as any)?.role)) return res.status(403).json({ error: "Sem permissão" });
+    const user = await getCurrentUser(req);
+    if (!user || user.role !== "admin") return res.status(403).json({ error: "Sem permissão" });
     const settingsMap = await getSettingsMap();
     const config = getNfseConfig(settingsMap);
     if (!config) return res.status(400).json({ error: "NFS-e não configurada" });

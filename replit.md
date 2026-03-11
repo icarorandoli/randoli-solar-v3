@@ -153,21 +153,23 @@ shared/
 - Session secret: variável `SESSION_SECRET`
 - Banco de dados: `DATABASE_URL` (PostgreSQL via Replit)
 - Object Storage: `DEFAULT_OBJECT_STORAGE_BUCKET_ID`, `PRIVATE_OBJECT_DIR`, `PUBLIC_OBJECT_SEARCH_PATHS`
-- Mercado Pago: `MP_ACCESS_TOKEN` (env var ou site_settings)
-- Inter Cobrança: certificado mTLS + client_id/secret via site_settings; scopes necessários: `boleto-cobranca.write` + `boleto-cobranca.read`
+- Mercado Pago: `MP_ACCESS_TOKEN` (env var ou site_settings) — único meio de pagamento
+- NFS-e COPLAN SPED v1.01 (Sinop/MT): certificado PFX A1 + config via site_settings (nfse_enabled, nfse_ctrib_nac, nfse_ctrib_mun, nfse_cnbs, nfse_op_simples_nac, nfse_reg_esp_trib, nfse_serie_dps, nfse_proximo_dps). Namespace: `http://www.sped.fazenda.gov.br/nfse`. Método: `RecepcionarLoteDpsSincrono`. Elemento raiz: `DPS` (v1.01).
 - WhatsApp (Evolution API): `whatsapp_api_url`, `whatsapp_api_key` (masked), `whatsapp_instance_name`, `whatsapp_admin_phone`, `whatsapp_enabled` via site_settings
 - GitHub: repo `icarorandoli/Novo-crm-projetos`, VPS: `cd /root/randoli-solar && git pull origin main && npm run build && pm2 restart all`
 
 ## Segurança (Auditoria Março/2026)
 - Todas as rotas project-scoped (documents, timeline, chat) verificam ownership para integradores
 - Settings GET requer auth + role admin/engenharia/financeiro; POST requer admin
-- Inter test connection requer admin
+- NFS-e emissão e upload de certificado requer admin/financeiro
 - Client CRUD requer admin/internal role
 - Project DELETE requer admin
 - Document DELETE verifica ownership para integradores
 - Rate limiting no login: máx 10 tentativas por IP a cada 15min
 
 ## Funcionalidades Recentes
+- **NFS-e SPED v1.01**: Módulo `server/nfse.ts` reescrito para padrão COPLAN SPED NFS-e Nacional (Sinop/MT). Substituiu ABRASF 2.02 RPS pelo DPS (Declaração de Prestação de Serviços) com namespace `http://www.sped.fazenda.gov.br/nfse`, método `RecepcionarLoteDpsSincrono`, campos `cTribNac/cTribMun/cNBS/opSimpNac/regEspTrib`. UI de configurações atualizada com os campos SPED.
+- **Banco Inter removido**: Integração Inter Cobrança completamente removida; apenas Mercado Pago como meio de pagamento.
 - WhatsApp (Evolution API): notificações automáticas para admin (novo projeto) e integrador (mudança de status, documentos, timeline, pagamento); aba "WhatsApp" em Configurações com teste de conexão
 - Filtros avançados na lista de projetos: por cliente, concessionária, status
 - Busca melhorada: ticket number, endereço, nº instalação

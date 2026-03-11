@@ -1,5 +1,6 @@
 import https from "https";
 import { URL } from "url";
+import crypto from "crypto";
 
 export interface NfseConfig {
   enabled: boolean;
@@ -9,12 +10,14 @@ export interface NfseConfig {
   inscricaoMunicipal: string;
   municipioCodigo: string;
   razaoSocial: string;
-  codigoServico: string;
+  cTribNac: string;
+  cTribMun: string;
+  cNBS: string;
   aliquotaIss: string;
-  regimeTributacao: string;
-  naturezaOperacao: string;
-  serieRps: string;
-  proximoRps: number;
+  opSimpNac: string;
+  regEspTrib: string;
+  serie: string;
+  proximoDps: number;
   informacoesComplementares: string;
   certificadoPfxBase64: string;
   certificadoSenha: string;
@@ -23,7 +26,7 @@ export interface NfseConfig {
 
 export interface EmitirNfseParams {
   config: NfseConfig;
-  numeroRps: string;
+  numeroDps: string;
   valor: string;
   tomadorNome: string;
   tomadorCpfCnpj: string;
@@ -48,100 +51,165 @@ export interface NfseResult {
   error?: string;
 }
 
-function buildRpsXml(params: EmitirNfseParams): string {
-  const cfg = params.config;
-  const now = params.dataEmissao ?? new Date();
-  const dataStr = now.toISOString().replace("Z", "");
-  const competencia = now.toISOString().split("T")[0];
-  const descricao = params.descricaoServico || cfg.descricaoServico || "Prestação de serviços de engenharia solar fotovoltaica";
-  const complementares = cfg.informacoesComplementares || "EMITIDO POR ME OU EPP OPTANTE PELO Simples Nacional";
-
-  const tomadorPF = !params.tomadorCpfCnpj?.includes("/");
-  const cpfCnpjTag = tomadorPF
-    ? `<Cpf>${params.tomadorCpfCnpj?.replace(/\D/g, "")}</Cpf>`
-    : `<Cnpj>${params.tomadorCpfCnpj?.replace(/\D/g, "")}</Cnpj>`;
-
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<EnviarLoteRpsEnvio xmlns="http://www.abrasf.org.br/nfse.xsd">
-  <LoteRps Id="lote1" versao="2.02">
-    <NumeroLote>1</NumeroLote>
-    <CpfCnpj>
-      <Cnpj>${cfg.cnpjPrestador.replace(/\D/g, "")}</Cnpj>
-    </CpfCnpj>
-    <InscricaoMunicipal>${cfg.inscricaoMunicipal}</InscricaoMunicipal>
-    <QuantidadeRps>1</QuantidadeRps>
-    <ListaRps>
-      <Rps>
-        <InfDeclaracaoPrestacaoServico Id="rps${params.numeroRps}">
-          <Rps>
-            <IdentificacaoRps>
-              <Numero>${params.numeroRps}</Numero>
-              <Serie>${cfg.serieRps}</Serie>
-              <Tipo>1</Tipo>
-            </IdentificacaoRps>
-            <DataEmissao>${dataStr}</DataEmissao>
-            <Status>1</Status>
-          </Rps>
-          <Competencia>${competencia}</Competencia>
-          <Servico>
-            <Valores>
-              <ValorServicos>${parseFloat(params.valor.replace(",", ".")).toFixed(2)}</ValorServicos>
-              <Aliquota>${parseFloat(cfg.aliquotaIss).toFixed(4)}</Aliquota>
-            </Valores>
-            <IssRetido>2</IssRetido>
-            <ItemListaServico>${cfg.codigoServico}</ItemListaServico>
-            <Discriminacao>${descricao}. ${complementares}</Discriminacao>
-            <CodigoMunicipio>${cfg.municipioCodigo}</CodigoMunicipio>
-            <ExigibilidadeISS>1</ExigibilidadeISS>
-          </Servico>
-          <Prestador>
-            <CpfCnpj>
-              <Cnpj>${cfg.cnpjPrestador.replace(/\D/g, "")}</Cnpj>
-            </CpfCnpj>
-            <InscricaoMunicipal>${cfg.inscricaoMunicipal}</InscricaoMunicipal>
-          </Prestador>
-          <Tomador>
-            <IdentificacaoTomador>
-              <CpfCnpj>
-                ${cpfCnpjTag}
-              </CpfCnpj>
-            </IdentificacaoTomador>
-            <RazaoSocial>${params.tomadorNome}</RazaoSocial>
-            ${params.tomadorEmail ? `<Contato><Email>${params.tomadorEmail}</Email></Contato>` : ""}
-            ${params.tomadorLogradouro ? `
-            <Endereco>
-              <Endereco>${params.tomadorLogradouro}</Endereco>
-              ${params.tomadorNumero ? `<Numero>${params.tomadorNumero}</Numero>` : ""}
-              ${params.tomadorBairro ? `<Bairro>${params.tomadorBairro}</Bairro>` : ""}
-              ${params.tomadorCodigoMunicipio ? `<CodigoMunicipio>${params.tomadorCodigoMunicipio}</CodigoMunicipio>` : ""}
-              ${params.tomadorUf ? `<Uf>${params.tomadorUf}</Uf>` : ""}
-              ${params.tomadorCep ? `<Cep>${params.tomadorCep?.replace(/\D/g, "")}</Cep>` : ""}
-            </Endereco>` : ""}
-          </Tomador>
-          <RegimeEspecialTributacao>${cfg.regimeTributacao}</RegimeEspecialTributacao>
-          <OptanteSimplesNacional>1</OptanteSimplesNacional>
-          <IncentivoFiscal>2</IncentivoFiscal>
-        </InfDeclaracaoPrestacaoServico>
-      </Rps>
-    </ListaRps>
-  </LoteRps>
-</EnviarLoteRpsEnvio>`;
+function formatDateTimeBR(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const y = date.getFullYear();
+  const mo = pad(date.getMonth() + 1);
+  const d = pad(date.getDate());
+  const h = pad(date.getHours());
+  const mi = pad(date.getMinutes());
+  const s = pad(date.getSeconds());
+  return `${y}-${mo}-${d}T${h}:${mi}:${s}-04:00`;
 }
 
-function buildSoapEnvelope(xml: string, method: string): string {
+function formatDateOnly(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+function cleanDoc(doc: string): string {
+  return doc.replace(/\D/g, "");
+}
+
+function buildDpsXml(params: EmitirNfseParams): string {
+  const cfg = params.config;
+  const now = params.dataEmissao ?? new Date();
+  const dhEmi = formatDateTimeBR(now);
+  const dCompet = formatDateOnly(now);
+  const tpAmb = cfg.ambiente === "producao" ? "1" : "2";
+  const descricao = params.descricaoServico || cfg.descricaoServico ||
+    "Prestação de serviços de engenharia solar fotovoltaica";
+  const nDPS = params.numeroDps;
+  const dpsId = `DPS${String(nDPS).padStart(15, "0")}`;
+  const cnpjPrestador = cleanDoc(cfg.cnpjPrestador);
+  const imPrestador = cfg.inscricaoMunicipal.replace(/\D/g, "");
+  const cLocEmi = cfg.municipioCodigo || "5107909";
+
+  const tomadorDoc = cleanDoc(params.tomadorCpfCnpj || "");
+  const tomadorDocTag = tomadorDoc.length === 11
+    ? `<CPF>${tomadorDoc}</CPF>`
+    : `<CNPJ>${tomadorDoc}</CNPJ>`;
+
+  const valorServico = parseFloat(params.valor.replace(",", ".")).toFixed(2);
+  const pAliq = parseFloat(cfg.aliquotaIss).toFixed(2);
+
+  const enderecoPrestador = `<end>
+        <endNac>
+          <cMun>${cLocEmi}</cMun>
+          <CEP>78555000</CEP>
+        </endNac>
+        <xLgr>Av. dos Ingás</xLgr>
+        <nro>SN</nro>
+        <xBairro>Centro</xBairro>
+      </end>`;
+
+  let tomaEnd = "";
+  if (params.tomadorCodigoMunicipio && params.tomadorCep) {
+    tomaEnd = `<end>
+        <endNac>
+          <cMun>${params.tomadorCodigoMunicipio}</cMun>
+          <CEP>${cleanDoc(params.tomadorCep)}</CEP>
+        </endNac>
+        ${params.tomadorLogradouro ? `<xLgr>${params.tomadorLogradouro}</xLgr>` : ""}
+        ${params.tomadorNumero ? `<nro>${params.tomadorNumero}</nro>` : ""}
+        ${params.tomadorBairro ? `<xBairro>${params.tomadorBairro}</xBairro>` : ""}
+      </end>`;
+  }
+
+  return `<DPS versao="1.01" xmlns="http://www.sped.fazenda.gov.br/nfse">
+  <infDPS Id="${dpsId}">
+    <tpAmb>${tpAmb}</tpAmb>
+    <dhEmi>${dhEmi}</dhEmi>
+    <verAplic>RandoliSolar1.00</verAplic>
+    <serie>${cfg.serie || "1"}</serie>
+    <nDPS>${nDPS}</nDPS>
+    <dCompet>${dCompet}</dCompet>
+    <tpEmit>1</tpEmit>
+    <cLocEmi>${cLocEmi}</cLocEmi>
+    <prest>
+      <CNPJ>${cnpjPrestador}</CNPJ>
+      <IM>${imPrestador}</IM>
+    </prest>
+    <toma>
+      ${tomadorDocTag}
+      <xNome>${params.tomadorNome}</xNome>
+      ${params.tomadorEmail ? `<email>${params.tomadorEmail}</email>` : ""}
+      ${tomaEnd}
+    </toma>
+    <serv>
+      <locPrest>
+        <cLocPrestacao>${cLocEmi}</cLocPrestacao>
+      </locPrest>
+      <cServ>
+        <cTribNac>${cfg.cTribNac || "010102"}</cTribNac>
+        <cTribMun>${cfg.cTribMun || "0101010001"}</cTribMun>
+        <xDescServ>${descricao}</xDescServ>
+        <cNBS>${cfg.cNBS || "100000000"}</cNBS>
+      </cServ>
+    </serv>
+    <valores>
+      <vServPrest>
+        <vServ>${valorServico}</vServ>
+      </vServPrest>
+      <trib>
+        <tribMun>
+          <tribISSQN>1</tribISSQN>
+          <tpRetISSQN>1</tpRetISSQN>
+          <pAliq>${pAliq}</pAliq>
+        </tribMun>
+        <totTrib>
+          <indTotTrib>0</indTotTrib>
+        </totTrib>
+      </trib>
+    </valores>
+    <regTrib>
+      <opSimpNac>${cfg.opSimpNac || "3"}</opSimpNac>
+      <regEspTrib>${cfg.regEspTrib || "0"}</regEspTrib>
+    </regTrib>
+  </infDPS>
+</DPS>`;
+}
+
+function buildLoteDpsXml(dpsXml: string, cfg: NfseConfig, loteNum: number): string {
+  const cnpjPrestador = cleanDoc(cfg.cnpjPrestador);
+  const imPrestador = cfg.inscricaoMunicipal.replace(/\D/g, "");
+
   return `<?xml version="1.0" encoding="UTF-8"?>
-<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:e="http://www.abrasf.org.br/nfse.xsd">
+<EnviarLoteDpsSincronoEnvio versao="1.01" xmlns="http://www.sped.fazenda.gov.br/nfse">
+  <NumeroLote>${loteNum}</NumeroLote>
+  <Prestador>
+    <CNPJ>${cnpjPrestador}</CNPJ>
+    <IM>${imPrestador}</IM>
+  </Prestador>
+  <QuantidadeDPS>1</QuantidadeDPS>
+  <ListaDps>
+    <Dps>
+${dpsXml}
+    </Dps>
+  </ListaDps>
+</EnviarLoteDpsSincronoEnvio>`;
+}
+
+function buildSoapEnvelope(xml: string): string {
+  const cabecalho = `<?xml version="1.0" encoding="UTF-8"?><cabecalho xmlns="http://www.sped.fazenda.gov.br/nfse" versao="1.01"><versaoDados>1.01</versaoDados></cabecalho>`;
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:e="http://www.sped.fazenda.gov.br/nfse">
   <soapenv:Header/>
   <soapenv:Body>
-    <e:${method}>
-      <nfseCabecMsg><![CDATA[<?xml version="1.0" encoding="UTF-8"?><cabecalho xmlns="http://www.abrasf.org.br/nfse.xsd" versao="2.02"><versaoDados>2.02</versaoDados></cabecalho>]]></nfseCabecMsg>
+    <e:RecepcionarLoteDpsSincrono>
+      <nfseCabecMsg><![CDATA[${cabecalho}]]></nfseCabecMsg>
       <nfseDadosMsg><![CDATA[${xml}]]></nfseDadosMsg>
-    </e:${method}>
+    </e:RecepcionarLoteDpsSincrono>
   </soapenv:Body>
 </soapenv:Envelope>`;
 }
 
-function makeHttpsRequest(urlStr: string, body: string, pfxBuffer: Buffer, passphrase: string): Promise<string> {
+function makeHttpsRequest(
+  urlStr: string,
+  body: string,
+  pfxBuffer: Buffer,
+  passphrase: string
+): Promise<string> {
   return new Promise((resolve, reject) => {
     const url = new URL(urlStr);
     const options: https.RequestOptions = {
@@ -151,7 +219,7 @@ function makeHttpsRequest(urlStr: string, body: string, pfxBuffer: Buffer, passp
       method: "POST",
       headers: {
         "Content-Type": "text/xml; charset=utf-8",
-        "SOAPAction": "",
+        "SOAPAction": "http://www.sped.fazenda.gov.br/nfse/RecepcionarLoteDpsSincrono",
         "Content-Length": Buffer.byteLength(body, "utf-8"),
       },
       pfx: pfxBuffer,
@@ -177,11 +245,11 @@ function extractFromXml(xml: string, tag: string): string | undefined {
 
 function extractError(xml: string): string {
   const msg =
-    extractFromXml(xml, "MensagemErro") ||
     extractFromXml(xml, "Mensagem") ||
+    extractFromXml(xml, "MensagemErro") ||
     extractFromXml(xml, "faultstring") ||
     extractFromXml(xml, "Correcao");
-  return msg || "Erro desconhecido ao emitir NFS-e. Verifique as configurações.";
+  return msg || "Erro desconhecido ao emitir NFS-e. Verifique as configurações e logs.";
 }
 
 export async function emitirNfse(params: EmitirNfseParams): Promise<NfseResult> {
@@ -196,10 +264,13 @@ export async function emitirNfse(params: EmitirNfseParams): Promise<NfseResult> 
 
   try {
     const pfxBuffer = Buffer.from(config.certificadoPfxBase64, "base64");
-    const rpsXml = buildRpsXml(params);
-    const soapBody = buildSoapEnvelope(rpsXml, "RecepcionarLoteRpsSincrono");
+    const loteNum = Date.now();
+    const dpsXml = buildDpsXml(params);
+    const loteXml = buildLoteDpsXml(dpsXml, config, loteNum);
+    const soapBody = buildSoapEnvelope(loteXml);
 
-    console.log(`[nfse] Emitindo RPS ${params.numeroRps} para ${config.webserviceUrl}`);
+    console.log(`[nfse-sped] Emitindo DPS ${params.numeroDps} ambiente=${config.ambiente} url=${config.webserviceUrl}`);
+    console.log(`[nfse-sped] DPS XML preview:\n${dpsXml.slice(0, 800)}`);
 
     const response = await makeHttpsRequest(
       config.webserviceUrl,
@@ -208,12 +279,25 @@ export async function emitirNfse(params: EmitirNfseParams): Promise<NfseResult> 
       config.certificadoSenha
     );
 
-    console.log("[nfse] Resposta recebida:", response.slice(0, 500));
+    console.log("[nfse-sped] Resposta recebida:", response.slice(0, 800));
 
-    if (response.includes("ListaNfse") || response.includes("Numero") && !response.includes("MensagemErro")) {
-      const numeroNota = extractFromXml(response, "Numero");
-      const codigoVerificacao = extractFromXml(response, "CodigoVerificacao");
-      const linkNota = extractFromXml(response, "OutrasInformacoes") || extractFromXml(response, "LinkNota");
+    const hasNfse =
+      response.includes("nNFSe") ||
+      response.includes("CompNfse") ||
+      response.includes("InfNfse");
+    const hasError =
+      response.includes("ListaMensagemRetorno") ||
+      response.includes("Mensagem") ||
+      response.includes("faultstring");
+
+    if (hasNfse && !response.includes("<Mensagem>")) {
+      const numeroNota =
+        extractFromXml(response, "nNFSe") ||
+        extractFromXml(response, "Numero");
+      const codigoVerificacao = extractFromXml(response, "cVerifNFSe") ||
+        extractFromXml(response, "CodigoVerificacao");
+      const linkNota = extractFromXml(response, "linkNFSe") ||
+        extractFromXml(response, "OutrasInformacoes");
 
       return {
         success: true,
@@ -230,8 +314,11 @@ export async function emitirNfse(params: EmitirNfseParams): Promise<NfseResult> 
       };
     }
   } catch (err: any) {
-    console.error("[nfse] Erro ao emitir:", err);
-    return { success: false, error: err?.message || "Erro de conexão ao webservice NFS-e." };
+    console.error("[nfse-sped] Erro ao emitir:", err);
+    return {
+      success: false,
+      error: err?.message || "Erro de conexão ao webservice NFS-e SPED.",
+    };
   }
 }
 
@@ -239,21 +326,25 @@ export function getNfseConfig(settingsMap: Record<string, string>): NfseConfig |
   if (settingsMap["nfse_enabled"] !== "true") return null;
   return {
     enabled: true,
-    ambiente: (settingsMap["nfse_ambiente"] as "producao" | "homologacao") || "producao",
+    ambiente: (settingsMap["nfse_ambiente"] as "producao" | "homologacao") || "homologacao",
     webserviceUrl: settingsMap["nfse_webservice_url"] || "",
     cnpjPrestador: settingsMap["nfse_cnpj_prestador"] || "",
     inscricaoMunicipal: settingsMap["nfse_inscricao_municipal"] || "",
     municipioCodigo: settingsMap["nfse_municipio_codigo"] || "5107909",
     razaoSocial: settingsMap["nfse_razao_social"] || "",
-    codigoServico: settingsMap["nfse_codigo_servico"] || "",
+    cTribNac: settingsMap["nfse_ctrib_nac"] || "010102",
+    cTribMun: settingsMap["nfse_ctrib_mun"] || "0101010001",
+    cNBS: settingsMap["nfse_cnbs"] || "100000000",
     aliquotaIss: settingsMap["nfse_aliquota_iss"] || "2.00",
-    regimeTributacao: settingsMap["nfse_regime_tributacao"] || "6",
-    naturezaOperacao: settingsMap["nfse_natureza_operacao"] || "1",
-    serieRps: settingsMap["nfse_serie_rps"] || "1",
-    proximoRps: parseInt(settingsMap["nfse_proximo_rps"] || "1"),
+    opSimpNac: settingsMap["nfse_op_simples_nac"] || "3",
+    regEspTrib: settingsMap["nfse_reg_esp_trib"] || "0",
+    serie: settingsMap["nfse_serie_dps"] || settingsMap["nfse_serie_rps"] || "1",
+    proximoDps: parseInt(settingsMap["nfse_proximo_dps"] || settingsMap["nfse_proximo_rps"] || "1"),
     informacoesComplementares: settingsMap["nfse_informacoes_complementares"] || "",
     certificadoPfxBase64: settingsMap["nfse_certificado_pfx"] || "",
     certificadoSenha: settingsMap["nfse_certificado_senha"] || "",
-    descricaoServico: settingsMap["nfse_descricao_servico"] || "Prestação de serviços de engenharia e homologação de sistemas fotovoltaicos",
+    descricaoServico:
+      settingsMap["nfse_descricao_servico"] ||
+      "Prestação de serviços de engenharia e homologação de sistemas fotovoltaicos",
   };
 }

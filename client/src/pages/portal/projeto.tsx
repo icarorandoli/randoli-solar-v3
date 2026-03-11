@@ -77,6 +77,59 @@ const DOC_TYPE_LABELS: Record<string, string> = {
   comprovante_pagamento: "Comprovante de Pagamento", outro: "Outro",
 };
 
+function PixQrCodeSection({ pixQrCode, pixQrCodeBase64, gateway }: { pixQrCode: string; pixQrCodeBase64?: string | null; gateway: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(pixQrCode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
+    } catch {}
+  };
+
+  const gatewayLabel = gateway === "pagseguro" ? "PagSeguro" : "Mercado Pago";
+
+  return (
+    <div className="flex flex-col items-center gap-4 p-6 rounded-2xl bg-white dark:bg-black/20 border border-emerald-500/20">
+      <div className="flex items-center gap-2 text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-widest">
+        <Zap className="h-3.5 w-3.5" /> PIX via {gatewayLabel}
+      </div>
+      {pixQrCodeBase64 && (
+        <div className="p-3 bg-white rounded-xl border border-border/40 shadow-sm">
+          <img
+            src={pixQrCodeBase64.startsWith("data:") ? pixQrCodeBase64 : pixQrCodeBase64.startsWith("http") ? pixQrCodeBase64 : `data:image/png;base64,${pixQrCodeBase64}`}
+            alt="QR Code PIX"
+            className="w-48 h-48"
+            data-testid="img-pix-qrcode"
+          />
+        </div>
+      )}
+      <div className="w-full space-y-2">
+        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest text-center">Copie o código PIX</p>
+        <div className="relative">
+          <Input
+            readOnly
+            value={pixQrCode}
+            className="pr-12 text-[11px] font-mono bg-muted/30 truncate"
+            data-testid="input-pix-code"
+          />
+          <Button
+            size="icon"
+            variant="ghost"
+            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+            onClick={handleCopy}
+            data-testid="button-copy-pix"
+          >
+            {copied ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+          </Button>
+        </div>
+        {copied && <p className="text-[10px] text-emerald-600 text-center font-bold">Copiado!</p>}
+      </div>
+    </div>
+  );
+}
+
 function MercadoPagoBrick({ preferenceId, paymentLink }: { preferenceId: string; paymentLink?: string | null }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
@@ -589,16 +642,31 @@ export default function PortalProjetoPage() {
                   </div>
 
                   <div className="space-y-4">
-                    {/* MP Checkout */}
-                    {project.paymentLink && (
+                    {project.pixQrCode && (
+                      <PixQrCodeSection
+                        pixQrCode={project.pixQrCode}
+                        pixQrCodeBase64={project.pixQrCodeBase64}
+                        gateway={project.paymentGateway || "mp"}
+                      />
+                    )}
+
+                    {project.paymentLink && !project.pixQrCode && (
                       <MercadoPagoBrick
                         preferenceId={project.paymentId || ""}
                         paymentLink={project.paymentLink}
                       />
                     )}
 
-                    {/* Aguardando — nenhum método gerado ainda */}
-                    {!project.paymentLink && (
+                    {project.paymentLink && project.pixQrCode && (
+                      <div className="pt-2 border-t border-border/30">
+                        <MercadoPagoBrick
+                          preferenceId={project.paymentId || ""}
+                          paymentLink={project.paymentLink}
+                        />
+                      </div>
+                    )}
+
+                    {!project.paymentLink && !project.pixQrCode && (
                       <div className="flex flex-col items-center justify-center py-8 text-center bg-muted/30 rounded-2xl border border-dashed border-border/60">
                         <AlertCircle className="h-8 w-8 text-muted-foreground mb-3" />
                         <p className="text-sm font-bold">Aguardando geração da cobrança</p>

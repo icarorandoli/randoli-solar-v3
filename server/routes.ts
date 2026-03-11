@@ -15,6 +15,7 @@ import {
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { sendStatusEmail, sendTestEmail, sendPasswordResetEmail, sendDocumentEmail, sendTimelineEmail, type EmailConfig } from "./email";
 import { createPaymentPreference, createPixPayment, getPaymentInfo, getMerchantOrder, verifyWebhookSignature } from "./mercadopago";
+import { createPagSeguroPixCharge, getPagSeguroOrderInfo, verifyPagSeguroWebhookSignature, extractPagSeguroPaymentStatus } from "./pagseguro";
 import { testWhatsAppConnection, type WhatsAppConfig, sendWhatsAppNewProjectNotification, sendWhatsAppAdminCreatedProjectNotification, sendWhatsAppStatusNotification, sendWhatsAppTimelineNotification, sendWhatsAppDocumentNotification, sendWhatsAppPaymentNotification } from "./whatsapp";
 import { emitirNfse, getNfseConfig } from "./nfse";
 import { registerUploadRoutes } from "./upload";
@@ -784,18 +785,19 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
                 paymentLink: pref.initPoint,
                 paymentId: pref.id,
                 paymentStatus: "pending",
+                paymentGateway: "mp",
               };
               try {
                 const pix = await createPixPayment(paymentArgs);
                 updatePayment.pixQrCode = pix.qrCode;
                 updatePayment.pixQrCodeBase64 = pix.qrCodeBase64;
                 updatePayment.pixPaymentId = pix.paymentId;
-                console.log(`[mercadopago] ✓ PIX criado para projeto ${(req.params.id as string)}`);
+                console.log(`[mercadopago] PIX criado para projeto ${(req.params.id as string)}`);
               } catch (pixErr) {
                 console.error("[mercadopago] Erro ao criar PIX (continuando sem):", pixErr);
               }
               await storage.updateProject((req.params.id as string), updatePayment);
-              console.log(`[mercadopago] ✓ Preferência criada para projeto ${(req.params.id as string)}`);
+              console.log(`[mercadopago] Preferência criada para projeto ${(req.params.id as string)}`);
             } catch (err) {
               console.error("[mercadopago] Erro ao criar pagamento:", err);
             }
@@ -922,7 +924,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         return res.status(400).json({ error: "Pagamento já aprovado não pode ser cancelado" });
       }
       await storage.updateProject((req.params.id as string), {
-        paymentLink: null, paymentId: null, paymentStatus: null,
+        paymentLink: null, paymentId: null, paymentStatus: null, paymentGateway: null,
         pixQrCode: null, pixQrCodeBase64: null, pixPaymentId: null,
       } as any);
       await storage.addTimelineEntry({
@@ -953,39 +955,82 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         return res.status(400).json({ error: "Projeto não possui valor definido" });
       }
 
+      const method = req.body.method || "mp";
       const settingsMap = await getSettingsMap();
-      const mpToken = getMpAccessToken(settingsMap);
-
-      if (!mpToken) {
-        return res.status(400).json({ error: "Mercado Pago não está configurado" });
-      }
-
       const intEmail = (project as any).integrador?.email || (project as any).client?.email;
       const intName = (project as any).integrador?.name || (project as any).client?.name;
       const intCpfCnpj = (project as any).integrador?.cpfCnpj || (project as any).client?.cpfCnpj || (project as any).cpfCnpjCliente || undefined;
       const updateData: any = {};
+      let gatewayLabel = "";
 
-      try {
-        const portalUrl = settingsMap["email_portal_url"] || "https://projetos.randolisolar.com.br";
-        const webhookUrl = `${portalUrl}/api/mercadopago/webhook`;
-        const paymentArgs = {
-          accessToken: mpToken,
-          projectId: (req.params.id as string),
-          projectTitle: project.title,
-          ticketNumber: project.ticketNumber,
-          valor: project.valor,
-          integradorEmail: intEmail || undefined,
-          integradorName: intName || undefined,
-          integradorCpfCnpj: intCpfCnpj || undefined,
-          webhookUrl,
-        };
-        const pref = await createPaymentPreference(paymentArgs);
-        updateData.paymentLink = pref.initPoint;
-        updateData.paymentId = pref.id;
-        updateData.paymentStatus = "pending";
-      } catch (mpErr: any) {
-        console.error("[mercadopago] Erro ao gerar pagamento MP:", mpErr);
-        return res.status(500).json({ error: mpErr.message || "Erro ao gerar cobrança Mercado Pago" });
+      if (method === "pagseguro") {
+        const psToken = settingsMap["pagseguro_token"];
+        const psEnabled = settingsMap["pagseguro_enabled"] === "true";
+        if (!psToken || !psEnabled) {
+          return res.status(400).json({ error: "PagSeguro não está configurado ou ativo" });
+        }
+        try {
+          const psSandbox = settingsMap["pagseguro_sandbox"] === "true";
+          const charge = await createPagSeguroPixCharge({
+            token: psToken,
+            sandbox: psSandbox,
+            projectId: (req.params.id as string),
+            projectTitle: project.title,
+            ticketNumber: project.ticketNumber,
+            valor: project.valor,
+            payerName: intName || undefined,
+            payerCpfCnpj: intCpfCnpj || undefined,
+            payerEmail: intEmail || undefined,
+          });
+          updateData.paymentId = charge.chargeId;
+          updateData.paymentStatus = "pending";
+          updateData.paymentGateway = "pagseguro";
+          updateData.pixQrCode = charge.qrCode;
+          updateData.pixQrCodeBase64 = charge.qrCodeBase64;
+          updateData.pixPaymentId = charge.chargeId;
+          gatewayLabel = "PagSeguro";
+        } catch (psErr: any) {
+          console.error("[pagseguro] Erro ao gerar pagamento:", psErr);
+          return res.status(500).json({ error: psErr.message || "Erro ao gerar cobrança PagSeguro" });
+        }
+      } else {
+        const mpToken = getMpAccessToken(settingsMap);
+        if (!mpToken) {
+          return res.status(400).json({ error: "Mercado Pago não está configurado" });
+        }
+        try {
+          const portalUrl = settingsMap["email_portal_url"] || "https://projetos.randolisolar.com.br";
+          const webhookUrl = `${portalUrl}/api/mercadopago/webhook`;
+          const paymentArgs = {
+            accessToken: mpToken,
+            projectId: (req.params.id as string),
+            projectTitle: project.title,
+            ticketNumber: project.ticketNumber,
+            valor: project.valor,
+            integradorEmail: intEmail || undefined,
+            integradorName: intName || undefined,
+            integradorCpfCnpj: intCpfCnpj || undefined,
+            webhookUrl,
+          };
+          const pref = await createPaymentPreference(paymentArgs);
+          updateData.paymentLink = pref.initPoint;
+          updateData.paymentId = pref.id;
+          updateData.paymentStatus = "pending";
+          updateData.paymentGateway = "mp";
+          try {
+            const pix = await createPixPayment(paymentArgs);
+            updateData.pixQrCode = pix.qrCode;
+            updateData.pixQrCodeBase64 = pix.qrCodeBase64;
+            updateData.pixPaymentId = pix.paymentId;
+            console.log(`[mercadopago] PIX criado para projeto ${(req.params.id as string)}`);
+          } catch (pixErr) {
+            console.error("[mercadopago] Erro ao criar PIX (continuando sem):", pixErr);
+          }
+          gatewayLabel = "Mercado Pago";
+        } catch (mpErr: any) {
+          console.error("[mercadopago] Erro ao gerar pagamento MP:", mpErr);
+          return res.status(500).json({ error: mpErr.message || "Erro ao gerar cobrança Mercado Pago" });
+        }
       }
 
       await storage.updateProject((req.params.id as string), updateData);
@@ -993,7 +1038,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       await storage.addTimelineEntry({
         projectId: (req.params.id as string),
         event: "Pagamento gerado pelo administrador",
-        details: "Mercado Pago disponível para pagamento.",
+        details: `${gatewayLabel} disponível para pagamento.`,
         createdByRole: "admin",
       });
 
@@ -1285,6 +1330,137 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   });
 
   // ── MERCADO PAGO WEBHOOK ──────────────────────────────────────────
+  async function advanceProjectAfterPayment(project: any, projectId: string, paymentId: string, paidValue: number, gatewayName: string, settingsMap?: Record<string, string>) {
+    await storage.updateProject(projectId, {
+      status: "projeto_tecnico",
+      paymentStatus: "approved",
+    } as any);
+
+    await storage.addTimelineEntry({
+      projectId,
+      event: `Pagamento confirmado via ${gatewayName}`,
+      details: `Pagamento #${paymentId} aprovado (R$ ${paidValue.toFixed(2).replace(".", ",")}). Status avançado automaticamente para Projeto Técnico.`,
+      createdByRole: "admin",
+    });
+
+    storage.createNotification({
+      type: "payment",
+      title: `Pagamento aprovado`,
+      body: `Pagamento de R$ ${paidValue.toFixed(2).replace(".", ",")} aprovado no projeto ${project.ticketNumber || project.title}. Status avançado para Projeto Técnico.`,
+      projectId,
+      projectTitle: project.title,
+      ticketNumber: project.ticketNumber,
+    }).catch(() => {});
+
+    storage.createAuditLog({
+      userId: null,
+      userName: gatewayName,
+      userRole: "system",
+      action: "payment.approved",
+      entityType: "project",
+      entityId: projectId,
+      entityLabel: `${project.ticketNumber || ""} ${project.title}`.trim(),
+      payload: JSON.stringify({ paymentId, amount: paidValue, gateway: gatewayName }),
+    }).catch(() => {});
+
+    const integradorEmail = project.integrador?.email || project.client?.email;
+    const integradorName = project.integrador?.name || project.client?.name || "Integrador";
+    if (integradorEmail) {
+      getEmailConfig().then(emailConfig => sendStatusEmail({
+        to: integradorEmail,
+        integradorName,
+        projectTitle: project.title,
+        ticketNumber: project.ticketNumber,
+        newStatus: "projeto_tecnico",
+        config: emailConfig,
+      })).catch(err => console.error("[email] Falha ao enviar:", err));
+    }
+
+    (async () => {
+      try {
+        const waConfig = await getWhatsAppConfig();
+        if (!waConfig.enabled) return;
+        const intPhone = project.integrador?.phone || project.client?.phone;
+        const intName = project.integrador?.name || project.client?.name || "Integrador";
+        const valor = paidValue.toFixed(2).replace(".", ",");
+        if (intPhone) {
+          await sendWhatsAppPaymentNotification({
+            config: waConfig, phone: intPhone, recipientName: intName,
+            projectTitle: project.title, ticketNumber: project.ticketNumber || "", valor,
+          });
+        }
+        const adminPhone = await getWhatsAppAdminPhone();
+        if (adminPhone) {
+          await sendWhatsAppPaymentNotification({
+            config: waConfig, phone: adminPhone, recipientName: "Admin",
+            projectTitle: project.title, ticketNumber: project.ticketNumber || "", valor,
+          });
+        }
+      } catch (err) { console.error("[whatsapp] Erro ao notificar pagamento:", err); }
+    })();
+
+    // Auto NFS-e emission after payment
+    const sMap = settingsMap || await getSettingsMap();
+    if (sMap["nfse_auto_emit"] === "true") {
+      try {
+        const nfseConfig = getNfseConfig(sMap);
+        if (nfseConfig) {
+          const client = project.client;
+          const proximoDps = nfseConfig.proximoDps;
+          const nota = await storage.createNfseNota({
+            projectId,
+            numeroRps: String(proximoDps),
+            serieRps: nfseConfig.serie,
+            status: "pendente",
+            valor: project.valor || "0",
+            tomadorNome: client?.name || "",
+            tomadorCpfCnpj: client?.cpfCnpj || "",
+          });
+          const result = await emitirNfse({
+            config: nfseConfig,
+            numeroDps: String(proximoDps),
+            valor: project.valor || "0",
+            tomadorNome: client?.name || "",
+            tomadorCpfCnpj: client?.cpfCnpj || "",
+            tomadorEmail: client?.email || undefined,
+            tomadorLogradouro: client?.rua || undefined,
+            tomadorNumero: client?.numero || undefined,
+            tomadorBairro: client?.bairro || undefined,
+            tomadorCep: client?.cep || undefined,
+            tomadorCidade: client?.cidade || undefined,
+            tomadorUf: client?.estado || undefined,
+            descricaoServico: nfseConfig.descricaoServico,
+          });
+          if (result.success) {
+            await storage.updateNfseNota(nota.id, {
+              status: "emitida",
+              numeroNota: result.numeroNota,
+              codigoVerificacao: result.codigoVerificacao,
+              linkNota: result.linkNota,
+              xmlContent: result.xmlContent,
+              emitidoEm: new Date(),
+            });
+            await storage.updateSetting("nfse_proximo_dps", String(proximoDps + 1));
+            await storage.addTimelineEntry({
+              projectId,
+              event: "NFS-e emitida automaticamente",
+              details: `NFS-e nº ${result.numeroNota || "–"} emitida automaticamente após confirmação de pagamento.`,
+              createdByRole: "admin",
+            });
+            console.log(`[nfse] NFS-e emitida automaticamente para projeto ${projectId}`);
+          } else {
+            await storage.updateNfseNota(nota.id, { status: "erro", errorMessage: result.error });
+            console.error(`[nfse] Erro ao emitir NFS-e automática: ${result.error}`);
+          }
+        }
+      } catch (nfseErr) {
+        console.error("[nfse] Erro na emissão automática de NFS-e:", nfseErr);
+      }
+    }
+
+    console.log(`[payment] Projeto ${projectId} avançado para projeto_tecnico via ${gatewayName}`);
+  }
+
   async function processPaymentUpdate(paymentId: string, mpToken: string, source: string): Promise<{ projectId?: string; status?: string; advanced?: boolean }> {
     const payment = await getPaymentInfo(paymentId, mpToken);
     if (!payment) {
@@ -1316,76 +1492,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     await storage.updateProject(projectId, { paymentStatus } as any);
 
     if (paymentStatus === "approved" && project.status === "aprovado_pagamento_pendente") {
-      await storage.updateProject(projectId, {
-        status: "projeto_tecnico",
-        paymentStatus: "approved",
-      } as any);
-
-      await storage.addTimelineEntry({
-        projectId,
-        event: "Pagamento confirmado via Mercado Pago",
-        details: `Pagamento #${paymentId} aprovado (R$ ${paidValue.toFixed(2).replace(".", ",")}). Status avançado automaticamente para Projeto Técnico.`,
-        createdByRole: "admin",
-      });
-
-      storage.createNotification({
-        type: "payment",
-        title: `Pagamento aprovado`,
-        body: `Pagamento de R$ ${paidValue.toFixed(2).replace(".", ",")} aprovado no projeto ${project.ticketNumber || project.title}. Status avançado para Projeto Técnico.`,
-        projectId,
-        projectTitle: project.title,
-        ticketNumber: project.ticketNumber,
-      }).catch(() => {});
-
-      storage.createAuditLog({
-        userId: null,
-        userName: "Mercado Pago",
-        userRole: "system",
-        action: "payment.approved",
-        entityType: "project",
-        entityId: projectId,
-        entityLabel: `${project.ticketNumber || ""} ${project.title}`.trim(),
-        payload: JSON.stringify({ paymentId, amount: paidValue }),
-      }).catch(() => {});
-
-      const integradorEmail = project.integrador?.email || project.client?.email;
-      const integradorName = project.integrador?.name || project.client?.name || "Integrador";
-      if (integradorEmail) {
-        getEmailConfig().then(emailConfig => sendStatusEmail({
-          to: integradorEmail,
-          integradorName,
-          projectTitle: project.title,
-          ticketNumber: project.ticketNumber,
-          newStatus: "projeto_tecnico",
-          config: emailConfig,
-        })).catch(err => console.error("[email] Falha ao enviar:", err));
-      }
-
-      // WhatsApp: notify both admin and integrador about payment
-      (async () => {
-        try {
-          const waConfig = await getWhatsAppConfig();
-          if (!waConfig.enabled) return;
-          const intPhone = project.integrador?.phone || project.client?.phone;
-          const intName = project.integrador?.name || project.client?.name || "Integrador";
-          const valor = paidValue.toFixed(2).replace(".", ",");
-          if (intPhone) {
-            await sendWhatsAppPaymentNotification({
-              config: waConfig, phone: intPhone, recipientName: intName,
-              projectTitle: project.title, ticketNumber: project.ticketNumber || "", valor,
-            });
-          }
-          const adminPhone = await getWhatsAppAdminPhone();
-          if (adminPhone) {
-            await sendWhatsAppPaymentNotification({
-              config: waConfig, phone: adminPhone, recipientName: "Admin",
-              projectTitle: project.title, ticketNumber: project.ticketNumber || "", valor,
-            });
-          }
-        } catch (err) { console.error("[whatsapp] Erro ao notificar pagamento:", err); }
-      })();
-
-      console.log(`[mercadopago] ✓ Projeto ${projectId} avançado para projeto_tecnico`);
+      await advanceProjectAfterPayment(project, projectId, paymentId, paidValue, "Mercado Pago");
       return { projectId, status: paymentStatus, advanced: true };
     }
 
@@ -1441,6 +1548,67 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
+  app.post("/api/pagseguro/webhook", async (req, res) => {
+    try {
+      const body = req.body;
+      console.log("[pagseguro] Webhook recebido:", JSON.stringify(body));
+
+      const settingsMap = await getSettingsMap();
+      const psToken = settingsMap["pagseguro_token"];
+      if (!psToken) {
+        console.log("[pagseguro] Token não configurado, ignorando webhook");
+        return res.sendStatus(200);
+      }
+
+      const signature = req.headers["x-pagseguro-signature"] as string | undefined;
+      if (!verifyPagSeguroWebhookSignature(JSON.stringify(body), signature, psToken)) {
+        console.warn("[pagseguro] Assinatura inválida no webhook — requisição rejeitada");
+        return res.sendStatus(401);
+      }
+
+      const orderId = body?.id || body?.reference_id;
+      if (!orderId) {
+        console.log("[pagseguro] Sem ID no webhook");
+        return res.sendStatus(200);
+      }
+
+      const psSandbox = settingsMap["pagseguro_sandbox"] === "true";
+      const order = await getPagSeguroOrderInfo(orderId, psToken, psSandbox);
+      if (!order) {
+        console.log(`[pagseguro] Pedido ${orderId} não encontrado`);
+        return res.sendStatus(200);
+      }
+
+      const projectId = order.reference_id;
+      const paymentStatus = extractPagSeguroPaymentStatus(order);
+      console.log(`[pagseguro] Pedido ${orderId}: status=${paymentStatus}, projeto=${projectId}`);
+
+      if (!projectId) return res.sendStatus(200);
+
+      const project = await storage.getProject(projectId);
+      if (!project) {
+        console.log(`[pagseguro] Projeto ${projectId} não encontrado`);
+        return res.sendStatus(200);
+      }
+
+      if (project.paymentStatus === "approved" && project.status !== "aprovado_pagamento_pendente") {
+        console.log(`[pagseguro] Projeto já pago e avançado, ignorando`);
+        return res.sendStatus(200);
+      }
+
+      await storage.updateProject(projectId, { paymentStatus } as any);
+
+      if (paymentStatus === "approved" && project.status === "aprovado_pagamento_pendente") {
+        await advanceProjectAfterPayment(project, projectId, orderId, order.charges?.[0]?.amount?.value ? (order.charges[0].amount.value / 100) : 0, "PagSeguro", settingsMap);
+      }
+
+      res.sendStatus(200);
+    } catch (err) {
+      console.error("[pagseguro] Erro no webhook:", err);
+      res.sendStatus(200);
+    }
+  });
+
   app.post("/api/projects/:id/verify-payment", requireAuth, async (req, res) => {
     try {
       const user = await getCurrentUser(req);
@@ -1450,6 +1618,34 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       if (!project) return res.status(404).json({ error: "Projeto não encontrado" });
 
       const settingsMap = await getSettingsMap();
+      const gateway = project.paymentGateway || "mp";
+
+      if (gateway === "pagseguro") {
+        const psToken = settingsMap["pagseguro_token"];
+        if (!psToken) return res.status(400).json({ error: "Token PagSeguro não configurado" });
+        if (!project.paymentId) return res.status(400).json({ error: "Nenhum pagamento para verificar" });
+
+        const psSandbox = settingsMap["pagseguro_sandbox"] === "true";
+        const order = await getPagSeguroOrderInfo(project.paymentId, psToken, psSandbox);
+        if (!order) return res.status(400).json({ error: "Pedido não encontrado no PagSeguro" });
+
+        const paymentStatus = extractPagSeguroPaymentStatus(order);
+
+        if (project.paymentStatus === "approved" && project.status !== "aprovado_pagamento_pendente") {
+          const updatedProject = await storage.getProject((req.params.id as string));
+          return res.json({ payments: [{ status: paymentStatus, gateway: "pagseguro" }], project: updatedProject });
+        }
+
+        await storage.updateProject((req.params.id as string), { paymentStatus } as any);
+
+        if (paymentStatus === "approved" && project.status === "aprovado_pagamento_pendente") {
+          await advanceProjectAfterPayment(project, (req.params.id as string), project.paymentId, order.charges?.[0]?.amount?.value ? (order.charges[0].amount.value / 100) : 0, "PagSeguro", settingsMap);
+        }
+
+        const updatedProject = await storage.getProject((req.params.id as string));
+        return res.json({ payments: [{ status: paymentStatus, gateway: "pagseguro" }], project: updatedProject });
+      }
+
       const mpToken = getMpAccessToken(settingsMap);
       if (!mpToken) return res.status(400).json({ error: "Token do Mercado Pago não configurado" });
 
@@ -1485,6 +1681,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
               method: p.payment_method_id,
               dateCreated: p.date_created,
               dateApproved: p.date_approved,
+              gateway: "mp",
             });
             if (p.status === "approved") {
               const updateResult = await processPaymentUpdate(String(p.id), mpToken, "verify-manual");
@@ -1507,6 +1704,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             method: "pix",
             dateCreated: pixPayment.date_created,
             dateApproved: pixPayment.date_approved,
+            gateway: "mp",
           });
           if (pixPayment.status === "approved") {
             await processPaymentUpdate(String(pixPayment.id), mpToken, "verify-manual-pix");
@@ -1517,7 +1715,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const updatedProject = await storage.getProject((req.params.id as string));
       res.json({ payments: results, project: updatedProject });
     } catch (err: any) {
-      console.error("[mercadopago] Erro ao verificar pagamento:", err);
+      console.error("[verify-payment] Erro ao verificar pagamento:", err);
       res.status(500).json({ error: err.message });
     }
   });
@@ -1707,7 +1905,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const settings = await storage.getSiteSettings();
       const map: Record<string, string> = {};
       const publicKeys = [
-        "mp_public_key", "mp_enabled", "company_name", "logo_url", "primary_color",
+        "mp_public_key", "mp_enabled", "pagseguro_enabled", "company_name", "logo_url", "primary_color",
         "login_badge_text", "login_headline", "login_headline_highlight",
         "login_description", "login_feature_1", "login_feature_2", "login_feature_3",
         "login_bg_type", "login_bg_image", "login_headline_size", "login_description_size",
@@ -1733,7 +1931,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const map: Record<string, string> = {};
       const MASKED_KEYS = new Set([
         "email_smtp_pass", "mp_access_token", "mp_webhook_secret",
-        "whatsapp_api_key",
+        "whatsapp_api_key", "pagseguro_token",
       ]);
       for (const s of settings) {
         if (!s.value) continue;
@@ -2236,13 +2434,13 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const config = getNfseConfig(settingsMap);
       if (!config) return res.status(400).json({ error: "NFS-e não está habilitada ou não configurada." });
 
-      const proximoRps = config.proximoRps;
+      const proximoDps = config.proximoDps;
       const client = project.client;
 
       const nota = await storage.createNfseNota({
         projectId: project.id,
-        numeroRps: String(proximoRps),
-        serieRps: config.serieRps,
+        numeroRps: String(proximoDps),
+        serieRps: config.serie,
         status: "pendente",
         valor: project.valor || "0",
         tomadorNome: client?.name || req.body.tomadorNome || "",
@@ -2251,7 +2449,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
       const result = await emitirNfse({
         config,
-        numeroRps: String(proximoRps),
+        numeroDps: String(proximoDps),
         valor: project.valor || "0",
         tomadorNome: client?.name || req.body.tomadorNome || "",
         tomadorCpfCnpj: client?.cpfCnpj || req.body.tomadorCpfCnpj || "",
@@ -2275,7 +2473,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           emitidoEm: new Date(),
           errorMessage: undefined,
         });
-        await storage.updateSetting("nfse_proximo_rps", String(proximoRps + 1));
+        await storage.updateSetting("nfse_proximo_dps", String(proximoDps + 1));
         await storage.addTimelineEntry({
           projectId: project.id,
           event: "NFS-e emitida",

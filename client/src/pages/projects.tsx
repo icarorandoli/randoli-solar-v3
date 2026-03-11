@@ -84,6 +84,7 @@ function ProjectDetailSheet({
   const { data: statusConfigs = [] } = useQuery<StatusConfig[]>({ queryKey: ["/api/status-configs"] });
   const { data: siteSettings } = useQuery<Record<string, string>>({ queryKey: ["/api/settings"] });
   const hasMp = siteSettings?.mp_enabled !== "false" && !!siteSettings?.mp_access_token;
+  const hasPs = siteSettings?.pagseguro_enabled === "true" && !!siteSettings?.pagseguro_token;
   const { data: internalUsers = [] } = useQuery<{ id: string; name: string; role: string }[]>({
     queryKey: ["/api/users"],
     select: (users: any[]) => users.filter((u: any) => ["admin", "engenharia", "financeiro", "tecnico"].includes(u.role)),
@@ -125,8 +126,8 @@ function ProjectDetailSheet({
   });
 
   const generatePaymentMut = useMutation({
-    mutationFn: (projectId: string) =>
-      apiRequest("POST", `/api/projects/${projectId}/generate-payment`, { method: "mp" }),
+    mutationFn: ({ projectId, method }: { projectId: string; method: string }) =>
+      apiRequest("POST", `/api/projects/${projectId}/generate-payment`, { method }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
       queryClient.invalidateQueries({ queryKey: ["/api/projects", "archived"] });
@@ -142,13 +143,12 @@ function ProjectDetailSheet({
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
       queryClient.invalidateQueries({ queryKey: ["/api/projects", "archived"] });
       queryClient.invalidateQueries({ queryKey: ["/api/projects", project?.id, "timeline"] });
-      generatePaymentMut.mutate(projectId);
     },
     onError: (err: any) => toast({ title: err?.message || "Erro ao cancelar cobrança", variant: "destructive" }),
   });
 
-  const handleGeneratePayment = (projectId: string) => {
-    generatePaymentMut.mutate(projectId);
+  const handleGeneratePayment = (projectId: string, method: string = "mp") => {
+    generatePaymentMut.mutate({ projectId, method });
   };
 
   const verifyPaymentMut = useMutation({
@@ -373,50 +373,83 @@ function ProjectDetailSheet({
                           {/* Active payment methods badges */}
                           {project.paymentId && project.paymentStatus !== "approved" && (
                             <div className="flex flex-wrap gap-1.5 mb-1">
-                              <Badge variant="outline" className="text-[10px] bg-sky-50 border-sky-200 text-sky-700 font-bold gap-1">
-                                <CreditCard className="h-2.5 w-2.5" /> Mercado Pago
+                              <Badge variant="outline" className={`text-[10px] font-bold gap-1 ${
+                                project.paymentGateway === "pagseguro"
+                                  ? "bg-green-50 border-green-200 text-green-700"
+                                  : "bg-sky-50 border-sky-200 text-sky-700"
+                              }`}>
+                                <CreditCard className="h-2.5 w-2.5" /> {project.paymentGateway === "pagseguro" ? "PagSeguro" : "Mercado Pago"}
                               </Badge>
                             </div>
                           )}
-                          <div className="flex gap-2">
+                          <div className="flex flex-col gap-2">
                             {project.status === "aprovado_pagamento_pendente" && !project.paymentId && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="w-full text-[10px] font-bold uppercase tracking-wider h-10 border-amber-200 text-amber-700 bg-amber-50 hover:bg-amber-100 no-default-hover-elevate"
-                                disabled={generatePaymentMut.isPending}
-                                onClick={() => handleGeneratePayment(project.id)}
-                                data-testid="button-generate-payment"
-                              >
-                                <CreditCard className="h-3.5 w-3.5 mr-2" />
-                                {generatePaymentMut.isPending ? "Gerando..." : "Gerar Pagamento"}
-                              </Button>
+                              <div className="flex gap-2">
+                                {hasMp && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="flex-1 text-[10px] font-bold uppercase tracking-wider h-10 border-sky-200 text-sky-700 bg-sky-50 hover:bg-sky-100 no-default-hover-elevate"
+                                    disabled={generatePaymentMut.isPending}
+                                    onClick={() => handleGeneratePayment(project.id, "mp")}
+                                    data-testid="button-generate-payment-mp"
+                                  >
+                                    <CreditCard className="h-3.5 w-3.5 mr-1" />
+                                    {generatePaymentMut.isPending ? "Gerando..." : "Mercado Pago"}
+                                  </Button>
+                                )}
+                                {hasPs && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="flex-1 text-[10px] font-bold uppercase tracking-wider h-10 border-green-200 text-green-700 bg-green-50 hover:bg-green-100 no-default-hover-elevate"
+                                    disabled={generatePaymentMut.isPending}
+                                    onClick={() => handleGeneratePayment(project.id, "pagseguro")}
+                                    data-testid="button-generate-payment-ps"
+                                  >
+                                    <CreditCard className="h-3.5 w-3.5 mr-1" />
+                                    {generatePaymentMut.isPending ? "Gerando..." : "PagSeguro"}
+                                  </Button>
+                                )}
+                                {!hasMp && !hasPs && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="w-full text-[10px] font-bold uppercase tracking-wider h-10 border-amber-200 text-amber-700 bg-amber-50 hover:bg-amber-100 no-default-hover-elevate"
+                                    disabled
+                                    data-testid="button-generate-payment-disabled"
+                                  >
+                                    <CreditCard className="h-3.5 w-3.5 mr-2" />
+                                    Nenhum gateway configurado
+                                  </Button>
+                                )}
+                              </div>
                             )}
                             {project.paymentId && project.paymentStatus !== "approved" && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="flex-1 text-[10px] font-bold uppercase tracking-wider h-10 border-rose-200 text-rose-700 bg-rose-50 hover:bg-rose-100 no-default-hover-elevate"
-                                disabled={cancelPaymentMut.isPending}
-                                onClick={() => cancelPaymentMut.mutate(project.id)}
-                                data-testid="button-cancel-payment"
-                              >
-                                <ArrowLeftRight className={`h-3.5 w-3.5 mr-2 ${cancelPaymentMut.isPending ? "animate-spin" : ""}`} />
-                                {cancelPaymentMut.isPending ? "Cancelando..." : "Trocar Método"}
-                              </Button>
-                            )}
-                            {project.paymentId && project.paymentStatus !== "approved" && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="flex-1 text-[10px] font-bold uppercase tracking-wider h-10 border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 no-default-hover-elevate"
-                                disabled={verifyPaymentMut.isPending}
-                                onClick={() => verifyPaymentMut.mutate(project.id)}
-                                data-testid="button-verify-payment"
-                              >
-                                <RefreshCw className={`h-3.5 w-3.5 mr-2 ${verifyPaymentMut.isPending ? "animate-spin" : ""}`} />
-                                {verifyPaymentMut.isPending ? "..." : "Verificar MP"}
-                              </Button>
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="flex-1 text-[10px] font-bold uppercase tracking-wider h-10 border-rose-200 text-rose-700 bg-rose-50 hover:bg-rose-100 no-default-hover-elevate"
+                                  disabled={cancelPaymentMut.isPending}
+                                  onClick={() => cancelPaymentMut.mutate(project.id)}
+                                  data-testid="button-cancel-payment"
+                                >
+                                  <ArrowLeftRight className={`h-3.5 w-3.5 mr-2 ${cancelPaymentMut.isPending ? "animate-spin" : ""}`} />
+                                  {cancelPaymentMut.isPending ? "..." : "Cancelar"}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="flex-1 text-[10px] font-bold uppercase tracking-wider h-10 border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 no-default-hover-elevate"
+                                  disabled={verifyPaymentMut.isPending}
+                                  onClick={() => verifyPaymentMut.mutate(project.id)}
+                                  data-testid="button-verify-payment"
+                                >
+                                  <RefreshCw className={`h-3.5 w-3.5 mr-2 ${verifyPaymentMut.isPending ? "animate-spin" : ""}`} />
+                                  {verifyPaymentMut.isPending ? "..." : "Verificar"}
+                                </Button>
+                              </div>
                             )}
                           </div>
                         </div>

@@ -127,22 +127,16 @@ export const projects = pgTable("projects", {
   potencia: text("potencia"),
   valor: text("valor"),
 
-  // Pagamento (Mercado Pago)
+  // Pagamento
   paymentLink: text("payment_link"),
   paymentId: text("payment_id"),
   paymentStatus: text("payment_status"),
+  paymentGateway: text("payment_gateway"),
 
-  // PIX Mercado Pago
+  // PIX (Mercado Pago / PagSeguro)
   pixQrCode: text("pix_qr_code"),
   pixQrCodeBase64: text("pix_qr_code_base64"),
   pixPaymentId: text("pix_payment_id"),
-
-  // PIX / BolePIX Banco Inter
-  interPixTxid: text("inter_pix_txid"),
-  interPixCopiaECola: text("inter_pix_copia_cola"),
-  interPixQrCodeBase64: text("inter_pix_qr_code_base64"),
-  interPixStatus: text("inter_pix_status"),
-  interBoletoLinhaDigitavel: text("inter_boleto_linha_digitavel"),
 
   // Responsáveis internos
   assignedEngineerId: varchar("assigned_engineer_id").references(() => users.id),

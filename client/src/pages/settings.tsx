@@ -307,6 +307,13 @@ export default function SettingsPage() {
   const [mpAccessToken, setMpAccessToken] = useState("");
   const [mpPublicKey, setMpPublicKey] = useState("");
   const [mpWebhookSecret, setMpWebhookSecret] = useState("");
+
+  const [psEnabled, setPsEnabled] = useState(false);
+  const [psToken, setPsToken] = useState("");
+  const [psEmail, setPsEmail] = useState("");
+  const [showPsToken, setShowPsToken] = useState(false);
+
+  const [nfseAutoEmit, setNfseAutoEmit] = useState(false);
   const [showMpToken, setShowMpToken] = useState(false);
 
 
@@ -355,6 +362,10 @@ export default function SettingsPage() {
     setMpAccessToken(settings.mp_access_token || "");
     setMpPublicKey(settings.mp_public_key || "");
     setMpWebhookSecret(settings.mp_webhook_secret || "");
+    setPsEnabled(settings.pagseguro_enabled === "true");
+    setPsToken(settings.pagseguro_token || "");
+    setPsEmail(settings.pagseguro_email || "");
+    setNfseAutoEmit(settings.nfse_auto_emit === "true");
     if (settings.login_badge_text) setLoginBadgeText(settings.login_badge_text);
     if (settings.login_headline) setLoginHeadline(settings.login_headline);
     if (settings.login_headline_highlight) setLoginHighlight(settings.login_headline_highlight);
@@ -402,6 +413,12 @@ export default function SettingsPage() {
       if (mpWebhookSecret && mpWebhookSecret !== "••••••••") {
         pairs.push({ key: "mp_webhook_secret", value: mpWebhookSecret });
       }
+      pairs.push({ key: "pagseguro_enabled", value: psEnabled ? "true" : "false" });
+      pairs.push({ key: "pagseguro_email", value: psEmail });
+      if (psToken && psToken !== "••••••••") {
+        pairs.push({ key: "pagseguro_token", value: psToken });
+      }
+      pairs.push({ key: "nfse_auto_emit", value: nfseAutoEmit ? "true" : "false" });
       pairs.push({ key: "favicon_url", value: faviconUrl });
       pairs.push(
         { key: "login_badge_text", value: loginBadgeText },
@@ -799,6 +816,66 @@ export default function SettingsPage() {
                   </CardContent>
                 </Card>
 
+                <Card className="border-muted/40 shadow-md">
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <CreditCard className="h-4 w-4 text-primary" />
+                      <CardTitle className="text-lg">PagSeguro</CardTitle>
+                    </div>
+                    <CardDescription>Receba pagamentos via PIX através do PagSeguro (PagBank).</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-muted/40 mb-2">
+                      <div className="space-y-0.5">
+                        <Label className="text-base font-semibold">PagSeguro Ativo</Label>
+                        <p className="text-xs text-muted-foreground">Utilizar PagSeguro para gerar cobranças PIX.</p>
+                      </div>
+                      <Switch checked={psEnabled} onCheckedChange={setPsEnabled} data-testid="switch-ps-enabled" />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>E-mail PagSeguro</Label>
+                        <Input value={psEmail} onChange={e => setPsEmail(e.target.value)} placeholder="seu@email.com" data-testid="input-ps-email" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Token</Label>
+                        <div className="relative">
+                          <Input
+                            type={showPsToken ? "text" : "password"}
+                            value={psToken}
+                            onChange={e => setPsToken(e.target.value)}
+                            placeholder="Token PagSeguro..."
+                            className="pr-10"
+                            data-testid="input-ps-token"
+                          />
+                          <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" onClick={() => setShowPsToken(!showPsToken)}>
+                            {showPsToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-muted/40 shadow-md">
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-primary" />
+                      <CardTitle className="text-lg">NFS-e Automática</CardTitle>
+                    </div>
+                    <CardDescription>Emitir NFS-e automaticamente após confirmação de pagamento.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-muted/40">
+                      <div className="space-y-0.5">
+                        <Label className="text-base font-semibold">Emissão Automática</Label>
+                        <p className="text-xs text-muted-foreground">Ao ativar, a NFS-e será emitida automaticamente quando o pagamento for confirmado.</p>
+                      </div>
+                      <Switch checked={nfseAutoEmit} onCheckedChange={setNfseAutoEmit} data-testid="switch-nfse-auto-emit" />
+                    </div>
+                  </CardContent>
+                </Card>
+
               </TabsContent>
 
               <TabsContent value="nfse" className="mt-0 space-y-6">
@@ -822,14 +899,15 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
   const [inscricaoMunicipal, setInscricaoMunicipal] = useState("");
   const [municipioCodigo, setMunicipioCodigo] = useState("5107909");
   const [razaoSocial, setRazaoSocial] = useState("");
-  const [codigoServico, setCodigoServico] = useState("");
+  const [cTribNac, setCTribNac] = useState("010102");
+  const [cTribMun, setCTribMun] = useState("0101010001");
+  const [cNBS, setCNBS] = useState("100000000");
   const [aliquotaIss, setAliquotaIss] = useState("2.00");
-  const [regimeTributacao, setRegimeTributacao] = useState("6");
-  const [naturezaOperacao, setNaturezaOperacao] = useState("1");
-  const [serieRps, setSerieRps] = useState("1");
-  const [proximoRps, setProximoRps] = useState("1");
+  const [opSimpNac, setOpSimpNac] = useState("3");
+  const [regEspTrib, setRegEspTrib] = useState("0");
+  const [serieDps, setSerieDps] = useState("1");
+  const [proximoDps, setProximoDps] = useState("1");
   const [descricaoServico, setDescricaoServico] = useState("");
-  const [informacoesComplementares, setInformacoesComplementares] = useState("");
   const [certSenha, setCertSenha] = useState("");
   const [certFile, setCertFile] = useState<File | null>(null);
   const [certName, setCertName] = useState("");
@@ -844,14 +922,15 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
     setInscricaoMunicipal(settingsRaw.nfse_inscricao_municipal || "");
     setMunicipioCodigo(settingsRaw.nfse_municipio_codigo || "5107909");
     setRazaoSocial(settingsRaw.nfse_razao_social || "");
-    setCodigoServico(settingsRaw.nfse_codigo_servico || "");
+    setCTribNac(settingsRaw.nfse_ctrib_nac || "010102");
+    setCTribMun(settingsRaw.nfse_ctrib_mun || "0101010001");
+    setCNBS(settingsRaw.nfse_cnbs || "100000000");
     setAliquotaIss(settingsRaw.nfse_aliquota_iss || "2.00");
-    setRegimeTributacao(settingsRaw.nfse_regime_tributacao || "6");
-    setNaturezaOperacao(settingsRaw.nfse_natureza_operacao || "1");
-    setSerieRps(settingsRaw.nfse_serie_rps || "1");
-    setProximoRps(settingsRaw.nfse_proximo_rps || "1");
+    setOpSimpNac(settingsRaw.nfse_op_simples_nac || "3");
+    setRegEspTrib(settingsRaw.nfse_reg_esp_trib || "0");
+    setSerieDps(settingsRaw.nfse_serie_dps || settingsRaw.nfse_serie_rps || "1");
+    setProximoDps(settingsRaw.nfse_proximo_dps || settingsRaw.nfse_proximo_rps || "1");
     setDescricaoServico(settingsRaw.nfse_descricao_servico || "Prestação de serviços de engenharia e homologação de sistemas fotovoltaicos");
-    setInformacoesComplementares(settingsRaw.nfse_informacoes_complementares || "EMITIDO POR ME OU EPP OPTANTE PELO Simples Nacional; e II NAO GERA DIREITO");
     if (settingsRaw.nfse_certificado_pfx) setCertName("Certificado carregado ✓");
     setInitialized(true);
   }
@@ -866,14 +945,15 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
         { key: "nfse_inscricao_municipal", value: inscricaoMunicipal },
         { key: "nfse_municipio_codigo", value: municipioCodigo },
         { key: "nfse_razao_social", value: razaoSocial },
-        { key: "nfse_codigo_servico", value: codigoServico },
+        { key: "nfse_ctrib_nac", value: cTribNac },
+        { key: "nfse_ctrib_mun", value: cTribMun },
+        { key: "nfse_cnbs", value: cNBS },
         { key: "nfse_aliquota_iss", value: aliquotaIss },
-        { key: "nfse_regime_tributacao", value: regimeTributacao },
-        { key: "nfse_natureza_operacao", value: naturezaOperacao },
-        { key: "nfse_serie_rps", value: serieRps },
-        { key: "nfse_proximo_rps", value: proximoRps },
+        { key: "nfse_op_simples_nac", value: opSimpNac },
+        { key: "nfse_reg_esp_trib", value: regEspTrib },
+        { key: "nfse_serie_dps", value: serieDps },
+        { key: "nfse_proximo_dps", value: proximoDps },
         { key: "nfse_descricao_servico", value: descricaoServico },
-        { key: "nfse_informacoes_complementares", value: informacoesComplementares },
       ];
       if (certSenha && certSenha !== "••••••••") {
         pairs.push({ key: "nfse_certificado_senha", value: certSenha });
@@ -922,7 +1002,7 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
             <Receipt className="h-4 w-4 text-primary" />
             <CardTitle className="text-lg">Nota Fiscal de Serviço (NFS-e)</CardTitle>
           </div>
-          <CardDescription>Configure a emissão automática de NFS-e após confirmação de pagamento. Integração com o sistema da prefeitura via webservice ABRASF.</CardDescription>
+          <CardDescription>Configure a emissão automática de NFS-e após confirmação de pagamento. Padrão COPLAN SPED NFS-e Nacional v1.01 — Sinop/MT.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex items-center gap-3">
@@ -943,35 +1023,7 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Regime Especial de Tributação</Label>
-              <Select value={regimeTributacao} onValueChange={setRegimeTributacao}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">Microempresa Municipal</SelectItem>
-                  <SelectItem value="2">Estimativa</SelectItem>
-                  <SelectItem value="3">Sociedade de Profissionais</SelectItem>
-                  <SelectItem value="4">Cooperativa</SelectItem>
-                  <SelectItem value="5">MEI - Simples Nacional</SelectItem>
-                  <SelectItem value="6">ME ou EPP - Simples Nacional</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Natureza de Operação</Label>
-              <Select value={naturezaOperacao} onValueChange={setNaturezaOperacao}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">Tributação no município</SelectItem>
-                  <SelectItem value="2">Tributação fora do município</SelectItem>
-                  <SelectItem value="3">Isenção</SelectItem>
-                  <SelectItem value="4">Imune</SelectItem>
-                  <SelectItem value="6">Exigibilidade suspensa por decisão judicial</SelectItem>
-                  <SelectItem value="7">Exigibilidade suspensa por processo adm.</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>URL do Webservice NFS-e</Label>
+              <Label>URL do Webservice NFS-e (COPLAN SPED)</Label>
               <Input value={webserviceUrl} onChange={e => setWebserviceUrl(e.target.value)} placeholder="https://nfse.sinop.mt.gov.br/..." data-testid="input-nfse-webservice-url" />
             </div>
           </div>
@@ -990,34 +1042,64 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
               <Input value={inscricaoMunicipal} onChange={e => setInscricaoMunicipal(e.target.value)} placeholder="000000" data-testid="input-nfse-im" />
             </div>
             <div className="space-y-2">
-              <Label>Código IBGE do Município</Label>
+              <Label>Código IBGE do Município (cLocEmi)</Label>
               <Input value={municipioCodigo} onChange={e => setMunicipioCodigo(e.target.value)} placeholder="5107909 (Sinop/MT)" data-testid="input-nfse-municipio" />
             </div>
             <div className="space-y-2">
-              <Label>Código do Serviço (LC116)</Label>
-              <Input value={codigoServico} onChange={e => setCodigoServico(e.target.value)} placeholder="Ex: 7.03" data-testid="input-nfse-servico" />
+              <Label>cTribNac — Cód. Tributação Nacional (6 dígitos)</Label>
+              <Input value={cTribNac} onChange={e => setCTribNac(e.target.value)} placeholder="010102" data-testid="input-nfse-ctrib-nac" />
+            </div>
+            <div className="space-y-2">
+              <Label>cTribMun — Cód. Tributação Municipal (10 dígitos)</Label>
+              <Input value={cTribMun} onChange={e => setCTribMun(e.target.value)} placeholder="0101010001" data-testid="input-nfse-ctrib-mun" />
+            </div>
+            <div className="space-y-2">
+              <Label>cNBS — Nomenclatura Brasileira de Serviços (9 dígitos)</Label>
+              <Input value={cNBS} onChange={e => setCNBS(e.target.value)} placeholder="100000000" data-testid="input-nfse-cnbs" />
             </div>
             <div className="space-y-2">
               <Label>Alíquota ISS (%)</Label>
               <Input value={aliquotaIss} onChange={e => setAliquotaIss(e.target.value)} placeholder="2.00" data-testid="input-nfse-iss" />
             </div>
             <div className="space-y-2">
-              <Label>Série do RPS</Label>
-              <Input value={serieRps} onChange={e => setSerieRps(e.target.value)} placeholder="1" data-testid="input-nfse-serie" />
+              <Label>Simples Nacional (opSimpNac)</Label>
+              <Select value={opSimpNac} onValueChange={setOpSimpNac}>
+                <SelectTrigger data-testid="select-nfse-op-simples"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">1 — Não Optante</SelectItem>
+                  <SelectItem value="2">2 — MEI</SelectItem>
+                  <SelectItem value="3">3 — ME/EPP</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
-              <Label>Próximo Número RPS</Label>
-              <Input value={proximoRps} onChange={e => setProximoRps(e.target.value)} placeholder="1" data-testid="input-nfse-rps" />
+              <Label>Regime Especial de Tributação (regEspTrib)</Label>
+              <Select value={regEspTrib} onValueChange={setRegEspTrib}>
+                <SelectTrigger data-testid="select-nfse-reg-esp"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">0 — Nenhum</SelectItem>
+                  <SelectItem value="1">1 — Ato Cooperado</SelectItem>
+                  <SelectItem value="2">2 — Estimativa</SelectItem>
+                  <SelectItem value="3">3 — Microempresa Municipal</SelectItem>
+                  <SelectItem value="4">4 — Notário ou Registrador</SelectItem>
+                  <SelectItem value="5">5 — Profissional Autônomo</SelectItem>
+                  <SelectItem value="6">6 — Sociedade de Profissionais</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Série do DPS</Label>
+              <Input value={serieDps} onChange={e => setSerieDps(e.target.value)} placeholder="1" data-testid="input-nfse-serie" />
+            </div>
+            <div className="space-y-2">
+              <Label>Próximo Número DPS</Label>
+              <Input value={proximoDps} onChange={e => setProximoDps(e.target.value)} placeholder="1" data-testid="input-nfse-dps" />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label>Descrição Padrão do Serviço</Label>
+            <Label>Descrição Padrão do Serviço (xDescServ)</Label>
             <Textarea value={descricaoServico} onChange={e => setDescricaoServico(e.target.value)} rows={2} placeholder="Prestação de serviços de engenharia e homologação de sistemas fotovoltaicos" data-testid="textarea-nfse-descricao" />
-          </div>
-          <div className="space-y-2">
-            <Label>Informações Complementares</Label>
-            <Textarea value={informacoesComplementares} onChange={e => setInformacoesComplementares(e.target.value)} rows={2} data-testid="textarea-nfse-complementares" />
           </div>
 
           <div className="border-t pt-4 space-y-3">

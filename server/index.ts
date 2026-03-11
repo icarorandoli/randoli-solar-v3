@@ -68,13 +68,12 @@ app.use((req, res, next) => {
   setupWebSocket(httpServer);
   await seedDatabase();
 
-  // Auto-migrate: ensure inter_boleto_linha_digitavel column exists
   try {
     const { pool: dbPool } = await import("./db");
-    await dbPool.query(`ALTER TABLE projects ADD COLUMN IF NOT EXISTS inter_boleto_linha_digitavel TEXT`);
-    console.log("[migration] inter_boleto_linha_digitavel column ensured");
+    await dbPool.query(`ALTER TABLE projects ADD COLUMN IF NOT EXISTS payment_gateway TEXT`);
+    console.log("[migration] payment_gateway column ensured");
   } catch (migErr: any) {
-    console.warn("[migration] Could not ensure inter_boleto_linha_digitavel column:", migErr.message);
+    console.warn("[migration] Could not ensure payment_gateway column:", migErr.message);
   }
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {

@@ -44,6 +44,7 @@ import EquipmentDbPage from "@/pages/equipment-db";
 import ProductionSimulatorPage from "@/pages/production-simulator";
 import EngineeringReportPage from "@/pages/engineering-report";
 import InformativosPage from "@/pages/informativos";
+import NfsePage from "@/pages/nfse";
 import { NotificationBell } from "@/components/notification-bell";
 import { GlobalSearch } from "@/components/global-search";
 import { AnnouncementPopup } from "@/components/announcement-popup";
@@ -154,6 +155,9 @@ function AdminLayout() {
               </Route>
               <Route path="/informativos">
                 <RoleGuard allow={["admin"]}><InformativosPage /></RoleGuard>
+              </Route>
+              <Route path="/nfse">
+                <RoleGuard allow={["admin", "financeiro"]}><NfsePage /></RoleGuard>
               </Route>
               <Route><Redirect to="/" /></Route>
             </Switch>

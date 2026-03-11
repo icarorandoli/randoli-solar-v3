@@ -1,7 +1,7 @@
 import {
   users, clients, projects, partners, siteSettings, documents, timeline,
   pricingRanges, clientPricing, chatMessages, statusConfigs, notifications, auditLogs,
-  solarIrradiation, solarPanels, solarInverters, announcements, announcementReads,
+  solarIrradiation, solarPanels, solarInverters, announcements, announcementReads, nfseNotas,
   type User, type InsertUser,
   type Client, type InsertClient,
   type Project, type InsertProject,
@@ -19,6 +19,7 @@ import {
   type SolarPanel, type InsertSolarPanel,
   type SolarInverter, type InsertSolarInverter,
   type Announcement, type InsertAnnouncement,
+  type NfseNota, type InsertNfseNota,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, count, isNull, not, gte, lte, and, or, ilike } from "drizzle-orm";
@@ -678,6 +679,29 @@ export class DatabaseStorage implements IStorage {
   }
   async markAnnouncementRead(announcementId: string, userId: string): Promise<void> {
     await db.insert(announcementReads).values({ announcementId, userId }).onConflictDoNothing();
+  }
+
+  // ── NFS-e ──
+  async getNfseNotas(): Promise<NfseNota[]> {
+    return db.select().from(nfseNotas).orderBy(desc(nfseNotas.createdAt));
+  }
+  async getNfseNotasByProject(projectId: string): Promise<NfseNota[]> {
+    return db.select().from(nfseNotas).where(eq(nfseNotas.projectId, projectId)).orderBy(desc(nfseNotas.createdAt));
+  }
+  async getNfseNota(id: string): Promise<NfseNota | undefined> {
+    const [r] = await db.select().from(nfseNotas).where(eq(nfseNotas.id, id));
+    return r;
+  }
+  async createNfseNota(data: InsertNfseNota): Promise<NfseNota> {
+    const [r] = await db.insert(nfseNotas).values(data).returning();
+    return r;
+  }
+  async updateNfseNota(id: string, data: Partial<InsertNfseNota>): Promise<NfseNota | undefined> {
+    const [r] = await db.update(nfseNotas).set({ ...data, updatedAt: new Date() }).where(eq(nfseNotas.id, id)).returning();
+    return r;
+  }
+  async deleteNfseNota(id: string): Promise<void> {
+    await db.delete(nfseNotas).where(eq(nfseNotas.id, id));
   }
 }
 

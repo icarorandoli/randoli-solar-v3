@@ -33,6 +33,7 @@ import {
   FileText,
   ChevronRight,
   Megaphone,
+  Receipt,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
@@ -64,6 +65,7 @@ const SECTION_AI = [
 
 const SECTION_ADMIN = [
   { title: "Parceiros", url: "/parceiros", icon: Star, roles: ["admin", "financeiro"] },
+  { title: "NFS-e", url: "/nfse", icon: Receipt, roles: ["admin", "financeiro"] },
   { title: "Informativos", url: "/informativos", icon: Megaphone, roles: ["admin"] },
   { title: "Status", url: "/status-config", icon: Settings2, roles: ["admin"] },
   { title: "Usuários", url: "/usuarios", icon: UserCog, roles: ["admin"] },

@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Save, Upload, Zap, Building2, ImageOff, Mail, Send, Eye, EyeOff,
   CreditCard, MonitorPlay, Image, Settings2, Globe, ShieldCheck, Palette, ArrowRight,
-  CheckCircle2, XCircle, Loader2, FolderOpen, FileKey, FileBadge
+  CheckCircle2, XCircle, Loader2, FolderOpen, FileKey, FileBadge, FileText, Receipt
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -626,6 +626,9 @@ export default function SettingsPage() {
                 <TabsTrigger value="integrations" className="w-full justify-start px-4 py-2 h-10 data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-lg transition-all border border-transparent data-[state=active]:border-primary/20">
                   <CreditCard className="h-4 w-4 mr-2" /> Pagamentos
                 </TabsTrigger>
+                <TabsTrigger value="nfse" className="w-full justify-start px-4 py-2 h-10 data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-lg transition-all border border-transparent data-[state=active]:border-primary/20">
+                  <FileText className="h-4 w-4 mr-2" /> NFS-e
+                </TabsTrigger>
               </TabsList>
             </aside>
 
@@ -1148,10 +1151,259 @@ export default function SettingsPage() {
                   </CardContent>
                 </Card>
               </TabsContent>
+
+              <TabsContent value="nfse" className="mt-0 space-y-6">
+                <NfseSettingsTab settingsRaw={settings} />
+              </TabsContent>
             </div>
           </div>
         </Tabs>
       )}
+    </div>
+  );
+}
+
+function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
+  const { toast } = useToast();
+  const [initialized, setInitialized] = useState(false);
+  const [nfseEnabled, setNfseEnabled] = useState(false);
+  const [ambiente, setAmbiente] = useState("homologacao");
+  const [webserviceUrl, setWebserviceUrl] = useState("");
+  const [cnpjPrestador, setCnpjPrestador] = useState("");
+  const [inscricaoMunicipal, setInscricaoMunicipal] = useState("");
+  const [municipioCodigo, setMunicipioCodigo] = useState("5107909");
+  const [razaoSocial, setRazaoSocial] = useState("");
+  const [codigoServico, setCodigoServico] = useState("");
+  const [aliquotaIss, setAliquotaIss] = useState("2.00");
+  const [regimeTributacao, setRegimeTributacao] = useState("6");
+  const [naturezaOperacao, setNaturezaOperacao] = useState("1");
+  const [serieRps, setSerieRps] = useState("1");
+  const [proximoRps, setProximoRps] = useState("1");
+  const [descricaoServico, setDescricaoServico] = useState("");
+  const [informacoesComplementares, setInformacoesComplementares] = useState("");
+  const [certSenha, setCertSenha] = useState("");
+  const [certFile, setCertFile] = useState<File | null>(null);
+  const [certName, setCertName] = useState("");
+  const [uploadingCert, setUploadingCert] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  if (settingsRaw && !initialized) {
+    setNfseEnabled(settingsRaw.nfse_enabled === "true");
+    setAmbiente(settingsRaw.nfse_ambiente || "homologacao");
+    setWebserviceUrl(settingsRaw.nfse_webservice_url || "");
+    setCnpjPrestador(settingsRaw.nfse_cnpj_prestador || "");
+    setInscricaoMunicipal(settingsRaw.nfse_inscricao_municipal || "");
+    setMunicipioCodigo(settingsRaw.nfse_municipio_codigo || "5107909");
+    setRazaoSocial(settingsRaw.nfse_razao_social || "");
+    setCodigoServico(settingsRaw.nfse_codigo_servico || "");
+    setAliquotaIss(settingsRaw.nfse_aliquota_iss || "2.00");
+    setRegimeTributacao(settingsRaw.nfse_regime_tributacao || "6");
+    setNaturezaOperacao(settingsRaw.nfse_natureza_operacao || "1");
+    setSerieRps(settingsRaw.nfse_serie_rps || "1");
+    setProximoRps(settingsRaw.nfse_proximo_rps || "1");
+    setDescricaoServico(settingsRaw.nfse_descricao_servico || "Prestação de serviços de engenharia e homologação de sistemas fotovoltaicos");
+    setInformacoesComplementares(settingsRaw.nfse_informacoes_complementares || "EMITIDO POR ME OU EPP OPTANTE PELO Simples Nacional; e II NAO GERA DIREITO");
+    if (settingsRaw.nfse_certificado_pfx) setCertName("Certificado carregado ✓");
+    setInitialized(true);
+  }
+
+  const saveMut = useMutation({
+    mutationFn: async () => {
+      const pairs = [
+        { key: "nfse_enabled", value: nfseEnabled ? "true" : "false" },
+        { key: "nfse_ambiente", value: ambiente },
+        { key: "nfse_webservice_url", value: webserviceUrl },
+        { key: "nfse_cnpj_prestador", value: cnpjPrestador },
+        { key: "nfse_inscricao_municipal", value: inscricaoMunicipal },
+        { key: "nfse_municipio_codigo", value: municipioCodigo },
+        { key: "nfse_razao_social", value: razaoSocial },
+        { key: "nfse_codigo_servico", value: codigoServico },
+        { key: "nfse_aliquota_iss", value: aliquotaIss },
+        { key: "nfse_regime_tributacao", value: regimeTributacao },
+        { key: "nfse_natureza_operacao", value: naturezaOperacao },
+        { key: "nfse_serie_rps", value: serieRps },
+        { key: "nfse_proximo_rps", value: proximoRps },
+        { key: "nfse_descricao_servico", value: descricaoServico },
+        { key: "nfse_informacoes_complementares", value: informacoesComplementares },
+      ];
+      if (certSenha && certSenha !== "••••••••") {
+        pairs.push({ key: "nfse_certificado_senha", value: certSenha });
+      }
+      for (const p of pairs) {
+        await apiRequest("POST", "/api/settings", p);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
+      toast({ title: "NFS-e salvo", description: "Configurações de NFS-e atualizadas." });
+    },
+    onError: () => toast({ title: "Erro", description: "Não foi possível salvar.", variant: "destructive" }),
+  });
+
+  const testMut = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/nfse/testar-conexao").then(r => r.json()),
+    onSuccess: (data: any) => toast({ title: data.success ? "✓ Configuração OK" : "Erro", description: data.message || data.error }),
+    onError: () => toast({ title: "Erro de conexão", variant: "destructive" }),
+  });
+
+  async function uploadCert() {
+    if (!certFile) return;
+    setUploadingCert(true);
+    try {
+      const fd = new FormData();
+      fd.append("certificado", certFile);
+      const r = await fetch("/api/nfse/upload-certificado", { method: "POST", body: fd });
+      const data = await r.json();
+      if (data.success) {
+        setCertName(`${certFile.name} (${Math.round((data.size || 0) / 1024)}KB) ✓`);
+        toast({ title: "Certificado enviado com sucesso!" });
+      } else {
+        toast({ title: "Erro ao enviar", description: data.error, variant: "destructive" });
+      }
+    } finally {
+      setUploadingCert(false);
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <Card className="border-muted/40 shadow-md">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Receipt className="h-4 w-4 text-primary" />
+            <CardTitle className="text-lg">Nota Fiscal de Serviço (NFS-e)</CardTitle>
+          </div>
+          <CardDescription>Configure a emissão automática de NFS-e após confirmação de pagamento. Integração com o sistema da prefeitura via webservice ABRASF.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex items-center gap-3">
+            <Switch checked={nfseEnabled} onCheckedChange={setNfseEnabled} data-testid="switch-nfse-enabled" />
+            <Label>Habilitar emissão de NFS-e</Label>
+            <Badge variant={nfseEnabled ? "default" : "secondary"} className="text-[10px]">{nfseEnabled ? "Ativo" : "Inativo"}</Badge>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Ambiente</Label>
+              <Select value={ambiente} onValueChange={setAmbiente}>
+                <SelectTrigger data-testid="select-nfse-ambiente"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="homologacao">Homologação (Testes)</SelectItem>
+                  <SelectItem value="producao">Produção</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Regime Especial de Tributação</Label>
+              <Select value={regimeTributacao} onValueChange={setRegimeTributacao}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">Microempresa Municipal</SelectItem>
+                  <SelectItem value="2">Estimativa</SelectItem>
+                  <SelectItem value="3">Sociedade de Profissionais</SelectItem>
+                  <SelectItem value="4">Cooperativa</SelectItem>
+                  <SelectItem value="5">MEI - Simples Nacional</SelectItem>
+                  <SelectItem value="6">ME ou EPP - Simples Nacional</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Natureza de Operação</Label>
+              <Select value={naturezaOperacao} onValueChange={setNaturezaOperacao}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">Tributação no município</SelectItem>
+                  <SelectItem value="2">Tributação fora do município</SelectItem>
+                  <SelectItem value="3">Isenção</SelectItem>
+                  <SelectItem value="4">Imune</SelectItem>
+                  <SelectItem value="6">Exigibilidade suspensa por decisão judicial</SelectItem>
+                  <SelectItem value="7">Exigibilidade suspensa por processo adm.</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>URL do Webservice NFS-e</Label>
+              <Input value={webserviceUrl} onChange={e => setWebserviceUrl(e.target.value)} placeholder="https://nfse.sinop.mt.gov.br/..." data-testid="input-nfse-webservice-url" />
+            </div>
+          </div>
+
+          <div className="border-t pt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>CNPJ do Prestador</Label>
+              <Input value={cnpjPrestador} onChange={e => setCnpjPrestador(e.target.value)} placeholder="00.000.000/0001-00" data-testid="input-nfse-cnpj" />
+            </div>
+            <div className="space-y-2">
+              <Label>Razão Social</Label>
+              <Input value={razaoSocial} onChange={e => setRazaoSocial(e.target.value)} placeholder="Randoli Engenharia Solar" data-testid="input-nfse-razao-social" />
+            </div>
+            <div className="space-y-2">
+              <Label>Inscrição Municipal (IM)</Label>
+              <Input value={inscricaoMunicipal} onChange={e => setInscricaoMunicipal(e.target.value)} placeholder="000000" data-testid="input-nfse-im" />
+            </div>
+            <div className="space-y-2">
+              <Label>Código IBGE do Município</Label>
+              <Input value={municipioCodigo} onChange={e => setMunicipioCodigo(e.target.value)} placeholder="5107909 (Sinop/MT)" data-testid="input-nfse-municipio" />
+            </div>
+            <div className="space-y-2">
+              <Label>Código do Serviço (LC116)</Label>
+              <Input value={codigoServico} onChange={e => setCodigoServico(e.target.value)} placeholder="Ex: 7.03" data-testid="input-nfse-servico" />
+            </div>
+            <div className="space-y-2">
+              <Label>Alíquota ISS (%)</Label>
+              <Input value={aliquotaIss} onChange={e => setAliquotaIss(e.target.value)} placeholder="2.00" data-testid="input-nfse-iss" />
+            </div>
+            <div className="space-y-2">
+              <Label>Série do RPS</Label>
+              <Input value={serieRps} onChange={e => setSerieRps(e.target.value)} placeholder="1" data-testid="input-nfse-serie" />
+            </div>
+            <div className="space-y-2">
+              <Label>Próximo Número RPS</Label>
+              <Input value={proximoRps} onChange={e => setProximoRps(e.target.value)} placeholder="1" data-testid="input-nfse-rps" />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Descrição Padrão do Serviço</Label>
+            <Textarea value={descricaoServico} onChange={e => setDescricaoServico(e.target.value)} rows={2} placeholder="Prestação de serviços de engenharia e homologação de sistemas fotovoltaicos" data-testid="textarea-nfse-descricao" />
+          </div>
+          <div className="space-y-2">
+            <Label>Informações Complementares</Label>
+            <Textarea value={informacoesComplementares} onChange={e => setInformacoesComplementares(e.target.value)} rows={2} data-testid="textarea-nfse-complementares" />
+          </div>
+
+          <div className="border-t pt-4 space-y-3">
+            <Label className="flex items-center gap-2"><FileKey className="h-4 w-4" /> Certificado Digital A1 (.pfx)</Label>
+            <div className="flex items-center gap-3">
+              <input ref={fileRef} type="file" accept=".pfx,.p12" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) setCertFile(f); }} />
+              <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()} data-testid="button-nfse-select-cert">
+                <Upload className="h-4 w-4 mr-2" /> Selecionar .pfx
+              </Button>
+              {certFile && (
+                <Button size="sm" onClick={uploadCert} disabled={uploadingCert} data-testid="button-nfse-upload-cert">
+                  {uploadingCert ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FileKey className="h-4 w-4 mr-2" />}
+                  Enviar certificado
+                </Button>
+              )}
+              {certName && <span className="text-xs text-emerald-600 font-medium">{certName}</span>}
+            </div>
+            <div className="space-y-2">
+              <Label>Senha do certificado</Label>
+              <Input type="password" value={certSenha} onChange={e => setCertSenha(e.target.value)} placeholder="••••••••" data-testid="input-nfse-cert-senha" />
+            </div>
+          </div>
+
+          <div className="flex gap-3 flex-wrap">
+            <Button onClick={() => saveMut.mutate()} disabled={saveMut.isPending} data-testid="button-nfse-save">
+              {saveMut.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+              Salvar configurações NFS-e
+            </Button>
+            <Button variant="outline" onClick={() => testMut.mutate()} disabled={testMut.isPending} data-testid="button-nfse-test">
+              {testMut.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
+              Testar configuração
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

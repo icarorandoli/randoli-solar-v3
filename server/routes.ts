@@ -17,6 +17,7 @@ import { sendStatusEmail, sendTestEmail, sendPasswordResetEmail, sendDocumentEma
 import { createPaymentPreference, createPixPayment, getPaymentInfo, getMerchantOrder, verifyWebhookSignature } from "./mercadopago";
 import { createInterPixCharge, getInterPixStatus, testInterConnection, diagnoseInterApi, cleanPem, clearInterTokenCache, type InterConfig } from "./inter";
 import { testWhatsAppConnection, type WhatsAppConfig, sendWhatsAppNewProjectNotification, sendWhatsAppAdminCreatedProjectNotification, sendWhatsAppStatusNotification, sendWhatsAppTimelineNotification, sendWhatsAppDocumentNotification, sendWhatsAppPaymentNotification } from "./whatsapp";
+import { emitirNfse, getNfseConfig } from "./nfse";
 import { registerUploadRoutes } from "./upload";
 import { calculateSystemSize, phaseFromConsumption } from "./ai/solar-calculator";
 import { dimensionSystem } from "./ai/solar-dimensioning";
@@ -2696,6 +2697,117 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     res.setHeader("Content-Disposition", "attachment; filename=randoli-solar.tar.gz");
     res.setHeader("Content-Type", "application/gzip");
     res.sendFile(filePath);
+  });
+
+  // ─── NFS-e ROUTES ────────────────────────────────────────────────────
+  app.get("/api/nfse/notas", requireAuth, async (req, res) => {
+    if (!["admin", "financeiro"].includes((req.user as any)?.role)) return res.status(403).json({ error: "Sem permissão" });
+    const notas = await storage.getNfseNotas();
+    res.json(notas);
+  });
+
+  app.get("/api/nfse/notas/projeto/:projectId", requireAuth, async (req, res) => {
+    const notas = await storage.getNfseNotasByProject(req.params.projectId);
+    res.json(notas);
+  });
+
+  app.post("/api/nfse/emitir/:projectId", requireAuth, async (req, res) => {
+    if (!["admin", "financeiro"].includes((req.user as any)?.role)) return res.status(403).json({ error: "Sem permissão" });
+    try {
+      const project = await storage.getProject(req.params.projectId);
+      if (!project) return res.status(404).json({ error: "Projeto não encontrado" });
+
+      const settingsMap = await getSettingsMap();
+      const config = getNfseConfig(settingsMap);
+      if (!config) return res.status(400).json({ error: "NFS-e não está habilitada ou não configurada." });
+
+      const proximoRps = config.proximoRps;
+      const client = project.client;
+
+      const nota = await storage.createNfseNota({
+        projectId: project.id,
+        numeroRps: String(proximoRps),
+        serieRps: config.serieRps,
+        status: "pendente",
+        valor: project.valor || "0",
+        tomadorNome: client?.name || req.body.tomadorNome || "",
+        tomadorCpfCnpj: client?.cpfCnpj || req.body.tomadorCpfCnpj || "",
+      });
+
+      const result = await emitirNfse({
+        config,
+        numeroRps: String(proximoRps),
+        valor: project.valor || "0",
+        tomadorNome: client?.name || req.body.tomadorNome || "",
+        tomadorCpfCnpj: client?.cpfCnpj || req.body.tomadorCpfCnpj || "",
+        tomadorEmail: client?.email || undefined,
+        tomadorLogradouro: client?.rua || undefined,
+        tomadorNumero: client?.numero || undefined,
+        tomadorBairro: client?.bairro || undefined,
+        tomadorCep: client?.cep || undefined,
+        tomadorCidade: client?.cidade || undefined,
+        tomadorUf: client?.estado || undefined,
+        descricaoServico: req.body.descricaoServico || config.descricaoServico,
+      });
+
+      if (result.success) {
+        await storage.updateNfseNota(nota.id, {
+          status: "emitida",
+          numeroNota: result.numeroNota,
+          codigoVerificacao: result.codigoVerificacao,
+          linkNota: result.linkNota,
+          xmlContent: result.xmlContent,
+          emitidoEm: new Date(),
+          errorMessage: undefined,
+        });
+        await storage.updateSetting("nfse_proximo_rps", String(proximoRps + 1));
+        await storage.addTimelineEntry({
+          projectId: project.id,
+          event: "NFS-e emitida",
+          details: `NFS-e nº ${result.numeroNota || "–"} emitida com sucesso. Código de verificação: ${result.codigoVerificacao || "–"}`,
+          createdByRole: "admin",
+        });
+        return res.json({ success: true, nota: await storage.getNfseNota(nota.id) });
+      } else {
+        await storage.updateNfseNota(nota.id, { status: "erro", errorMessage: result.error });
+        return res.status(400).json({ success: false, error: result.error, nota });
+      }
+    } catch (err: any) {
+      console.error("[nfse] Erro:", err);
+      res.status(500).json({ error: err?.message || "Erro interno ao emitir NFS-e" });
+    }
+  });
+
+  app.post("/api/nfse/cancelar/:notaId", requireAuth, async (req, res) => {
+    if (!["admin"].includes((req.user as any)?.role)) return res.status(403).json({ error: "Sem permissão" });
+    const nota = await storage.getNfseNota(req.params.notaId);
+    if (!nota) return res.status(404).json({ error: "Nota não encontrada" });
+    await storage.updateNfseNota(nota.id, { status: "cancelada" });
+    res.json({ success: true });
+  });
+
+  app.delete("/api/nfse/notas/:notaId", requireAuth, async (req, res) => {
+    if (!["admin"].includes((req.user as any)?.role)) return res.status(403).json({ error: "Sem permissão" });
+    await storage.deleteNfseNota(req.params.notaId);
+    res.json({ success: true });
+  });
+
+  app.post("/api/nfse/upload-certificado", requireAuth, memUpload.single("certificado"), async (req, res) => {
+    if (!["admin"].includes((req.user as any)?.role)) return res.status(403).json({ error: "Sem permissão" });
+    if (!req.file) return res.status(400).json({ error: "Nenhum arquivo enviado" });
+    const base64 = req.file.buffer.toString("base64");
+    await storage.updateSetting("nfse_certificado_pfx", base64);
+    res.json({ success: true, size: req.file.size, originalname: req.file.originalname });
+  });
+
+  app.post("/api/nfse/testar-conexao", requireAuth, async (req, res) => {
+    if (!["admin"].includes((req.user as any)?.role)) return res.status(403).json({ error: "Sem permissão" });
+    const settingsMap = await getSettingsMap();
+    const config = getNfseConfig(settingsMap);
+    if (!config) return res.status(400).json({ error: "NFS-e não configurada" });
+    if (!config.webserviceUrl) return res.status(400).json({ error: "URL do webservice não configurada" });
+    if (!config.certificadoPfxBase64) return res.status(400).json({ error: "Certificado não enviado" });
+    res.json({ success: true, message: `Configuração carregada. URL: ${config.webserviceUrl}. Certificado presente (${Math.round(config.certificadoPfxBase64.length * 0.75 / 1024)}KB). Use emissão de nota teste no ambiente de homologação para validar.` });
   });
 
   return httpServer;

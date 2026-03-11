@@ -416,6 +416,29 @@ export const announcementReads = pgTable("announcement_reads", {
   readAt: timestamp("read_at").defaultNow(),
 });
 
+// ─── NFS-e NOTAS ─────────────────────────────────────────────────────
+export const nfseNotas = pgTable("nfse_notas", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  numeroNota: text("numero_nota"),
+  numeroRps: text("numero_rps").notNull(),
+  serieRps: text("serie_rps").notNull().default("1"),
+  codigoVerificacao: text("codigo_verificacao"),
+  xmlContent: text("xml_content"),
+  linkNota: text("link_nota"),
+  status: text("status").notNull().default("pendente"),
+  errorMessage: text("error_message"),
+  valor: text("valor"),
+  tomadorNome: text("tomador_nome"),
+  tomadorCpfCnpj: text("tomador_cpf_cnpj"),
+  emitidoEm: timestamp("emitido_em"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+export const insertNfseNotaSchema = createInsertSchema(nfseNotas).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertNfseNota = z.infer<typeof insertNfseNotaSchema>;
+export type NfseNota = typeof nfseNotas.$inferSelect;
+
 // ─── RELATIONS ────────────────────────────────────────────────────────
 export const projectRelations = relations(projects, ({ one, many }) => ({
   client: one(clients, { fields: [projects.clientId], references: [clients.id] }),

@@ -4,7 +4,7 @@ import {
   SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
   SidebarHeader, SidebarFooter,
 } from "@/components/ui/sidebar";
-import { LayoutDashboard, Plus, User, LogOut, Zap, ChevronRight } from "lucide-react";
+import { LayoutDashboard, Plus, User, LogOut, Zap, ChevronRight, Megaphone } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { title: "Meus Projetos", url: "/portal", icon: LayoutDashboard },
   { title: "Novo Projeto", url: "/portal/novo-projeto", icon: Plus },
+  { title: "Informativos", url: "/portal/informativos", icon: Megaphone },
   { title: "Minha Conta", url: "/portal/conta", icon: User },
 ];
 

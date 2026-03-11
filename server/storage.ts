@@ -1,7 +1,7 @@
 import {
   users, clients, projects, partners, siteSettings, documents, timeline,
   pricingRanges, clientPricing, chatMessages, statusConfigs, notifications, auditLogs,
-  solarIrradiation, solarPanels, solarInverters,
+  solarIrradiation, solarPanels, solarInverters, announcements, announcementReads,
   type User, type InsertUser,
   type Client, type InsertClient,
   type Project, type InsertProject,
@@ -18,6 +18,7 @@ import {
   type SolarIrradiation, type InsertSolarIrradiation,
   type SolarPanel, type InsertSolarPanel,
   type SolarInverter, type InsertSolarInverter,
+  type Announcement, type InsertAnnouncement,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, count, isNull, not, gte, lte, and, or, ilike } from "drizzle-orm";
@@ -137,6 +138,15 @@ export interface IStorage {
   createSolarInverter(data: InsertSolarInverter): Promise<SolarInverter>;
   updateSolarInverter(id: string, data: Partial<InsertSolarInverter>): Promise<SolarInverter | undefined>;
   deleteSolarInverter(id: string): Promise<void>;
+  // Announcements
+  getAnnouncements(): Promise<Announcement[]>;
+  getActiveAnnouncements(): Promise<Announcement[]>;
+  getAnnouncement(id: string): Promise<Announcement | undefined>;
+  createAnnouncement(data: InsertAnnouncement): Promise<Announcement>;
+  updateAnnouncement(id: string, data: Partial<InsertAnnouncement>): Promise<Announcement | undefined>;
+  deleteAnnouncement(id: string): Promise<void>;
+  getUnreadAnnouncements(userId: string): Promise<Announcement[]>;
+  markAnnouncementRead(announcementId: string, userId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -635,6 +645,39 @@ export class DatabaseStorage implements IStorage {
   }
   async deleteSolarInverter(id: string): Promise<void> {
     await db.delete(solarInverters).where(eq(solarInverters.id, id));
+  }
+
+  // ── Announcements ──
+  async getAnnouncements(): Promise<Announcement[]> {
+    return db.select().from(announcements).orderBy(desc(announcements.createdAt));
+  }
+  async getActiveAnnouncements(): Promise<Announcement[]> {
+    return db.select().from(announcements).where(eq(announcements.active, true)).orderBy(desc(announcements.createdAt));
+  }
+  async getAnnouncement(id: string): Promise<Announcement | undefined> {
+    const [r] = await db.select().from(announcements).where(eq(announcements.id, id));
+    return r;
+  }
+  async createAnnouncement(data: InsertAnnouncement): Promise<Announcement> {
+    const [r] = await db.insert(announcements).values(data).returning();
+    return r;
+  }
+  async updateAnnouncement(id: string, data: Partial<InsertAnnouncement>): Promise<Announcement | undefined> {
+    const [r] = await db.update(announcements).set({ ...data, updatedAt: new Date() }).where(eq(announcements.id, id)).returning();
+    return r;
+  }
+  async deleteAnnouncement(id: string): Promise<void> {
+    await db.delete(announcements).where(eq(announcements.id, id));
+  }
+  async getUnreadAnnouncements(userId: string): Promise<Announcement[]> {
+    const reads = await db.select({ announcementId: announcementReads.announcementId })
+      .from(announcementReads).where(eq(announcementReads.userId, userId));
+    const readIds = reads.map(r => r.announcementId);
+    const active = await this.getActiveAnnouncements();
+    return active.filter(a => !readIds.includes(a.id));
+  }
+  async markAnnouncementRead(announcementId: string, userId: string): Promise<void> {
+    await db.insert(announcementReads).values({ announcementId, userId }).onConflictDoNothing();
   }
 }
 

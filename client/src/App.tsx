@@ -33,6 +33,7 @@ import PortalProjetoPage from "@/pages/portal/projeto";
 import PortalProjetosPage from "@/pages/portal/projetos";
 import NovoProjetoPage from "@/pages/portal/novo-projeto";
 import ContaPage from "@/pages/portal/conta";
+import PortalInformativosPage from "@/pages/portal/informativos";
 import CompletarPerfilPage from "@/pages/completar-perfil";
 import NotFound from "@/pages/not-found";
 import StatusConfigPage from "@/pages/status-config";
@@ -42,8 +43,10 @@ import AiCalculatorPage from "@/pages/ai-calculator";
 import EquipmentDbPage from "@/pages/equipment-db";
 import ProductionSimulatorPage from "@/pages/production-simulator";
 import EngineeringReportPage from "@/pages/engineering-report";
+import InformativosPage from "@/pages/informativos";
 import { NotificationBell } from "@/components/notification-bell";
 import { GlobalSearch } from "@/components/global-search";
+import { AnnouncementPopup } from "@/components/announcement-popup";
 
 import type { ReactNode } from "react";
 
@@ -149,6 +152,9 @@ function AdminLayout() {
               <Route path="/engineering-report">
                 <RoleGuard allow={["admin", "engenharia"]}><EngineeringReportPage /></RoleGuard>
               </Route>
+              <Route path="/informativos">
+                <RoleGuard allow={["admin"]}><InformativosPage /></RoleGuard>
+              </Route>
               <Route><Redirect to="/" /></Route>
             </Switch>
           </main>
@@ -177,10 +183,12 @@ function PortalLayout() {
               <Route path="/portal/projetos" component={PortalProjetosPage} />
               <Route path="/portal/projetos/:id" component={PortalProjetoPage} />
               <Route path="/portal/conta" component={ContaPage} />
+              <Route path="/portal/informativos" component={PortalInformativosPage} />
               <Route><Redirect to="/portal" /></Route>
             </Switch>
           </main>
         </div>
+        <AnnouncementPopup />
       </div>
     </SidebarProvider>
   );

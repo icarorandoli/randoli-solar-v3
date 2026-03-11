@@ -1741,6 +1741,64 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
+  // ── ANNOUNCEMENTS (INFORMATIVOS) ──────────────────────────────────────
+  app.get("/api/announcements", requireAuth, async (req, res) => {
+    try {
+      const user = await getCurrentUser(req);
+      const isAdmin = ["admin", "engenharia", "financeiro", "tecnico"].includes(user?.role || "");
+      const items = isAdmin ? await storage.getAnnouncements() : await storage.getActiveAnnouncements();
+      res.json(items);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.get("/api/announcements/unread", requireAuth, async (req, res) => {
+    try {
+      const user = await getCurrentUser(req);
+      if (!user) return res.status(401).json({ error: "Não autenticado" });
+      const items = await storage.getUnreadAnnouncements(user.id);
+      res.json(items);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.post("/api/announcements", requireAuth, async (req, res) => {
+    try {
+      const user = await getCurrentUser(req);
+      if (user?.role !== "admin") return res.status(403).json({ error: "Sem permissão" });
+      const data = req.body;
+      if (!data.title || !data.content) return res.status(400).json({ error: "Título e conteúdo são obrigatórios" });
+      const item = await storage.createAnnouncement({ title: data.title, content: data.content, active: data.active ?? true });
+      res.status(201).json(item);
+    } catch (err: any) { res.status(400).json({ error: err.message }); }
+  });
+
+  app.patch("/api/announcements/:id", requireAuth, async (req, res) => {
+    try {
+      const user = await getCurrentUser(req);
+      if (user?.role !== "admin") return res.status(403).json({ error: "Sem permissão" });
+      const updated = await storage.updateAnnouncement(req.params.id as string, req.body);
+      if (!updated) return res.status(404).json({ error: "Não encontrado" });
+      res.json(updated);
+    } catch (err: any) { res.status(400).json({ error: err.message }); }
+  });
+
+  app.delete("/api/announcements/:id", requireAuth, async (req, res) => {
+    try {
+      const user = await getCurrentUser(req);
+      if (user?.role !== "admin") return res.status(403).json({ error: "Sem permissão" });
+      await storage.deleteAnnouncement(req.params.id as string);
+      res.json({ ok: true });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.post("/api/announcements/:id/read", requireAuth, async (req, res) => {
+    try {
+      const user = await getCurrentUser(req);
+      if (!user) return res.status(401).json({ error: "Não autenticado" });
+      await storage.markAnnouncementRead(req.params.id as string, user.id);
+      res.json({ ok: true });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
   // ── SEARCH ───────────────────────────────────────────────────────────
   app.get("/api/search", requireAuth, async (req, res) => {
     try {

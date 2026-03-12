@@ -1,6 +1,8 @@
 import https from "https";
+import tls from "tls";
 import { URL } from "url";
 import crypto from "crypto";
+import forge from "node-forge";
 
 export interface NfseConfig {
   enabled: boolean;
@@ -201,6 +203,41 @@ ${dpsXml}
 </EnviarLoteDpsSincronoEnvio>`;
 }
 
+function extractCertAndKeyFromPfx(pfxBuffer: Buffer, passphrase: string): { certPem: string; keyPem: string } {
+  const pfxAsn1 = forge.asn1.fromDer(pfxBuffer.toString("binary"));
+  const pfxObj = forge.pkcs12.pkcs12FromAsn1(pfxAsn1, passphrase);
+
+  let certPem = "";
+  let keyPem = "";
+
+  const certBags = pfxObj.getBags({ bagType: forge.pki.oids.certBag });
+  const certBagList = certBags[forge.pki.oids.certBag] || [];
+  for (const bag of certBagList) {
+    if (bag.cert) {
+      certPem += forge.pki.certificateToPem(bag.cert);
+    }
+  }
+
+  const keyBags = pfxObj.getBags({ bagType: forge.pki.oids.pkcs8ShroudedKeyBag });
+  const keyBagList = keyBags[forge.pki.oids.pkcs8ShroudedKeyBag] || [];
+  if (keyBagList.length > 0 && keyBagList[0].key) {
+    keyPem = forge.pki.privateKeyToPem(keyBagList[0].key);
+  }
+
+  if (!keyPem) {
+    const keyBags2 = pfxObj.getBags({ bagType: forge.pki.oids.keyBag });
+    const keyBagList2 = keyBags2[forge.pki.oids.keyBag] || [];
+    if (keyBagList2.length > 0 && keyBagList2[0].key) {
+      keyPem = forge.pki.privateKeyToPem(keyBagList2[0].key);
+    }
+  }
+
+  if (!certPem) throw new Error("Certificado não encontrado no arquivo PFX.");
+  if (!keyPem) throw new Error("Chave privada não encontrada no arquivo PFX.");
+
+  return { certPem, keyPem };
+}
+
 function makeHttpsRequest(
   urlStr: string,
   body: string,
@@ -210,6 +247,17 @@ function makeHttpsRequest(
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     const url = new URL(urlStr);
+
+    let tlsOptions: Record<string, any>;
+    try {
+      const { certPem, keyPem } = extractCertAndKeyFromPfx(pfxBuffer, passphrase);
+      console.log(`[nfse-sped] Certificado extraído do PFX com sucesso (cert: ${certPem.length}B, key: ${keyPem.length}B)`);
+      tlsOptions = { cert: certPem, key: keyPem };
+    } catch (forgeErr: any) {
+      console.log(`[nfse-sped] node-forge falhou (${forgeErr?.message}), tentando pfx nativo...`);
+      tlsOptions = { pfx: pfxBuffer, passphrase };
+    }
+
     const headers: Record<string, string | number> = {
       "Content-Type": `${contentType}; charset=utf-8`,
       "Content-Length": Buffer.byteLength(body, "utf-8"),
@@ -220,8 +268,7 @@ function makeHttpsRequest(
       path: url.pathname + url.search,
       method: "POST",
       headers,
-      pfx: pfxBuffer,
-      passphrase,
+      ...tlsOptions,
       rejectUnauthorized: false,
     };
     const req = https.request(options, (res) => {

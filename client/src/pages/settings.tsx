@@ -963,6 +963,7 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
   const [cnpjPrestador, setCnpjPrestador] = useState("");
   const [inscricaoMunicipal, setInscricaoMunicipal] = useState("");
   const [municipioCodigo, setMunicipioCodigo] = useState("5107909");
+  const [municipioNome, setMunicipioNome] = useState("sinop");
   const [razaoSocial, setRazaoSocial] = useState("");
   const [nomeFantasia, setNomeFantasia] = useState("");
   const [emailPrestador, setEmailPrestador] = useState("");
@@ -975,8 +976,7 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
   const [cTribMun, setCTribMun] = useState("");
   const [cNBS, setCNBS] = useState("101061900");
   const [aliquotaIss, setAliquotaIss] = useState("2.00");
-  const [opSimpNac, setOpSimpNac] = useState("3");
-  const [regApTribSN, setRegApTribSN] = useState("1");
+  const [opSimpNac, setOpSimpNac] = useState("1");
   const [regEspTrib, setRegEspTrib] = useState("0");
   const [serieDps, setSerieDps] = useState("1");
   const [proximoDps, setProximoDps] = useState("1");
@@ -995,6 +995,7 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
     setCnpjPrestador(settingsRaw.nfse_cnpj_prestador || "");
     setInscricaoMunicipal(settingsRaw.nfse_inscricao_municipal || "");
     setMunicipioCodigo(settingsRaw.nfse_municipio_codigo || "5107909");
+    setMunicipioNome(settingsRaw.nfse_municipio_nome || "sinop");
     setRazaoSocial(settingsRaw.nfse_razao_social || "");
     setNomeFantasia(settingsRaw.nfse_nome_fantasia || "");
     setEmailPrestador(settingsRaw.nfse_email_prestador || "");
@@ -1007,8 +1008,7 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
     setCTribMun(settingsRaw.nfse_ctrib_mun || "");
     setCNBS(settingsRaw.nfse_cnbs || "101061900");
     setAliquotaIss(settingsRaw.nfse_aliquota_iss || "2.00");
-    setOpSimpNac(settingsRaw.nfse_op_simples_nac || "3");
-    setRegApTribSN(settingsRaw.nfse_reg_ap_trib_sn || "1");
+    setOpSimpNac(settingsRaw.nfse_op_simples_nac || "1");
     setRegEspTrib(settingsRaw.nfse_reg_esp_trib || "0");
     setSerieDps(settingsRaw.nfse_serie_dps || settingsRaw.nfse_serie_rps || "1");
     setProximoDps(settingsRaw.nfse_proximo_dps || settingsRaw.nfse_proximo_rps || "1");
@@ -1027,6 +1027,7 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
         { key: "nfse_cnpj_prestador", value: cnpjPrestador },
         { key: "nfse_inscricao_municipal", value: inscricaoMunicipal },
         { key: "nfse_municipio_codigo", value: municipioCodigo },
+        { key: "nfse_municipio_nome", value: municipioNome },
         { key: "nfse_razao_social", value: razaoSocial },
         { key: "nfse_nome_fantasia", value: nomeFantasia },
         { key: "nfse_email_prestador", value: emailPrestador },
@@ -1040,7 +1041,6 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
         { key: "nfse_cnbs", value: cNBS },
         { key: "nfse_aliquota_iss", value: aliquotaIss },
         { key: "nfse_op_simples_nac", value: opSimpNac },
-        { key: "nfse_reg_ap_trib_sn", value: regApTribSN },
         { key: "nfse_reg_esp_trib", value: regEspTrib },
         { key: "nfse_serie_dps", value: serieDps },
         { key: "nfse_proximo_dps", value: proximoDps },
@@ -1152,9 +1152,14 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>URL do Webservice NFS-e Nacional (SPED)</Label>
-              <Input value={webserviceUrl} onChange={e => setWebserviceUrl(e.target.value)} placeholder="https://sefin.nfse.gov.br/sefinnacional" data-testid="input-nfse-webservice-url" />
-              <p className="text-[10px] text-muted-foreground">URL padrão: https://sefin.nfse.gov.br/sefinnacional (o ambiente é controlado no XML via tpAmb)</p>
+              <Label>URL do Webservice (opcional)</Label>
+              <Input value={webserviceUrl} onChange={e => setWebserviceUrl(e.target.value)} placeholder="Auto-detectado pelo município e ambiente" data-testid="input-nfse-webservice-url" />
+              <p className="text-[10px] text-muted-foreground">Deixe vazio para usar URL padrão COPLAN. Prod: gp.srv.br | Homol: coplan.inf.br</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Nome do Município (para URL)</Label>
+              <Input value={municipioNome} onChange={e => setMunicipioNome(e.target.value)} placeholder="sinop" data-testid="input-nfse-municipio-nome" />
+              <p className="text-[10px] text-muted-foreground">Nome usado na URL do webservice COPLAN (ex: sinop)</p>
             </div>
           </div>
 
@@ -1236,16 +1241,6 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
                   <SelectItem value="1">1 — Não Optante</SelectItem>
                   <SelectItem value="2">2 — MEI</SelectItem>
                   <SelectItem value="3">3 — ME/EPP</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Apuração Tributária SN (regApTribSN)</Label>
-              <Select value={regApTribSN} onValueChange={setRegApTribSN}>
-                <SelectTrigger data-testid="select-nfse-reg-ap"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">1 — Receita Bruta</SelectItem>
-                  <SelectItem value="2">2 — Valor Fixo</SelectItem>
                 </SelectContent>
               </Select>
             </div>

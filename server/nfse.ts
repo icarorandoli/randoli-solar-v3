@@ -1,8 +1,5 @@
 import https from "https";
-import tls from "tls";
 import { URL } from "url";
-import crypto from "crypto";
-import zlib from "zlib";
 import forge from "node-forge";
 import { SignedXml } from "xml-crypto";
 
@@ -10,6 +7,7 @@ export interface NfseConfig {
   enabled: boolean;
   ambiente: "producao" | "homologacao";
   webserviceUrl: string;
+  municipioNome: string;
   cnpjPrestador: string;
   inscricaoMunicipal: string;
   municipioCodigo: string;
@@ -26,7 +24,6 @@ export interface NfseConfig {
   cNBS: string;
   aliquotaIss: string;
   opSimpNac: string;
-  regApTribSN: string;
   regEspTrib: string;
   serie: string;
   proximoDps: number;
@@ -72,7 +69,7 @@ function formatDateTimeBR(date: Date): string {
   const h = pad(date.getHours());
   const mi = pad(date.getMinutes());
   const s = pad(date.getSeconds());
-  return `${y}-${mo}-${d}T${h}:${mi}:${s}-04:00`;
+  return `${y}-${mo}-${d}T${h}:${mi}:${s}-03:00`;
 }
 
 function formatDateOnly(date: Date): string {
@@ -84,14 +81,23 @@ function cleanDoc(doc: string): string {
   return doc.replace(/\D/g, "");
 }
 
-function buildDpsXml(params: EmitirNfseParams): string {
+function escapeXml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+function buildGerarNfseEnvioXml(params: EmitirNfseParams): string {
   const cfg = params.config;
   const now = params.dataEmissao ?? new Date();
   const dhEmi = formatDateTimeBR(now);
   const dCompet = formatDateOnly(now);
   const tpAmb = cfg.ambiente === "producao" ? "1" : "2";
   const descricao = params.descricaoServico || cfg.descricaoServico ||
-    "Prestação de serviços de engenharia e homologação de sistemas fotovoltaicos";
+    "Prestacao de servicos de engenharia e homologacao de sistemas fotovoltaicos";
   const nDPS = params.numeroDps;
   const cnpjPrestador = cleanDoc(cfg.cnpjPrestador);
   const imPrestador = cfg.inscricaoMunicipal.replace(/\D/g, "");
@@ -104,123 +110,59 @@ function buildDpsXml(params: EmitirNfseParams): string {
   const tomadorDoc = cleanDoc(params.tomadorCpfCnpj || "");
   const tomadorDocTag = tomadorDoc.length === 11
     ? `<CPF>${tomadorDoc}</CPF>`
-    : `<CNPJ>${tomadorDoc}</CNPJ>`;
+    : `<CNPJ>${tomadorDoc.padStart(14, "0")}</CNPJ>`;
 
   const valorServico = parseFloat(params.valor.replace(",", ".")).toFixed(2);
+  const aliquota = parseFloat(cfg.aliquotaIss || "2.00").toFixed(2);
 
   let tomaEnd = "";
   if (params.tomadorCodigoMunicipio && params.tomadorCep) {
-    tomaEnd = `
-          <end>
-            <endNac>
-              <cMun>${params.tomadorCodigoMunicipio}</cMun>
-              <CEP>${cleanDoc(params.tomadorCep)}</CEP>
-            </endNac>
-            ${params.tomadorLogradouro ? `<xLgr>${params.tomadorLogradouro}</xLgr>` : ""}
-            ${params.tomadorNumero ? `<nro>${params.tomadorNumero}</nro>` : ""}
-            ${params.tomadorComplemento ? `<xCpl>${params.tomadorComplemento}</xCpl>` : ""}
-            ${params.tomadorBairro ? `<xBairro>${params.tomadorBairro}</xBairro>` : ""}
-          </end>`;
+    tomaEnd = `<end><endNac><cMun>${params.tomadorCodigoMunicipio}</cMun><CEP>${cleanDoc(params.tomadorCep)}</CEP></endNac>${params.tomadorLogradouro ? `<xLgr>${escapeXml(params.tomadorLogradouro)}</xLgr>` : ""}${params.tomadorNumero ? `<nro>${escapeXml(params.tomadorNumero)}</nro>` : ""}${params.tomadorComplemento ? `<xCpl>${escapeXml(params.tomadorComplemento)}</xCpl>` : ""}${params.tomadorBairro ? `<xBairro>${escapeXml(params.tomadorBairro)}</xBairro>` : ""}</end>`;
   }
 
-  const infoCompl = cfg.informacoesComplementares ||
-    "EMITIDO POR ME OU EPP OPTANTE PELO Simples Nacional; e II NAO GERA DIREITO FISCAL DE ICMS, DE ISS E DE IPI ICMS DOCUMENTO EMITIDO POR ME OU EPP OPTANTE SIMPLES NACIONAL. NAO GERA DIREITO A CREDITO FISCAL DE ICMS, ISS E IPI.";
+  if (!cfg.cTribMun) {
+    throw new Error("cTribMun (Código de Tributação Municipal) é obrigatório para emissão via COPLAN.");
+  }
+  const cTribMunTag = `<cTribMun>${cfg.cTribMun}</cTribMun>`;
 
-  return `<DPS versao="1.01" xmlns="http://www.sped.fazenda.gov.br/nfse">
-  <infDPS Id="${dpsId}">
-    <tpAmb>${tpAmb}</tpAmb>
-    <dhEmi>${dhEmi}</dhEmi>
-    <verAplic>1.01</verAplic>
-    <serie>${cfg.serie || "1"}</serie>
-    <nDPS>${nDPS}</nDPS>
-    <dCompet>${dCompet}</dCompet>
-    <tpEmit>1</tpEmit>
-    <cLocEmi>${cLocEmi}</cLocEmi>
-    <prest>
-      <CNPJ>${cnpjPrestador}</CNPJ>
-      <IM>${imPrestador}</IM>
-      ${cfg.emailPrestador ? `<email>${cfg.emailPrestador}</email>` : ""}
-      <regTrib>
-        <opSimpNac>${cfg.opSimpNac || "3"}</opSimpNac>
-        <regApTribSN>${cfg.regApTribSN || "1"}</regApTribSN>
-        <regEspTrib>${cfg.regEspTrib || "0"}</regEspTrib>
-      </regTrib>
-    </prest>
-    <toma>
-      ${tomadorDocTag}
-      <xNome>${params.tomadorNome}</xNome>
-      ${params.tomadorEmail ? `<email>${params.tomadorEmail}</email>` : ""}${tomaEnd}
-    </toma>
-    <serv>
-      <locPrest>
-        <cLocPrestacao>${cLocEmi}</cLocPrestacao>
-      </locPrest>
-      <cServ>
-        <cTribNac>${cfg.cTribNac || "140601"}</cTribNac>
-        <xDescServ>${descricao}</xDescServ>
-        <cNBS>${cfg.cNBS || "101061900"}</cNBS>
-      </cServ>
-      <infoCompl>
-        <xInfComp>${infoCompl}</xInfComp>
-      </infoCompl>
-    </serv>
-    <valores>
-      <vServPrest>
-        <vServ>${valorServico}</vServ>
-      </vServPrest>
-      <trib>
-        <tribMun>
-          <tribISSQN>1</tribISSQN>
-          <tpRetISSQN>1</tpRetISSQN>
-        </tribMun>
-        <tribFed>
-          <piscofins>
-            <CST>00</CST>
-          </piscofins>
-        </tribFed>
-        <totTrib>
-          <indTotTrib>0</indTotTrib>
-        </totTrib>
-      </trib>
-    </valores>
-  </infDPS>
-</DPS>`;
+  const dpsXml = `<GerarNfseEnvio xmlns="http://www.sped.fazenda.gov.br/nfse" xmlns:dsig="http://www.w3.org/2000/09/xmldsig#" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><DPS versao="1.01"><infDPS Id="${dpsId}"><tpAmb>${tpAmb}</tpAmb><dhEmi>${dhEmi}</dhEmi><verAplic>1.01</verAplic><serie>${cfg.serie || "1"}</serie><nDPS>${nDPS}</nDPS><dCompet>${dCompet}</dCompet><tpEmit>1</tpEmit><cLocEmi>${cLocEmi}</cLocEmi><prest><CNPJ>${cnpjPrestador}</CNPJ><IM>${imPrestador}</IM><xNome>${escapeXml(cfg.razaoSocial)}</xNome><regTrib><opSimpNac>${cfg.opSimpNac || "1"}</opSimpNac><regEspTrib>${cfg.regEspTrib || "0"}</regEspTrib></regTrib></prest><toma>${tomadorDocTag}<xNome>${escapeXml(params.tomadorNome)}</xNome>${tomaEnd}</toma><serv><locPrest><cLocPrestacao>${cLocEmi}</cLocPrestacao></locPrest><cServ><cTribNac>${cfg.cTribNac || "140601"}</cTribNac>${cTribMunTag}<xDescServ>${escapeXml(descricao)}</xDescServ><cNBS>${cfg.cNBS || "101061900"}</cNBS></cServ></serv><valores><vServPrest><vReceb>${valorServico}</vReceb><vServ>${valorServico}</vServ></vServPrest><trib><tribMun><tribISSQN>1</tribISSQN><tpRetISSQN>2</tpRetISSQN><pAliq>${aliquota}</pAliq></tribMun><totTrib><indTotTrib>0</indTotTrib></totTrib></trib></valores></infDPS></DPS></GerarNfseEnvio>`;
+
+  return dpsXml;
 }
 
-function compressDpsToGzipB64(dpsXml: string): string {
-  const xmlWithDecl = dpsXml.startsWith("<?xml") ? dpsXml : `<?xml version="1.0" encoding="UTF-8"?>${dpsXml}`;
-  const xmlBuffer = Buffer.from(xmlWithDecl, "utf-8");
-  const compressed = zlib.gzipSync(xmlBuffer);
-  return compressed.toString("base64");
-}
-
-function signDpsXml(dpsXml: string, certPem: string, keyPem: string, certDerB64: string): string {
-  const idMatch = dpsXml.match(/Id="([^"]+)"/);
+function signDpsInGerarNfseEnvio(gerarNfseXml: string, certPem: string, keyPem: string): string {
+  const idMatch = gerarNfseXml.match(/Id="([^"]+)"/);
   if (!idMatch) throw new Error("Id attribute not found in DPS XML");
   const refId = idMatch[1];
 
   const sig = new SignedXml({
     privateKey: keyPem,
     publicCert: certPem,
-    canonicalizationAlgorithm: "http://www.w3.org/2001/10/xml-exc-c14n#",
-    signatureAlgorithm: "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+    canonicalizationAlgorithm: "http://www.w3.org/TR/2001/REC-xml-c14n-20010315",
+    signatureAlgorithm: "http://www.w3.org/2000/09/xmldsig#rsa-sha1",
   });
 
   sig.addReference({
     xpath: "//*[local-name(.)='infDPS']",
-    digestAlgorithm: "http://www.w3.org/2001/04/xmlenc#sha256",
+    digestAlgorithm: "http://www.w3.org/2000/09/xmldsig#sha1",
     transforms: [
       "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
-      "http://www.w3.org/2001/10/xml-exc-c14n#",
+      "http://www.w3.org/TR/2001/REC-xml-c14n-20010315",
     ],
     uri: `#${refId}`,
   });
 
-  sig.computeSignature(dpsXml, {
+  sig.computeSignature(gerarNfseXml, {
     location: { reference: "//*[local-name(.)='DPS']", action: "append" },
   });
 
   return sig.getSignedXml();
+}
+
+function wrapInSoapEnvelope(signedGerarNfseXml: string): string {
+  const cabecalho = `<cabecalho versao="2.01"><versaoDados>2.01</versaoDados></cabecalho>`;
+
+  return `<?xml version="1.0" encoding="UTF-8"?><soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:trib="Tributario"><soapenv:Header/><soapenv:Body><trib:nfse_web_service.GERARNFSE><trib:Gerarnfserequest><trib:nfseCabecMsg><![CDATA[${cabecalho}]]></trib:nfseCabecMsg><trib:nfseDadosMsg><![CDATA[${signedGerarNfseXml}]]></trib:nfseDadosMsg></trib:Gerarnfserequest></trib:nfse_web_service.GERARNFSE></soapenv:Body></soapenv:Envelope>`;
 }
 
 function extractCertAndKeyFromPfx(pfxBuffer: Buffer, passphrase: string): { certPem: string; keyPem: string; certDerB64: string } {
@@ -263,12 +205,28 @@ function extractCertAndKeyFromPfx(pfxBuffer: Buffer, passphrase: string): { cert
   return { certPem, keyPem, certDerB64 };
 }
 
+function buildWebserviceUrl(config: NfseConfig): string {
+  if (config.webserviceUrl) {
+    let url = config.webserviceUrl.replace(/\/+$/, "");
+    if (!url.includes("anfse_ws")) {
+      if (!url.endsWith("/")) url += "/";
+      url += "anfse_ws";
+    }
+    return url;
+  }
+
+  const municipio = (config.municipioNome || "sinop").toLowerCase().replace(/\s+/g, "");
+  if (config.ambiente === "producao") {
+    return `https://gp.srv.br/tributario/${municipio}/anfse_ws`;
+  }
+  return `https://coplan.inf.br/tributario/${municipio}/anfse_ws`;
+}
+
 function makeHttpsRequest(
   urlStr: string,
   body: string,
   pfxBuffer: Buffer,
-  passphrase: string,
-  contentType: string = "application/json"
+  passphrase: string
 ): Promise<{ statusCode: number; body: string }> {
   return new Promise((resolve, reject) => {
     const url = new URL(urlStr);
@@ -276,18 +234,19 @@ function makeHttpsRequest(
     let tlsOptions: Record<string, any>;
     try {
       const { certPem, keyPem } = extractCertAndKeyFromPfx(pfxBuffer, passphrase);
-      console.log(`[nfse-sped] Certificado extraído do PFX com sucesso (cert: ${certPem.length}B, key: ${keyPem.length}B)`);
+      console.log(`[nfse-coplan] Certificado extraído do PFX (cert: ${certPem.length}B, key: ${keyPem.length}B)`);
       tlsOptions = { cert: certPem, key: keyPem };
     } catch (forgeErr: any) {
-      console.log(`[nfse-sped] node-forge falhou (${forgeErr?.message}), usando pfx nativo...`);
+      console.log(`[nfse-coplan] node-forge falhou (${forgeErr?.message}), usando pfx nativo...`);
       tlsOptions = { pfx: pfxBuffer, passphrase };
     }
 
     const headers: Record<string, string | number> = {
-      "Content-Type": `${contentType}; charset=utf-8`,
+      "Content-Type": "text/xml; charset=utf-8",
       "Content-Length": Buffer.byteLength(body, "utf-8"),
-      "Accept": "application/json",
+      "SOAPAction": "nfse_web_service.GERARNFSE",
     };
+
     const options: https.RequestOptions = {
       hostname: url.hostname,
       port: url.port ? parseInt(url.port) : 443,
@@ -297,11 +256,12 @@ function makeHttpsRequest(
       ...tlsOptions,
       rejectUnauthorized: false,
     };
+
     const req = https.request(options, (res) => {
       let data = "";
       res.on("data", (chunk) => { data += chunk; });
       res.on("end", () => {
-        console.log(`[nfse-sped] HTTP ${res.statusCode} from ${url.hostname}`);
+        console.log(`[nfse-coplan] HTTP ${res.statusCode} from ${url.hostname}`);
         resolve({ statusCode: res.statusCode || 0, body: data });
       });
     });
@@ -317,140 +277,134 @@ function extractFromXml(xml: string, tag: string): string | undefined {
   return m?.[1]?.trim() || undefined;
 }
 
-function extractError(responseBody: string): string {
-  const msg =
-    extractFromXml(responseBody, "xMotivo") ||
-    extractFromXml(responseBody, "xDesc") ||
-    extractFromXml(responseBody, "Mensagem") ||
-    extractFromXml(responseBody, "MensagemErro") ||
-    extractFromXml(responseBody, "faultstring") ||
-    extractFromXml(responseBody, "Correcao") ||
-    extractFromXml(responseBody, "message") ||
-    extractFromXml(responseBody, "Message");
+function extractCdataContent(xml: string, tag: string): string | undefined {
+  const re = new RegExp(`<(?:[^:>]+:)?${tag}[^>]*>\\s*(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?\\s*</(?:[^:>]+:)?${tag}>`, "i");
+  const m = xml.match(re);
+  return m?.[1]?.trim() || undefined;
+}
 
-  const cStat = extractFromXml(responseBody, "cStat");
-  const statusInfo = cStat ? ` (cStat: ${cStat})` : "";
+function parseSoapResponse(responseBody: string): NfseResult {
+  const returnContent = extractCdataContent(responseBody, "Gerarnfseresponse") ||
+    extractCdataContent(responseBody, "GerarNfseResponse") ||
+    extractCdataContent(responseBody, "nfseDadosMsg") ||
+    extractCdataContent(responseBody, "return") ||
+    responseBody;
 
-  if (msg) return msg + statusInfo;
-
-  if (responseBody.includes('"error"') || responseBody.includes('"message"')) {
-    try {
-      const json = JSON.parse(responseBody);
-      return json.error || json.message || json.detail || `Resposta JSON: ${responseBody.slice(0, 300)}`;
-    } catch {}
+  const faultString = extractFromXml(responseBody, "faultstring");
+  if (faultString) {
+    return {
+      success: false,
+      error: `SOAP Fault: ${faultString}`,
+      xmlContent: responseBody,
+    };
   }
 
-  if (responseBody.length < 500) {
-    return `Resposta do servidor: ${responseBody.slice(0, 400)}`;
+  const listaMensagem = responseBody.match(/<(?:[^:>]+:)?MensagemRetorno[^>]*>([\s\S]*?)<\/(?:[^:>]+:)?MensagemRetorno>/gi);
+  if (listaMensagem && listaMensagem.length > 0) {
+    const errors: string[] = [];
+    for (const msg of listaMensagem) {
+      const codigo = extractFromXml(msg, "Codigo") || extractFromXml(msg, "codigo");
+      const mensagem = extractFromXml(msg, "Mensagem") || extractFromXml(msg, "mensagem");
+      const correcao = extractFromXml(msg, "Correcao") || extractFromXml(msg, "correcao");
+      if (codigo || mensagem) {
+        errors.push(`${codigo || "?"}: ${mensagem || "Erro desconhecido"}${correcao ? ` (Correção: ${correcao})` : ""}`);
+      }
+    }
+
+    const hasNfse = responseBody.includes("<nNFSe>") || responseBody.includes("<Numero>");
+    if (errors.length > 0 && !hasNfse) {
+      return {
+        success: false,
+        error: errors.join("; "),
+        xmlContent: responseBody,
+      };
+    }
   }
 
-  return "Erro desconhecido ao emitir NFS-e. Verifique as configurações e logs.";
+  const numeroNota = extractFromXml(returnContent, "nNFSe") ||
+    extractFromXml(returnContent, "Numero") ||
+    extractFromXml(responseBody, "nNFSe") ||
+    extractFromXml(responseBody, "Numero");
+
+  const codigoVerificacao = extractFromXml(returnContent, "CodigoVerificacao") ||
+    extractFromXml(returnContent, "cVerifNFSe") ||
+    extractFromXml(responseBody, "CodigoVerificacao") ||
+    extractFromXml(responseBody, "cVerifNFSe");
+
+  const linkNota = extractFromXml(returnContent, "linkNFSe") ||
+    extractFromXml(responseBody, "linkNFSe");
+
+  if (numeroNota) {
+    return {
+      success: true,
+      numeroNota,
+      codigoVerificacao,
+      linkNota,
+      xmlContent: responseBody,
+    };
+  }
+
+  if (responseBody.includes("<CompNfse>") || responseBody.includes("<NFSe>") || responseBody.includes("<Nfse>")) {
+    return {
+      success: true,
+      numeroNota: numeroNota || "Gerada",
+      codigoVerificacao,
+      linkNota,
+      xmlContent: responseBody,
+    };
+  }
+
+  return {
+    success: false,
+    error: `Resposta inesperada do webservice COPLAN. Verifique o XML de retorno.`,
+    xmlContent: responseBody,
+  };
 }
 
 export async function emitirNfse(params: EmitirNfseParams): Promise<NfseResult> {
   const { config } = params;
 
-  if (!config.webserviceUrl) {
-    return { success: false, error: "URL do webservice NFS-e não configurada." };
-  }
   if (!config.certificadoPfxBase64) {
     return { success: false, error: "Certificado digital (A1) não configurado." };
   }
 
   try {
     const pfxBuffer = Buffer.from(config.certificadoPfxBase64, "base64");
+    const { certPem, keyPem } = extractCertAndKeyFromPfx(pfxBuffer, config.certificadoSenha);
 
-    const { certPem, keyPem, certDerB64 } = extractCertAndKeyFromPfx(pfxBuffer, config.certificadoSenha);
+    const gerarNfseXml = buildGerarNfseEnvioXml(params);
+    const signedXml = signDpsInGerarNfseEnvio(gerarNfseXml, certPem, keyPem);
+    const soapEnvelope = wrapInSoapEnvelope(signedXml);
 
-    const dpsXml = buildDpsXml(params);
-    const signedDpsXml = signDpsXml(dpsXml, certPem, keyPem, certDerB64);
-    const dpsGzipB64 = compressDpsToGzipB64(signedDpsXml);
+    const wsUrl = buildWebserviceUrl(config);
 
-    let apiUrl = config.webserviceUrl.replace(/\/+$/, "");
-    if (!apiUrl.endsWith("/nfse")) {
-      apiUrl += "/nfse";
-    }
-
-    const jsonBody = JSON.stringify({ dpsXmlGZipB64: dpsGzipB64 });
-
-    console.log(`[nfse-sped] Emitindo DPS ${params.numeroDps} ambiente=${config.ambiente} url=${apiUrl}`);
-    console.log(`[nfse-sped] DPS XML (assinado) preview:\n${signedDpsXml.slice(0, 2000)}`);
-    console.log(`[nfse-sped] JSON body size: ${jsonBody.length}B, GZIP B64 size: ${dpsGzipB64.length}B`);
+    console.log(`[nfse-coplan] Emitindo DPS ${params.numeroDps} ambiente=${config.ambiente} url=${wsUrl}`);
+    console.log(`[nfse-coplan] GerarNfseEnvio XML (assinado) preview:\n${signedXml.slice(0, 2000)}`);
+    console.log(`[nfse-coplan] SOAP envelope size: ${soapEnvelope.length}B`);
 
     const response = await makeHttpsRequest(
-      apiUrl,
-      jsonBody,
+      wsUrl,
+      soapEnvelope,
       pfxBuffer,
-      config.certificadoSenha,
-      "application/json"
+      config.certificadoSenha
     );
 
-    console.log(`[nfse-sped] HTTP ${response.statusCode} - Resposta: ${response.body.slice(0, 1500)}`);
+    console.log(`[nfse-coplan] HTTP ${response.statusCode} - Resposta: ${response.body.slice(0, 2000)}`);
 
-    let jsonResp: any;
-    try {
-      jsonResp = JSON.parse(response.body);
-    } catch {
+    if (response.statusCode === 0 || response.statusCode >= 500) {
       return {
         success: false,
-        error: `Resposta não-JSON do servidor (HTTP ${response.statusCode}): ${response.body.slice(0, 500)}`,
+        error: `Erro HTTP ${response.statusCode} do webservice COPLAN: ${response.body.slice(0, 500)}`,
         xmlContent: response.body,
       };
     }
 
-    if (jsonResp.erros && jsonResp.erros.length > 0) {
-      const errorMessages = jsonResp.erros.map((e: any) =>
-        `${e.Codigo || e.codigo}: ${e.Descricao || e.descricao}${e.Complemento ? ` - ${e.Complemento}` : ""}`
-      ).join("; ");
-      return {
-        success: false,
-        error: errorMessages,
-        xmlContent: JSON.stringify(jsonResp, null, 2),
-      };
-    }
-
-    if (jsonResp.nfseXmlGZipB64) {
-      let nfseXml = "";
-      try {
-        const nfseCompressed = Buffer.from(jsonResp.nfseXmlGZipB64, "base64");
-        nfseXml = zlib.gunzipSync(nfseCompressed).toString("utf-8");
-      } catch {
-        nfseXml = jsonResp.nfseXmlGZipB64;
-      }
-
-      const numeroNota = extractFromXml(nfseXml, "nNFSe") || jsonResp.nNFSe;
-      const codigoVerificacao = extractFromXml(nfseXml, "cVerifNFSe") || jsonResp.cVerifNFSe;
-      const linkNota = extractFromXml(nfseXml, "linkNFSe") || jsonResp.linkNFSe;
-
-      return {
-        success: true,
-        numeroNota,
-        codigoVerificacao,
-        linkNota,
-        xmlContent: nfseXml,
-      };
-    }
-
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      return {
-        success: true,
-        numeroNota: jsonResp.nNFSe || jsonResp.numero,
-        codigoVerificacao: jsonResp.cVerifNFSe,
-        linkNota: jsonResp.linkNFSe,
-        xmlContent: JSON.stringify(jsonResp, null, 2),
-      };
-    }
-
-    return {
-      success: false,
-      error: jsonResp.message || jsonResp.error || `HTTP ${response.statusCode}: ${response.body.slice(0, 400)}`,
-      xmlContent: JSON.stringify(jsonResp, null, 2),
-    };
+    return parseSoapResponse(response.body);
   } catch (err: any) {
-    console.error("[nfse-sped] Erro ao emitir:", err);
+    console.error("[nfse-coplan] Erro ao emitir:", err);
     return {
       success: false,
-      error: err?.message || "Erro de conexão ao webservice NFS-e SPED.",
+      error: err?.message || "Erro de conexão ao webservice NFS-e COPLAN.",
     };
   }
 }
@@ -461,6 +415,7 @@ export function getNfseConfig(settingsMap: Record<string, string>): NfseConfig |
     enabled: true,
     ambiente: (settingsMap["nfse_ambiente"] as "producao" | "homologacao") || "homologacao",
     webserviceUrl: settingsMap["nfse_webservice_url"] || "",
+    municipioNome: settingsMap["nfse_municipio_nome"] || "sinop",
     cnpjPrestador: settingsMap["nfse_cnpj_prestador"] || "",
     inscricaoMunicipal: settingsMap["nfse_inscricao_municipal"] || "",
     municipioCodigo: settingsMap["nfse_municipio_codigo"] || "5107909",
@@ -476,8 +431,7 @@ export function getNfseConfig(settingsMap: Record<string, string>): NfseConfig |
     cTribMun: settingsMap["nfse_ctrib_mun"] || "",
     cNBS: settingsMap["nfse_cnbs"] || "101061900",
     aliquotaIss: settingsMap["nfse_aliquota_iss"] || "2.00",
-    opSimpNac: settingsMap["nfse_op_simples_nac"] || "3",
-    regApTribSN: settingsMap["nfse_reg_ap_trib_sn"] || "1",
+    opSimpNac: settingsMap["nfse_op_simples_nac"] || "1",
     regEspTrib: settingsMap["nfse_reg_esp_trib"] || "0",
     serie: settingsMap["nfse_serie_dps"] || settingsMap["nfse_serie_rps"] || "1",
     proximoDps: parseInt(settingsMap["nfse_proximo_dps"] || settingsMap["nfse_proximo_rps"] || "1"),
@@ -486,6 +440,6 @@ export function getNfseConfig(settingsMap: Record<string, string>): NfseConfig |
     certificadoSenha: settingsMap["nfse_certificado_senha"] || "",
     descricaoServico:
       settingsMap["nfse_descricao_servico"] ||
-      "Prestação de serviços de engenharia e homologação de sistemas fotovoltaicos",
+      "Prestacao de servicos de engenharia e homologacao de sistemas fotovoltaicos",
   };
 }

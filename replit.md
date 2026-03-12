@@ -158,7 +158,7 @@ shared/
 - Banco de dados: `DATABASE_URL` (PostgreSQL via Replit)
 - Object Storage: `DEFAULT_OBJECT_STORAGE_BUCKET_ID`, `PRIVATE_OBJECT_DIR`, `PUBLIC_OBJECT_SEARCH_PATHS`
 - Mercado Pago: `MP_ACCESS_TOKEN` (env var ou site_settings) — único meio de pagamento
-- NFS-e COPLAN SPED v1.01 (Sinop/MT): certificado PFX A1 + config via site_settings (nfse_enabled, nfse_ctrib_nac, nfse_ctrib_mun, nfse_cnbs, nfse_op_simples_nac, nfse_reg_esp_trib, nfse_serie_dps, nfse_proximo_dps). Namespace: `http://www.sped.fazenda.gov.br/nfse`. Método: `RecepcionarLoteDpsSincrono`. Elemento raiz: `DPS` (v1.01).
+- NFS-e COPLAN SOAP v1.01 (Sinop/MT): certificado PFX A1 + config via site_settings. Protocolo SOAP com CDATA. URLs: Prod `gp.srv.br/tributario/{municipio}/anfse_ws` | Homol `coplan.inf.br/tributario/{municipio}/anfse_ws`. Método: `GerarNfseEnvio` (DPS unitário). Assinatura: RSA-SHA1, C14N inclusivo, DigestMethod SHA1. SOAPAction: `nfse_web_service.GERARNFSE`. Namespace: `http://www.sped.fazenda.gov.br/nfse`.
 - WhatsApp (Evolution API): `whatsapp_api_url`, `whatsapp_api_key` (masked), `whatsapp_instance_name`, `whatsapp_admin_phone`, `whatsapp_enabled` via site_settings
 - GitHub: repo `icarorandoli/Novo-crm-projetos`, VPS: `cd /root/randoli-solar && git pull origin main && npm run build && pm2 restart all`
 
@@ -172,7 +172,7 @@ shared/
 - Rate limiting no login: máx 10 tentativas por IP a cada 15min
 
 ## Funcionalidades Recentes
-- **NFS-e SPED Nacional v1.01**: API REST JSON (`POST /sefinnacional/nfse`) com GZIP+Base64 do DPS XML assinado digitalmente (xml-crypto, RSA-SHA256). Endpoint único, ambiente controlado por `tpAmb` no XML. Certificado A1 (PFX) via node-forge. Testado com sucesso no SPED Nacional.
+- **NFS-e COPLAN SOAP Padrão Nacional v1.01**: Reescrito para protocolo SOAP da COPLAN. Envelope SOAP com `nfseCabecMsg` + `nfseDadosMsg` em CDATA. Método `GerarNfseEnvio` (DPS unitário, síncrono). Assinatura digital RSA-SHA1 com C14N inclusivo sobre `infDPS`. Apenas X509Certificate no KeyInfo. Campos: `xNome` no prestador, `vReceb` nos valores, `pAliq` na tributação municipal, `cTribMun` obrigatório. URLs auto-detectadas pelo nome do município e ambiente.
 - **Portal do Cliente**: Área do cliente final (`/cliente`) com autenticação separada. Admin define senha via "Definir Acesso" na página de clientes. Cliente vê seus projetos, progresso, timeline e documentos.
 - **Portal do Integrador redesenhado**: Layout moderno com cards de progresso, barras de progresso nos projetos ativos, sidebar limpa com navegação simplificada.
 - **Banco Inter removido**: Integração Inter Cobrança completamente removida; apenas Mercado Pago como meio de pagamento.

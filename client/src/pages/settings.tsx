@@ -972,9 +972,9 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
   const [bairroPrest, setBairroPrest] = useState("");
   const [cepPrest, setCepPrest] = useState("");
   const [ufPrest, setUfPrest] = useState("");
-  const [cTribNac, setCTribNac] = useState("140601");
-  const [cTribMun, setCTribMun] = useState("");
-  const [cNBS, setCNBS] = useState("101061900");
+  const [cTribNac, setCTribNac] = useState("170600");
+  const [cTribMun, setCTribMun] = useState("1706");
+  const [cNBS, setCNBS] = useState("114061100");
   const [aliquotaIss, setAliquotaIss] = useState("2.00");
   const [opSimpNac, setOpSimpNac] = useState("3");
   const [regEspTrib, setRegEspTrib] = useState("0");

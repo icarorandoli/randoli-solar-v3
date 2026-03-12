@@ -274,7 +274,7 @@ function AppRoutes() {
   const isAdminRole = ["admin", "engenharia", "financeiro", "tecnico"].includes(user.role);
 
   if (isAdminRole) {
-    if (location.startsWith("/portal") || location.startsWith("/cliente")) {
+    if (location.startsWith("/portal") || (location.startsWith("/cliente") && !location.startsWith("/clientes"))) {
       return <Redirect to="/" />;
     }
     return <AdminLayout />;

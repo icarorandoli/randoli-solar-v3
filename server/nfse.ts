@@ -2,7 +2,9 @@ import https from "https";
 import tls from "tls";
 import { URL } from "url";
 import crypto from "crypto";
+import zlib from "zlib";
 import forge from "node-forge";
+import { SignedXml } from "xml-crypto";
 
 export interface NfseConfig {
   enabled: boolean;
@@ -95,7 +97,9 @@ function buildDpsXml(params: EmitirNfseParams): string {
   const imPrestador = cfg.inscricaoMunicipal.replace(/\D/g, "");
   const cLocEmi = cfg.municipioCodigo || "5107909";
 
-  const dpsId = `DPS${cLocEmi}${cnpjPrestador}${String(cfg.serie).padStart(5, "0")}${String(nDPS).padStart(15, "0")}`;
+  const tpInsc = cnpjPrestador.length <= 11 ? "1" : "2";
+  const docPad = cnpjPrestador.padStart(14, "0");
+  const dpsId = `DPS${cLocEmi}${tpInsc}${docPad}${String(cfg.serie).padStart(5, "0")}${String(nDPS).padStart(15, "0")}`;
 
   const tomadorDoc = cleanDoc(params.tomadorCpfCnpj || "");
   const tomadorDocTag = tomadorDoc.length === 11
@@ -183,38 +187,59 @@ function buildDpsXml(params: EmitirNfseParams): string {
 </DPS>`;
 }
 
-function buildLoteDpsXml(dpsXml: string, cfg: NfseConfig, loteNum: number): string {
-  const cnpjPrestador = cleanDoc(cfg.cnpjPrestador);
-  const imPrestador = cfg.inscricaoMunicipal.replace(/\D/g, "");
-
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<EnviarLoteDpsSincronoEnvio versao="1.01" xmlns="http://www.sped.fazenda.gov.br/nfse">
-  <NumeroLote>${loteNum}</NumeroLote>
-  <Prestador>
-    <CNPJ>${cnpjPrestador}</CNPJ>
-    <IM>${imPrestador}</IM>
-  </Prestador>
-  <QuantidadeDPS>1</QuantidadeDPS>
-  <ListaDps>
-    <Dps>
-${dpsXml}
-    </Dps>
-  </ListaDps>
-</EnviarLoteDpsSincronoEnvio>`;
+function compressDpsToGzipB64(dpsXml: string): string {
+  const xmlWithDecl = dpsXml.startsWith("<?xml") ? dpsXml : `<?xml version="1.0" encoding="UTF-8"?>${dpsXml}`;
+  const xmlBuffer = Buffer.from(xmlWithDecl, "utf-8");
+  const compressed = zlib.gzipSync(xmlBuffer);
+  return compressed.toString("base64");
 }
 
-function extractCertAndKeyFromPfx(pfxBuffer: Buffer, passphrase: string): { certPem: string; keyPem: string } {
+function signDpsXml(dpsXml: string, certPem: string, keyPem: string, certDerB64: string): string {
+  const idMatch = dpsXml.match(/Id="([^"]+)"/);
+  if (!idMatch) throw new Error("Id attribute not found in DPS XML");
+  const refId = idMatch[1];
+
+  const sig = new SignedXml({
+    privateKey: keyPem,
+    publicCert: certPem,
+    canonicalizationAlgorithm: "http://www.w3.org/2001/10/xml-exc-c14n#",
+    signatureAlgorithm: "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+  });
+
+  sig.addReference({
+    xpath: "//*[local-name(.)='infDPS']",
+    digestAlgorithm: "http://www.w3.org/2001/04/xmlenc#sha256",
+    transforms: [
+      "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
+      "http://www.w3.org/2001/10/xml-exc-c14n#",
+    ],
+    uri: `#${refId}`,
+  });
+
+  sig.computeSignature(dpsXml, {
+    location: { reference: "//*[local-name(.)='DPS']", action: "append" },
+  });
+
+  return sig.getSignedXml();
+}
+
+function extractCertAndKeyFromPfx(pfxBuffer: Buffer, passphrase: string): { certPem: string; keyPem: string; certDerB64: string } {
   const pfxAsn1 = forge.asn1.fromDer(pfxBuffer.toString("binary"));
   const pfxObj = forge.pkcs12.pkcs12FromAsn1(pfxAsn1, passphrase);
 
   let certPem = "";
   let keyPem = "";
+  let certDerB64 = "";
 
   const certBags = pfxObj.getBags({ bagType: forge.pki.oids.certBag });
   const certBagList = certBags[forge.pki.oids.certBag] || [];
   for (const bag of certBagList) {
     if (bag.cert) {
       certPem += forge.pki.certificateToPem(bag.cert);
+      if (!certDerB64) {
+        const derBytes = forge.asn1.toDer(forge.pki.certificateToAsn1(bag.cert)).getBytes();
+        certDerB64 = Buffer.from(derBytes, "binary").toString("base64");
+      }
     }
   }
 
@@ -235,7 +260,7 @@ function extractCertAndKeyFromPfx(pfxBuffer: Buffer, passphrase: string): { cert
   if (!certPem) throw new Error("Certificado não encontrado no arquivo PFX.");
   if (!keyPem) throw new Error("Chave privada não encontrada no arquivo PFX.");
 
-  return { certPem, keyPem };
+  return { certPem, keyPem, certDerB64 };
 }
 
 function makeHttpsRequest(
@@ -243,8 +268,8 @@ function makeHttpsRequest(
   body: string,
   pfxBuffer: Buffer,
   passphrase: string,
-  contentType: string = "application/xml"
-): Promise<string> {
+  contentType: string = "application/json"
+): Promise<{ statusCode: number; body: string }> {
   return new Promise((resolve, reject) => {
     const url = new URL(urlStr);
 
@@ -254,13 +279,14 @@ function makeHttpsRequest(
       console.log(`[nfse-sped] Certificado extraído do PFX com sucesso (cert: ${certPem.length}B, key: ${keyPem.length}B)`);
       tlsOptions = { cert: certPem, key: keyPem };
     } catch (forgeErr: any) {
-      console.log(`[nfse-sped] node-forge falhou (${forgeErr?.message}), tentando pfx nativo...`);
+      console.log(`[nfse-sped] node-forge falhou (${forgeErr?.message}), usando pfx nativo...`);
       tlsOptions = { pfx: pfxBuffer, passphrase };
     }
 
     const headers: Record<string, string | number> = {
       "Content-Type": `${contentType}; charset=utf-8`,
       "Content-Length": Buffer.byteLength(body, "utf-8"),
+      "Accept": "application/json",
     };
     const options: https.RequestOptions = {
       hostname: url.hostname,
@@ -276,7 +302,7 @@ function makeHttpsRequest(
       res.on("data", (chunk) => { data += chunk; });
       res.on("end", () => {
         console.log(`[nfse-sped] HTTP ${res.statusCode} from ${url.hostname}`);
-        resolve(data);
+        resolve({ statusCode: res.statusCode || 0, body: data });
       });
     });
     req.on("error", reject);
@@ -333,60 +359,93 @@ export async function emitirNfse(params: EmitirNfseParams): Promise<NfseResult> 
 
   try {
     const pfxBuffer = Buffer.from(config.certificadoPfxBase64, "base64");
-    const loteNum = Date.now();
-    const dpsXml = buildDpsXml(params);
-    const loteXml = buildLoteDpsXml(dpsXml, config, loteNum);
 
-    let baseUrl = config.webserviceUrl.replace(/\/+$/, "");
-    if (!baseUrl.includes("RecepcionarLoteDpsSincrono") && !baseUrl.includes("recepcionar-lote-dps-sincrono")) {
-      baseUrl += "/RecepcionarLoteDpsSincrono";
+    const { certPem, keyPem, certDerB64 } = extractCertAndKeyFromPfx(pfxBuffer, config.certificadoSenha);
+
+    const dpsXml = buildDpsXml(params);
+    const signedDpsXml = signDpsXml(dpsXml, certPem, keyPem, certDerB64);
+    const dpsGzipB64 = compressDpsToGzipB64(signedDpsXml);
+
+    let apiUrl = config.webserviceUrl.replace(/\/+$/, "");
+    if (!apiUrl.endsWith("/nfse")) {
+      apiUrl += "/nfse";
     }
 
-    console.log(`[nfse-sped] Emitindo DPS ${params.numeroDps} ambiente=${config.ambiente} url=${baseUrl}`);
-    console.log(`[nfse-sped] Lote XML preview:\n${loteXml.slice(0, 1500)}`);
+    const jsonBody = JSON.stringify({ dpsXmlGZipB64: dpsGzipB64 });
+
+    console.log(`[nfse-sped] Emitindo DPS ${params.numeroDps} ambiente=${config.ambiente} url=${apiUrl}`);
+    console.log(`[nfse-sped] DPS XML (assinado) preview:\n${signedDpsXml.slice(0, 2000)}`);
+    console.log(`[nfse-sped] JSON body size: ${jsonBody.length}B, GZIP B64 size: ${dpsGzipB64.length}B`);
 
     const response = await makeHttpsRequest(
-      baseUrl,
-      loteXml,
+      apiUrl,
+      jsonBody,
       pfxBuffer,
       config.certificadoSenha,
-      "application/xml"
+      "application/json"
     );
 
-    console.log("[nfse-sped] Resposta recebida:", response.slice(0, 1200));
+    console.log(`[nfse-sped] HTTP ${response.statusCode} - Resposta: ${response.body.slice(0, 1500)}`);
 
-    const hasNfse =
-      response.includes("nNFSe") ||
-      response.includes("CompNfse") ||
-      response.includes("InfNfse");
-    const hasError =
-      response.includes("ListaMensagemRetorno") ||
-      response.includes("Mensagem") ||
-      response.includes("faultstring");
+    let jsonResp: any;
+    try {
+      jsonResp = JSON.parse(response.body);
+    } catch {
+      return {
+        success: false,
+        error: `Resposta não-JSON do servidor (HTTP ${response.statusCode}): ${response.body.slice(0, 500)}`,
+        xmlContent: response.body,
+      };
+    }
 
-    if (hasNfse && !response.includes("<Mensagem>")) {
-      const numeroNota =
-        extractFromXml(response, "nNFSe") ||
-        extractFromXml(response, "Numero");
-      const codigoVerificacao = extractFromXml(response, "cVerifNFSe") ||
-        extractFromXml(response, "CodigoVerificacao");
-      const linkNota = extractFromXml(response, "linkNFSe") ||
-        extractFromXml(response, "OutrasInformacoes");
+    if (jsonResp.erros && jsonResp.erros.length > 0) {
+      const errorMessages = jsonResp.erros.map((e: any) =>
+        `${e.Codigo || e.codigo}: ${e.Descricao || e.descricao}${e.Complemento ? ` - ${e.Complemento}` : ""}`
+      ).join("; ");
+      return {
+        success: false,
+        error: errorMessages,
+        xmlContent: JSON.stringify(jsonResp, null, 2),
+      };
+    }
+
+    if (jsonResp.nfseXmlGZipB64) {
+      let nfseXml = "";
+      try {
+        const nfseCompressed = Buffer.from(jsonResp.nfseXmlGZipB64, "base64");
+        nfseXml = zlib.gunzipSync(nfseCompressed).toString("utf-8");
+      } catch {
+        nfseXml = jsonResp.nfseXmlGZipB64;
+      }
+
+      const numeroNota = extractFromXml(nfseXml, "nNFSe") || jsonResp.nNFSe;
+      const codigoVerificacao = extractFromXml(nfseXml, "cVerifNFSe") || jsonResp.cVerifNFSe;
+      const linkNota = extractFromXml(nfseXml, "linkNFSe") || jsonResp.linkNFSe;
 
       return {
         success: true,
         numeroNota,
         codigoVerificacao,
         linkNota,
-        xmlContent: response,
-      };
-    } else {
-      return {
-        success: false,
-        error: extractError(response),
-        xmlContent: response,
+        xmlContent: nfseXml,
       };
     }
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return {
+        success: true,
+        numeroNota: jsonResp.nNFSe || jsonResp.numero,
+        codigoVerificacao: jsonResp.cVerifNFSe,
+        linkNota: jsonResp.linkNFSe,
+        xmlContent: JSON.stringify(jsonResp, null, 2),
+      };
+    }
+
+    return {
+      success: false,
+      error: jsonResp.message || jsonResp.error || `HTTP ${response.statusCode}: ${response.body.slice(0, 400)}`,
+      xmlContent: JSON.stringify(jsonResp, null, 2),
+    };
   } catch (err: any) {
     console.error("[nfse-sped] Erro ao emitir:", err);
     return {

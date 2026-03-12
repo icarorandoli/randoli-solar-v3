@@ -1143,7 +1143,7 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
               <Select value={ambiente} onValueChange={v => {
                 setAmbiente(v);
                 if (v === "producao") setWebserviceUrl("https://sefin.nfse.gov.br/sefinnacional");
-                else setWebserviceUrl("https://sefin.nfse.gov.br/sefinnacional/homologacao");
+                else setWebserviceUrl("https://sefin.nfse.gov.br/SefinNacional");
               }}>
                 <SelectTrigger data-testid="select-nfse-ambiente"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -1155,7 +1155,7 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
             <div className="space-y-2">
               <Label>URL do Webservice NFS-e Nacional (SPED)</Label>
               <Input value={webserviceUrl} onChange={e => setWebserviceUrl(e.target.value)} placeholder="https://sefin.nfse.gov.br/sefinnacional" data-testid="input-nfse-webservice-url" />
-              <p className="text-[10px] text-muted-foreground">Produção: https://sefin.nfse.gov.br/sefinnacional | Homologação: https://sefin.nfse.gov.br/sefinnacional/homologacao</p>
+              <p className="text-[10px] text-muted-foreground">Produção: https://sefin.nfse.gov.br/sefinnacional | Homologação: https://sefin.nfse.gov.br/SefinNacional</p>
             </div>
           </div>
 

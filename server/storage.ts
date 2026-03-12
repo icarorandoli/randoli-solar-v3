@@ -430,7 +430,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getFinancialProjects(filter: "today" | "month" | "paid" | "pending"): Promise<(Project & { client: Client | null })[]> {
-    const allProjects = await db.select().from(projects).where(eq(projects.archived, false)).orderBy(projects.updatedAt);
+    const allProjects = await db.select().from(projects).orderBy(projects.updatedAt);
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -443,7 +443,7 @@ export class DatabaseStorage implements IStorage {
     } else if (filter === "paid") {
       filtered = allProjects.filter(p => p.paymentStatus === "approved");
     } else {
-      filtered = allProjects.filter(p => p.paymentStatus !== "approved" && p.valor);
+      filtered = allProjects.filter(p => !p.archived && p.paymentStatus !== "approved" && p.valor);
     }
 
     const clientList = await db.select().from(clients);

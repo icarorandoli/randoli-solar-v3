@@ -2577,7 +2577,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       if (!user || user.role !== "admin") return res.status(403).json({ error: "Sem permissão" });
       if (!req.file) return res.status(400).json({ error: "Nenhum arquivo enviado. Selecione um arquivo .pfx primeiro." });
       const base64 = req.file.buffer.toString("base64");
-      await storage.updateSetting("nfse_certificado_pfx", base64);
+      await storage.setSiteSetting("nfse_certificado_pfx", base64);
       console.log(`[nfse] certificado uploaded: ${req.file.originalname} (${req.file.size} bytes)`);
       res.json({ success: true, size: req.file.size, originalname: req.file.originalname });
     } catch (err: any) {

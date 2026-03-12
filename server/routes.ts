@@ -1331,22 +1331,42 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
   // ── MERCADO PAGO WEBHOOK ──────────────────────────────────────────
   async function advanceProjectAfterPayment(project: any, projectId: string, paymentId: string, paidValue: number, gatewayName: string, settingsMap?: Record<string, string>) {
+    const STATUS_ORDER = ["orcamento", "aprovado_pagamento_pendente", "projeto_tecnico", "aguardando_art", "protocolado", "parecer_acesso", "instalacao", "vistoria", "projeto_aprovado", "homologado", "finalizado", "cancelado"];
+    const currentIdx = STATUS_ORDER.indexOf(project.status);
+    const nextStatus = currentIdx >= 0 && currentIdx < STATUS_ORDER.length - 1 ? STATUS_ORDER[currentIdx + 1] : "projeto_tecnico";
+
+    const STATUS_LABELS: Record<string, string> = {
+      "orcamento": "Orçamento",
+      "aprovado_pagamento_pendente": "Aprovado / Pag. Pendente",
+      "projeto_tecnico": "Projeto Técnico",
+      "aguardando_art": "Aguardando ART",
+      "protocolado": "Protocolado",
+      "parecer_acesso": "Parecer de Acesso",
+      "instalacao": "Em Instalação",
+      "vistoria": "Aguardando Vistoria",
+      "projeto_aprovado": "Projeto Aprovado",
+      "homologado": "Homologado",
+      "finalizado": "Finalizado",
+      "cancelado": "Cancelado",
+    };
+
     await storage.updateProject(projectId, {
-      status: "projeto_tecnico",
+      status: nextStatus,
       paymentStatus: "approved",
     } as any);
 
+    const nextStatusLabel = STATUS_LABELS[nextStatus] || nextStatus;
     await storage.addTimelineEntry({
       projectId,
       event: `Pagamento confirmado via ${gatewayName}`,
-      details: `Pagamento #${paymentId} aprovado (R$ ${paidValue.toFixed(2).replace(".", ",")}). Status avançado automaticamente para Projeto Técnico.`,
+      details: `Pagamento #${paymentId} aprovado (R$ ${paidValue.toFixed(2).replace(".", ",")}). Status avançado automaticamente para ${nextStatusLabel}.`,
       createdByRole: "admin",
     });
 
     storage.createNotification({
       type: "payment",
       title: `Pagamento aprovado`,
-      body: `Pagamento de R$ ${paidValue.toFixed(2).replace(".", ",")} aprovado no projeto ${project.ticketNumber || project.title}. Status avançado para Projeto Técnico.`,
+      body: `Pagamento de R$ ${paidValue.toFixed(2).replace(".", ",")} aprovado no projeto ${project.ticketNumber || project.title}. Status avançado para ${nextStatusLabel}.`,
       projectId,
       projectTitle: project.title,
       ticketNumber: project.ticketNumber,
@@ -1371,7 +1391,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         integradorName,
         projectTitle: project.title,
         ticketNumber: project.ticketNumber,
-        newStatus: "projeto_tecnico",
+        newStatus: nextStatus,
         config: emailConfig,
       })).catch(err => console.error("[email] Falha ao enviar:", err));
     }

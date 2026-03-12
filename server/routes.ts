@@ -1496,7 +1496,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
               xmlContent: result.xmlContent,
               emitidoEm: new Date(),
             });
-            await storage.updateSetting("nfse_proximo_dps", String(proximoDps + 1));
+            await storage.setSiteSetting("nfse_proximo_dps", String(proximoDps + 1));
             await storage.addTimelineEntry({
               projectId,
               event: "NFS-e emitida automaticamente",
@@ -2529,7 +2529,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           emitidoEm: new Date(),
           errorMessage: undefined,
         });
-        await storage.updateSetting("nfse_proximo_dps", String(proximoDps + 1));
+        await storage.setSiteSetting("nfse_proximo_dps", String(proximoDps + 1));
         await storage.addTimelineEntry({
           projectId: project.id,
           event: "NFS-e emitida",

@@ -1519,7 +1519,7 @@ export default function ProjectsPage() {
                   <tr
                     key={project.id}
                     className="hover:bg-primary/[0.02] transition-colors cursor-pointer group"
-                    onClick={() => tab !== "arquivados" && setDetailProjectId(project.id)}
+                    onClick={() => setDetailProjectId(project.id)}
                     data-testid={`row-project-${project.id}`}
                   >
                     <td className="px-6 py-5">
@@ -1598,7 +1598,7 @@ export default function ProjectsPage() {
             <Card
               key={project.id}
               className="group relative border-border/40 hover:border-primary/40 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden bg-background rounded-2xl"
-              onClick={() => tab !== "arquivados" && setDetailProjectId(project.id)}
+              onClick={() => setDetailProjectId(project.id)}
               data-testid={`card-project-${project.id}`}
             >
               <div className={`h-1.5 w-full ${getStatusBadge(project.status).split(" ")[1]}`} />

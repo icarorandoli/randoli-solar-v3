@@ -401,7 +401,7 @@ export class DatabaseStorage implements IStorage {
 
   // ── Financial Stats ──
   async getFinancialStats(): Promise<{ todayTotal: number; monthTotal: number; paidCount: number; pendingTotal: number }> {
-    const allProjectsList = await db.select().from(projects).where(eq(projects.archived, false));
+    const allProjectsList = await db.select().from(projects);
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -422,7 +422,7 @@ export class DatabaseStorage implements IStorage {
         paidCount++;
         if (p.updatedAt && p.updatedAt >= monthStart) monthTotal += val;
         if (p.updatedAt && p.updatedAt >= todayStart) todayTotal += val;
-      } else if (p.paymentStatus !== "approved" && p.valor) {
+      } else if (!p.archived && p.paymentStatus !== "approved" && p.valor) {
         pendingTotal += parseValor(p.valor);
       }
     }

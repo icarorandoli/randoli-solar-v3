@@ -313,7 +313,7 @@ export default function ClientsPage() {
                   <div className="flex items-center gap-3">
                     <Avatar className="h-12 w-12 border-2 border-background shadow-sm">
                       <AvatarFallback className="bg-primary/10 text-primary font-bold">
-                        {getInitials(client.name)}
+                        {getInitials(client.name || "")}
                       </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0">

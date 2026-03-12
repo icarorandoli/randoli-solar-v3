@@ -588,8 +588,8 @@ export default function UsersPage() {
   });
 
   const filtered = users.filter(u =>
-    u.name.toLowerCase().includes(search.toLowerCase()) ||
-    u.username.toLowerCase().includes(search.toLowerCase()) ||
+    (u.name || "").toLowerCase().includes(search.toLowerCase()) ||
+    (u.username || "").toLowerCase().includes(search.toLowerCase()) ||
     (u.email || "").toLowerCase().includes(search.toLowerCase())
   );
 
@@ -657,7 +657,7 @@ export default function UsersPage() {
                   <div className="flex items-center gap-3">
                     <Avatar className="h-12 w-12 border-2 border-background shadow-sm">
                       <AvatarFallback className="bg-primary/10 text-primary font-bold">
-                        {getInitials(u.name)}
+                        {getInitials(u.name || "")}
                       </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0">
@@ -766,7 +766,7 @@ function UserRow({
         <div className="flex items-center gap-4 flex-wrap">
           {/* Avatar */}
           <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-            <span className="text-sm font-bold text-primary">{user.name.charAt(0).toUpperCase()}</span>
+            <span className="text-sm font-bold text-primary">{(user.name || "U").charAt(0).toUpperCase()}</span>
           </div>
 
           {/* Info */}

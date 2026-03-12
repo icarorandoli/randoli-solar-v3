@@ -1061,6 +1061,7 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
     onError: () => toast({ title: "Erro", description: "Não foi possível salvar.", variant: "destructive" }),
   });
 
+  const [testResult, setTestResult] = useState<{ success: boolean; error?: string; message?: string; xmlResponse?: string } | null>(null);
   const testMut = useMutation({
     mutationFn: async () => {
       const r = await fetch("/api/nfse/testar-conexao", {
@@ -1071,6 +1072,7 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
       return r.json();
     },
     onSuccess: (data: any) => {
+      setTestResult(data);
       if (data.success) {
         toast({ title: "Conexão OK!", description: data.message });
       } else {
@@ -1079,11 +1081,11 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
           : (data.error || "Verifique os campos");
         toast({ title: "Resultado do Teste", description: desc, variant: "destructive", duration: 15000 });
       }
-      if (data.xmlResponse) {
-        console.log("[NFS-e Test] XML Response:", data.xmlResponse);
-      }
     },
-    onError: (err: any) => toast({ title: "Erro de conexão", description: err?.message || "Não foi possível conectar ao servidor", variant: "destructive" }),
+    onError: (err: any) => {
+      setTestResult({ success: false, error: err?.message || "Erro de conexão" });
+      toast({ title: "Erro de conexão", description: err?.message || "Não foi possível conectar ao servidor", variant: "destructive" });
+    },
   });
 
   async function uploadCert() {
@@ -1314,6 +1316,22 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
               Testar configuração
             </Button>
           </div>
+
+          {testResult && (
+            <div className={`mt-4 p-4 rounded-lg border ${testResult.success ? "bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800" : "bg-red-50 border-red-200 dark:bg-red-950 dark:border-red-800"}`} data-testid="nfse-test-result">
+              <p className={`font-semibold text-sm ${testResult.success ? "text-green-800 dark:text-green-200" : "text-red-800 dark:text-red-200"}`}>
+                {testResult.success ? "Conexão OK!" : "Resultado do Teste"}
+              </p>
+              {testResult.error && <p className="text-sm mt-1 text-red-700 dark:text-red-300">{testResult.error}</p>}
+              {testResult.message && <p className="text-xs mt-1 text-muted-foreground">{testResult.message}</p>}
+              {testResult.xmlResponse && (
+                <details className="mt-2">
+                  <summary className="text-xs cursor-pointer text-muted-foreground hover:text-foreground">Ver resposta XML do webservice</summary>
+                  <pre className="mt-1 text-[10px] bg-muted p-2 rounded overflow-x-auto max-h-60 whitespace-pre-wrap break-all">{testResult.xmlResponse}</pre>
+                </details>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

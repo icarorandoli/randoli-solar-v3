@@ -291,13 +291,34 @@ function extractFromXml(xml: string, tag: string): string | undefined {
   return m?.[1]?.trim() || undefined;
 }
 
-function extractError(xml: string): string {
+function extractError(responseBody: string): string {
   const msg =
-    extractFromXml(xml, "Mensagem") ||
-    extractFromXml(xml, "MensagemErro") ||
-    extractFromXml(xml, "faultstring") ||
-    extractFromXml(xml, "Correcao");
-  return msg || "Erro desconhecido ao emitir NFS-e. Verifique as configurações e logs.";
+    extractFromXml(responseBody, "xMotivo") ||
+    extractFromXml(responseBody, "xDesc") ||
+    extractFromXml(responseBody, "Mensagem") ||
+    extractFromXml(responseBody, "MensagemErro") ||
+    extractFromXml(responseBody, "faultstring") ||
+    extractFromXml(responseBody, "Correcao") ||
+    extractFromXml(responseBody, "message") ||
+    extractFromXml(responseBody, "Message");
+
+  const cStat = extractFromXml(responseBody, "cStat");
+  const statusInfo = cStat ? ` (cStat: ${cStat})` : "";
+
+  if (msg) return msg + statusInfo;
+
+  if (responseBody.includes('"error"') || responseBody.includes('"message"')) {
+    try {
+      const json = JSON.parse(responseBody);
+      return json.error || json.message || json.detail || `Resposta JSON: ${responseBody.slice(0, 300)}`;
+    } catch {}
+  }
+
+  if (responseBody.length < 500) {
+    return `Resposta do servidor: ${responseBody.slice(0, 400)}`;
+  }
+
+  return "Erro desconhecido ao emitir NFS-e. Verifique as configurações e logs.";
 }
 
 export async function emitirNfse(params: EmitirNfseParams): Promise<NfseResult> {

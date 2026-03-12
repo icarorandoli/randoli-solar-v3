@@ -907,7 +907,7 @@ export default function SettingsPage() {
                     <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-muted/40">
                       <div className="space-y-0.5">
                         <Label className="text-base font-semibold">Emissão Automática</Label>
-                        <p className="text-xs text-muted-foreground">Ao ativar, a NFS-e será emitida automaticamente quando o pagamento for confirmado.</p>
+                        <p className="text-xs text-muted-foreground">Ao ativar, a NFS-e será emitida automaticamente quando o projeto for finalizado ou quando o pagamento for confirmado por gateway.</p>
                       </div>
                       <Switch checked={nfseAutoEmit} onCheckedChange={setNfseAutoEmit} data-testid="switch-nfse-auto-emit" />
                     </div>

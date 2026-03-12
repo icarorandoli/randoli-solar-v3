@@ -939,6 +939,70 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         }
       }
 
+      // Auto-emit NFS-e when status changes to "finalizado"
+      if (data.status === "finalizado" && current.status !== "finalizado") {
+        const sMapNfse = await getSettingsMap();
+        if (sMapNfse["nfse_auto_emit"] === "true") {
+          (async () => {
+            try {
+              const nfseConfig = getNfseConfig(sMapNfse);
+              if (!nfseConfig) return;
+              const proj = await storage.getProject((req.params.id as string));
+              if (!proj) return;
+              const client = proj.client;
+              const proximoDps = nfseConfig.proximoDps;
+              const nota = await storage.createNfseNota({
+                projectId: (req.params.id as string),
+                numeroRps: String(proximoDps),
+                serieRps: nfseConfig.serie,
+                status: "pendente",
+                valor: proj.valor || "0",
+                tomadorNome: client?.name || "",
+                tomadorCpfCnpj: client?.cpfCnpj || "",
+              });
+              const result = await emitirNfse({
+                config: nfseConfig,
+                numeroDps: String(proximoDps),
+                valor: proj.valor || "0",
+                tomadorNome: client?.name || "",
+                tomadorCpfCnpj: client?.cpfCnpj || "",
+                tomadorEmail: client?.email || undefined,
+                tomadorLogradouro: client?.rua || undefined,
+                tomadorNumero: client?.numero || undefined,
+                tomadorBairro: client?.bairro || undefined,
+                tomadorCep: client?.cep || undefined,
+                tomadorCidade: client?.cidade || undefined,
+                tomadorUf: client?.estado || undefined,
+                descricaoServico: nfseConfig.descricaoServico,
+              });
+              if (result.success) {
+                await storage.updateNfseNota(nota.id, {
+                  status: "emitida",
+                  numeroNota: result.numeroNota,
+                  codigoVerificacao: result.codigoVerificacao,
+                  linkNota: result.linkNota,
+                  xmlContent: result.xmlContent,
+                  emitidoEm: new Date(),
+                });
+                await storage.setSiteSetting("nfse_proximo_dps", String(proximoDps + 1));
+                await storage.addTimelineEntry({
+                  projectId: (req.params.id as string),
+                  event: "NFS-e emitida automaticamente",
+                  details: `NFS-e nº ${result.numeroNota || "–"} emitida automaticamente ao finalizar o projeto.`,
+                  createdByRole: "admin",
+                });
+                console.log(`[nfse] NFS-e emitida automaticamente ao finalizar projeto ${req.params.id}`);
+              } else {
+                await storage.updateNfseNota(nota.id, { status: "erro", errorMessage: result.error });
+                console.error(`[nfse] Erro na emissão automática (finalização): ${result.error}`);
+              }
+            } catch (nfseErr) {
+              console.error("[nfse] Erro ao emitir NFS-e na finalização:", nfseErr);
+            }
+          })();
+        }
+      }
+
       // Re-fetch project with updated payment info
       const finalProject = await storage.getProject((req.params.id as string));
       res.json(finalProject || updated);

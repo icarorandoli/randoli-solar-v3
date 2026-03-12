@@ -1904,7 +1904,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     try {
       const user = await getCurrentUser(req);
       if (!user || !["admin", "financeiro", "engenharia"].includes(user.role)) return res.status(403).json({ error: "Sem permissão" });
-      const allProjects = await storage.getProjects();
+      const allProjects = await storage.getAllProjectsIncludingArchived();
       // Projects per month (last 6 months)
       const now = new Date();
       const months: { month: string; count: number; revenue: number }[] = [];
@@ -2073,7 +2073,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.get("/api/stats", requireAuth, async (_req, res) => {
     try {
       const [allProjects, allClients] = await Promise.all([
-        storage.getProjects(),
+        storage.getAllProjectsIncludingArchived(),
         storage.getClients(),
       ]);
       const byStatus = allProjects.reduce((acc: Record<string, number>, p) => {

@@ -5,7 +5,7 @@ import { apiRequest } from "@/lib/queryClient";
 interface AuthUser {
   id: string;
   username: string;
-  role: "admin" | "engenharia" | "financeiro" | "integrador";
+  role: "admin" | "engenharia" | "financeiro" | "integrador" | "cliente";
   name: string;
   email?: string;
   phone?: string;
@@ -13,6 +13,12 @@ interface AuthUser {
   clientType?: "PF" | "PJ";
   company?: string;
   address?: string;
+  rua?: string;
+  numero?: string;
+  bairro?: string;
+  cep?: string;
+  cidade?: string;
+  estado?: string;
   needsProfileCompletion?: boolean;
 }
 

@@ -20,7 +20,7 @@ Sistema SaaS para gerenciamento de projetos de homologação fotovoltaica. Inclu
 - **Pagamentos**: Mercado Pago (checkout preferences + webhook)
 
 ### Banco de Dados (schema.ts)
-- `users` — roles: `admin`, `engenharia`, `financeiro`, `integrador`; campos de endereço separados (rua/numero/bairro/cep/cidade/estado)
+- `users` — roles: `admin`, `engenharia`, `financeiro`, `integrador`, `cliente`; campos de endereço separados (rua/numero/bairro/cep/cidade/estado)
 - `clients` — registros de clientes/integradores; campos de endereço estruturado (rua/numero/bairro/cep/cidade/estado); CNPJ lookup via BrasilAPI
 - `projects` — projetos fotovoltaicos com status de homologação (12 status), campos paymentLink/paymentId/paymentStatus, archived, valor
 - `documents` — arquivos enviados por projeto
@@ -100,10 +100,14 @@ Sistema SaaS para gerenciamento de projetos de homologação fotovoltaica. Inclu
 - `/parceiros` — Carousel de parceiros (admin)
 - `/usuarios` — Gestão de usuários com suporte aos roles: admin, engenharia, financeiro, integrador
 - `/configuracoes` — Configurações do sistema: identidade, e-mail SMTP, Mercado Pago
-- `/portal` — Home do integrador (lista de projetos próprios)
+- `/portal` — Home do integrador (cards de stats, projetos ativos com barra de progresso, lista completa)
 - `/portal/novo-projeto` — Formulário para solicitar novo projeto (com auto-preenchimento do valor baseado no kWp)
 - `/portal/projetos/:id` — Detalhe do projeto: timeline + upload de documentos + pagamento
 - `/portal/conta` — Perfil do integrador + alterar senha
+- `/portal/informativos` — Informativos para integradores
+- `/cliente` — Home do cliente final (lista de projetos)
+- `/cliente/projeto/:id` — Detalhe do projeto (progresso visual, timeline, documentos)
+- `/cliente/conta` — Dados da conta do cliente
 - `/completar-perfil` — Página para completar dados após primeiro login com Google (CEP auto-fill, CNPJ auto-fill)
 
 ## Estrutura de Arquivos Importantes
@@ -168,7 +172,9 @@ shared/
 - Rate limiting no login: máx 10 tentativas por IP a cada 15min
 
 ## Funcionalidades Recentes
-- **NFS-e SPED v1.01**: Módulo `server/nfse.ts` reescrito para padrão COPLAN SPED NFS-e Nacional (Sinop/MT). Substituiu ABRASF 2.02 RPS pelo DPS (Declaração de Prestação de Serviços) com namespace `http://www.sped.fazenda.gov.br/nfse`, método `RecepcionarLoteDpsSincrono`, campos `cTribNac/cTribMun/cNBS/opSimpNac/regEspTrib`. UI de configurações atualizada com os campos SPED.
+- **NFS-e SPED Nacional v1.01**: API REST JSON (`POST /sefinnacional/nfse`) com GZIP+Base64 do DPS XML assinado digitalmente (xml-crypto, RSA-SHA256). Endpoint único, ambiente controlado por `tpAmb` no XML. Certificado A1 (PFX) via node-forge. Testado com sucesso no SPED Nacional.
+- **Portal do Cliente**: Área do cliente final (`/cliente`) com autenticação separada. Admin define senha via "Definir Acesso" na página de clientes. Cliente vê seus projetos, progresso, timeline e documentos.
+- **Portal do Integrador redesenhado**: Layout moderno com cards de progresso, barras de progresso nos projetos ativos, sidebar limpa com navegação simplificada.
 - **Banco Inter removido**: Integração Inter Cobrança completamente removida; apenas Mercado Pago como meio de pagamento.
 - WhatsApp (Evolution API): notificações automáticas para admin (novo projeto) e integrador (mudança de status, documentos, timeline, pagamento); aba "WhatsApp" em Configurações com teste de conexão
 - Filtros avançados na lista de projetos: por cliente, concessionária, status

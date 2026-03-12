@@ -63,6 +63,7 @@ export interface IStorage {
 
   // Projects
   getProjects(): Promise<ProjectWithIntegrador[]>;
+  getAllProjectsIncludingArchived(): Promise<ProjectWithIntegrador[]>;
   getArchivedProjects(): Promise<ProjectWithIntegrador[]>;
   getProjectsByClient(clientId: string): Promise<ProjectWithIntegrador[]>;
   getProject(id: string): Promise<ProjectWithIntegrador | undefined>;
@@ -249,6 +250,13 @@ export class DatabaseStorage implements IStorage {
     const rows = await db.select().from(projects)
       .leftJoin(clients, eq(projects.clientId, clients.id))
       .where(eq(projects.archived, false))
+      .orderBy(desc(projects.createdAt));
+    return this.enrichWithIntegrador(rows);
+  }
+
+  async getAllProjectsIncludingArchived(): Promise<ProjectWithIntegrador[]> {
+    const rows = await db.select().from(projects)
+      .leftJoin(clients, eq(projects.clientId, clients.id))
       .orderBy(desc(projects.createdAt));
     return this.enrichWithIntegrador(rows);
   }

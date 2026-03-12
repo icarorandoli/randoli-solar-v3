@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useParams } from "wouter";
+import { Tabs } from "@/components/ui/tabs";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -456,6 +457,13 @@ export default function PortalProjetoPage() {
       toast({ title: "Documento removido" });
     },
   });
+
+  const [activeTab, setActiveTab] = useState("sobre");
+
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ["/api/projects", id, "documents"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/projects", id, "timeline"] });
+  }, [activeTab, id]);
 
   useEffect(() => {
     if (!project || project.status !== "aprovado_pagamento_pendente") return;

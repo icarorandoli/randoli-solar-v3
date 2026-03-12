@@ -1,4 +1,6 @@
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -46,15 +48,28 @@ export default function RelatoriosPage() {
     queryKey: ["/api/stats/financial"],
   });
 
-  const { data: paidProjects = [], isLoading: paidLoading } = useQuery<(Project & { client: Client | null })[]>({
+  const paidQuery = useQuery<(Project & { client: Client | null })[]>({
     queryKey: ["/api/stats/financial/projects", "paid"],
     queryFn: () => fetch("/api/stats/financial/projects?filter=paid", { credentials: "include" }).then(r => r.json()),
   });
 
-  const { data: pendingProjects = [], isLoading: pendingLoading } = useQuery<(Project & { client: Client | null })[]>({
+  const pendingQuery = useQuery<(Project & { client: Client | null })[]>({
     queryKey: ["/api/stats/financial/projects", "pending"],
     queryFn: () => fetch("/api/stats/financial/projects?filter=pending", { credentials: "include" }).then(r => r.json()),
   });
+
+  const paidProjects = paidQuery.data || [];
+  const paidLoading = paidQuery.isLoading;
+  const pendingProjects = pendingQuery.data || [];
+  const pendingLoading = pendingQuery.isLoading;
+
+  useEffect(() => {
+    const handleFocus = () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/stats/financial/projects"] });
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, []);
 
   // Build monthly chart data from paid projects
   const monthlyMap: Record<string, number> = {};

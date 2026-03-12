@@ -217,16 +217,22 @@ function extractCertAndKeyFromPfx(pfxBuffer: Buffer, passphrase: string): { cert
 }
 
 function buildWebserviceUrl(config: NfseConfig): string {
+  const municipio = (config.municipioNome || "sinop").toLowerCase().replace(/\s+/g, "");
+
   if (config.webserviceUrl) {
-    let url = config.webserviceUrl.replace(/\/+$/, "");
-    if (!url.includes("anfse_ws")) {
-      if (!url.endsWith("/")) url += "/";
-      url += "anfse_ws";
+    const raw = config.webserviceUrl.trim();
+    // Ignore national NFS-e platform URLs — use the COPLAN endpoint instead
+    const isNationalPlatform = raw.includes("sefin.nfse.gov.br") || raw.includes("sefinnacional") || raw.includes("fazenda.gov.br");
+    if (!isNationalPlatform) {
+      let url = raw.replace(/\/+$/, "");
+      if (!url.includes("anfse_ws")) {
+        if (!url.endsWith("/")) url += "/";
+        url += "anfse_ws";
+      }
+      return url;
     }
-    return url;
   }
 
-  const municipio = (config.municipioNome || "sinop").toLowerCase().replace(/\s+/g, "");
   if (config.ambiente === "producao") {
     return `https://gp.srv.br/tributario/${municipio}/anfse_ws`;
   }

@@ -2621,6 +2621,68 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
+  app.post("/api/nfse/reemitir/:notaId", requireAuth, async (req, res) => {
+    const user = await getCurrentUser(req);
+    if (!user || !["admin", "financeiro"].includes(user.role)) return res.status(403).json({ error: "Sem permissão" });
+    try {
+      const nota = await storage.getNfseNota(req.params.notaId);
+      if (!nota) return res.status(404).json({ error: "Nota não encontrada" });
+      if (!nota.projectId) return res.status(400).json({ error: "Nota sem projeto associado" });
+
+      const project = await storage.getProject(nota.projectId);
+      if (!project) return res.status(404).json({ error: "Projeto não encontrado" });
+
+      const settingsMap = await getSettingsMap();
+      const config = getNfseConfig(settingsMap);
+      if (!config) return res.status(400).json({ error: "NFS-e não configurada." });
+
+      const client = project.client;
+      await storage.updateNfseNota(nota.id, { status: "pendente", errorMessage: undefined });
+
+      const result = await emitirNfse({
+        config,
+        numeroDps: nota.numeroRps,
+        valor: nota.valor || project.valor || "0",
+        tomadorNome: nota.tomadorNome || client?.name || "",
+        tomadorCpfCnpj: nota.tomadorCpfCnpj || client?.cpfCnpj || "",
+        tomadorEmail: client?.email || undefined,
+        tomadorLogradouro: client?.rua || undefined,
+        tomadorNumero: client?.numero || undefined,
+        tomadorBairro: client?.bairro || undefined,
+        tomadorCep: client?.cep || undefined,
+        tomadorCidade: client?.cidade || undefined,
+        tomadorUf: client?.estado || undefined,
+        descricaoServico: config.descricaoServico,
+      });
+
+      if (result.success) {
+        await storage.updateNfseNota(nota.id, {
+          status: "emitida",
+          numeroNota: result.numeroNota,
+          codigoVerificacao: result.codigoVerificacao,
+          linkNota: result.linkNota,
+          xmlContent: result.xmlContent,
+          emitidoEm: new Date(),
+          errorMessage: undefined,
+        });
+        await storage.setSiteSetting("nfse_proximo_dps", String(config.proximoDps + 1));
+        await storage.addTimelineEntry({
+          projectId: nota.projectId,
+          event: "NFS-e re-emitida",
+          details: `NFS-e nº ${result.numeroNota || "–"} re-emitida com sucesso.`,
+          createdByRole: "admin",
+        });
+        return res.json({ success: true, nota: await storage.getNfseNota(nota.id) });
+      } else {
+        await storage.updateNfseNota(nota.id, { status: "erro", errorMessage: result.error });
+        return res.status(400).json({ success: false, error: result.error });
+      }
+    } catch (err: any) {
+      console.error("[nfse] Erro na re-emissão:", err);
+      res.status(500).json({ error: err?.message || "Erro interno ao re-emitir NFS-e" });
+    }
+  });
+
   app.post("/api/nfse/cancelar/:notaId", requireAuth, async (req, res) => {
     const user = await getCurrentUser(req);
     if (!user || user.role !== "admin") return res.status(403).json({ error: "Sem permissão" });

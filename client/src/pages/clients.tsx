@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Plus, Search, Pencil, Trash2, Users, Phone, Mail, Building2, User,
-  MapPin, Filter, MoreHorizontal, UserPlus, ArrowRight, FileText
+  MapPin, Filter, MoreHorizontal, UserPlus, ArrowRight, FileText, KeyRound
 } from "lucide-react";
 import { useForm, Controller } from "react-hook-form";
 import type { Client, InsertClient } from "@shared/schema";
@@ -215,6 +215,8 @@ export default function ClientsPage() {
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editClient, setEditClient] = useState<Client | undefined>();
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [passwordClient, setPasswordClient] = useState<Client | undefined>();
   const { toast } = useToast();
 
   const { data: clients = [], isLoading } = useQuery<Client[]>({ queryKey: ["/api/clients"] });
@@ -326,6 +328,16 @@ export default function ClientsPage() {
                     <Button
                       size="icon"
                       variant="ghost"
+                      className="h-8 w-8 text-muted-foreground hover:text-amber-600 transition-colors"
+                      onClick={() => { setPasswordClient(client); setPasswordDialogOpen(true); }}
+                      data-testid={`button-password-client-${client.id}`}
+                      title="Definir Senha de Acesso"
+                    >
+                      <KeyRound className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
                       className="h-8 w-8 text-muted-foreground hover:text-primary transition-colors"
                       onClick={() => { setEditClient(client); setDialogOpen(true); }}
                       data-testid={`button-edit-client-${client.id}`}
@@ -391,6 +403,70 @@ export default function ClientsPage() {
       )}
 
       <ClientDialog open={dialogOpen} onClose={() => setDialogOpen(false)} client={editClient} />
+      <PasswordDialog
+        open={passwordDialogOpen}
+        onClose={() => setPasswordDialogOpen(false)}
+        client={passwordClient}
+      />
     </div>
+  );
+}
+
+function PasswordDialog({ open, onClose, client }: { open: boolean; onClose: () => void; client: Client | undefined }) {
+  const { toast } = useToast();
+  const [pw, setPw] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    if (!client || pw.length < 6) {
+      toast({ title: "Senha deve ter pelo menos 6 caracteres", variant: "destructive" });
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await apiRequest("POST", `/api/clients/${client.id}/set-password`, { password: pw });
+      const data = await res.json();
+      toast({ title: data.message || "Senha definida!", description: data.username ? `Login: ${data.username}` : undefined });
+      setPw("");
+      onClose();
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[400px]">
+        <DialogHeader>
+          <DialogTitle>Definir Senha do Cliente</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <p className="text-sm text-muted-foreground">
+            Defina uma senha para <strong>{client?.name}</strong> acessar o portal do cliente.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Login será: <strong>{client?.email || client?.cpfCnpj || client?.name || "—"}</strong>
+          </p>
+          <div className="space-y-2">
+            <Label>Nova Senha</Label>
+            <Input
+              type="text"
+              value={pw}
+              onChange={e => setPw(e.target.value)}
+              placeholder="Mínimo 6 caracteres"
+              data-testid="input-client-password"
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancelar</Button>
+          <Button onClick={handleSave} disabled={saving || pw.length < 6} data-testid="button-save-client-password">
+            {saving ? "Salvando..." : "Definir Senha"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

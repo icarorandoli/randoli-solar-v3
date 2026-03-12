@@ -1,13 +1,40 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Zap, Eye, EyeOff, ShieldCheck, Clock, CheckCircle } from "lucide-react";
+import { Zap, Eye, EyeOff, ShieldCheck, Clock, CheckCircle, BarChart3, FileText, Sun } from "lucide-react";
 import { SiGoogle } from "react-icons/si";
 import { useQuery } from "@tanstack/react-query";
+
+const SLIDES = [
+  {
+    icon: ShieldCheck,
+    title: "Homologação Simplificada",
+    description: "Todo o processo de homologação fotovoltaica em um só lugar, do orçamento à aprovação final.",
+    accent: "from-emerald-500/20 to-emerald-500/5",
+  },
+  {
+    icon: BarChart3,
+    title: "Acompanhamento em Tempo Real",
+    description: "Monitore cada etapa do seu projeto com atualizações automáticas e notificações instantâneas.",
+    accent: "from-blue-500/20 to-blue-500/5",
+  },
+  {
+    icon: FileText,
+    title: "Documentos Centralizados",
+    description: "ART, projetos técnicos e pareceres organizados em um único painel seguro e acessível.",
+    accent: "from-violet-500/20 to-violet-500/5",
+  },
+  {
+    icon: Sun,
+    title: "Gestão Inteligente",
+    description: "Controle financeiro, relatórios e NFS-e integrados para simplificar sua operação solar.",
+    accent: "from-amber-500/20 to-amber-500/5",
+  },
+];
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -17,6 +44,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [currentSlide, setCurrentSlide] = useState(0);
 
   const { data: settings } = useQuery<Record<string, string>>({ queryKey: ["/api/settings/public"], retry: false });
   const companyName = settings?.company_name || "Randoli Engenharia Solar";
@@ -33,6 +61,13 @@ export default function LoginPage() {
   const loginBgImage = settings?.login_bg_image || "";
   const loginHeadlineSize = settings?.login_headline_size || "lg";
   const loginDescriptionSize = settings?.login_description_size || "md";
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide(prev => (prev + 1) % SLIDES.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
 
   const headlineSizeClass = {
     sm: "text-3xl xl:text-5xl",
@@ -68,7 +103,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-background">
-      {/* Left panel — brand */}
       <div
         className="hidden lg:flex lg:w-1/2 xl:w-[55%] flex-col p-12 relative overflow-hidden"
         style={loginBgType === "image" && loginBgImage
@@ -76,16 +110,13 @@ export default function LoginPage() {
           : { background: "linear-gradient(135deg, hsl(215 80% 18%) 0%, hsl(215 80% 12%) 50%, hsl(215 80% 8%) 100%)" }
         }
       >
-        {/* Overlay for image bg */}
         {loginBgType === "image" && loginBgImage && (
           <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" />
         )}
         
-        {/* Decorative elements */}
         <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-primary/20 blur-[100px] animate-pulse" />
         <div className="absolute -bottom-32 -left-16 h-[500px] w-[500px] rounded-full bg-sky-500/10 blur-[120px]" />
 
-        {/* Logo */}
         <div className="flex items-center gap-4 relative z-10 mb-auto">
           {logoUrl ? (
             <img src={logoUrl} alt="Logo" className="h-12 object-contain" />
@@ -97,7 +128,6 @@ export default function LoginPage() {
           <span className="text-white font-bold text-2xl tracking-tight drop-shadow-sm">{companyName}</span>
         </div>
 
-        {/* Content */}
         <div className="relative z-10 max-w-2xl">
           <div className="inline-flex items-center gap-2 bg-sky-500/20 backdrop-blur-md border border-sky-400/30 rounded-full px-4 py-1.5 text-xs text-sky-100 font-bold uppercase tracking-wider mb-8 shadow-lg">
             <Zap className="h-3.5 w-3.5 fill-sky-400 text-sky-400" />
@@ -108,12 +138,11 @@ export default function LoginPage() {
             {headlineNode}
           </h1>
           
-          <p className={`${descriptionSizeClass} text-sky-100/80 leading-relaxed mb-12 font-medium`}>
+          <p className={`${descriptionSizeClass} text-sky-100/80 leading-relaxed mb-10 font-medium`}>
             {loginDescription}
           </p>
 
-          {/* Feature list */}
-          <div className="grid grid-cols-1 gap-6">
+          <div className="grid grid-cols-1 gap-6 mb-10">
             {[
               { icon: CheckCircle, text: loginFeature1, color: "text-emerald-400" },
               { icon: ShieldCheck, text: loginFeature2, color: "text-sky-400" },
@@ -127,32 +156,65 @@ export default function LoginPage() {
               </div>
             ))}
           </div>
+
+          <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 mb-8">
+            <div className="relative overflow-hidden min-h-[80px]">
+              {SLIDES.map((slide, idx) => {
+                const SlideIcon = slide.icon;
+                return (
+                  <div
+                    key={idx}
+                    className={`transition-all duration-700 ease-in-out ${
+                      idx === currentSlide
+                        ? "opacity-100 translate-y-0"
+                        : "opacity-0 translate-y-4 absolute inset-0"
+                    }`}
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className={`h-10 w-10 rounded-xl bg-gradient-to-br ${slide.accent} flex items-center justify-center flex-shrink-0`}>
+                        <SlideIcon className="h-5 w-5 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-white font-bold text-base mb-1">{slide.title}</h3>
+                        <p className="text-sky-200/70 text-sm leading-relaxed">{slide.description}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex gap-2 mt-4">
+              {SLIDES.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentSlide(idx)}
+                  className={`h-1.5 rounded-full transition-all duration-500 ${
+                    idx === currentSlide ? "w-8 bg-sky-400" : "w-1.5 bg-white/20 hover:bg-white/40"
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
         </div>
 
-        {/* Partners strip */}
         {settings?.partners_enabled !== "false" && (
-          <div className="relative z-10 mt-auto pt-10 border-t border-white/10">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-white/40 mb-6 font-bold">
-              Trusted by leading solar installers
+          <div className="relative z-10 mt-auto pt-8 border-t border-white/10">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-white/40 mb-5 font-bold">
+              Parceiros e Fabricantes
             </p>
             <div className="relative overflow-hidden">
               <div className="flex animate-scroll gap-12 items-center py-2">
                 <PartnersList dark />
                 <PartnersList dark />
               </div>
-              <div className="absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-transparent to-transparent pointer-events-none" />
-              <div className="absolute inset-y-0 right-0 w-20 bg-gradient-to-l from-transparent to-transparent pointer-events-none" />
             </div>
           </div>
         )}
       </div>
 
-      {/* Right panel — form */}
       <div className="flex-1 flex flex-col items-center justify-center p-8 bg-background relative overflow-hidden">
-        {/* Subtle background glow */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
         
-        {/* Mobile logo */}
         <div className="flex flex-col items-center gap-3 mb-12 lg:hidden relative z-10">
           {logoUrl ? (
             <img src={logoUrl} alt="Logo" className="h-16 object-contain" />

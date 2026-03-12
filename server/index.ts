@@ -72,8 +72,10 @@ app.use((req, res, next) => {
     const { pool: dbPool } = await import("./db");
     await dbPool.query(`ALTER TABLE projects ADD COLUMN IF NOT EXISTS payment_gateway TEXT`);
     console.log("[migration] payment_gateway column ensured");
+    await dbPool.query(`ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'cliente'`).catch(() => {});
+    console.log("[migration] cliente role ensured");
   } catch (migErr: any) {
-    console.warn("[migration] Could not ensure payment_gateway column:", migErr.message);
+    console.warn("[migration] Could not ensure migrations:", migErr.message);
   }
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {

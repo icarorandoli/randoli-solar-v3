@@ -580,6 +580,38 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     } catch { res.status(500).json({ error: "Erro ao deletar" }); }
   });
 
+  app.post("/api/clients/:id/set-password", requireAuth, async (req, res) => {
+    try {
+      const user = await getCurrentUser(req);
+      if (!user || user.role !== "admin") return res.status(403).json({ error: "Sem permissão" });
+      const { password } = req.body;
+      if (!password || password.length < 6) return res.status(400).json({ error: "Senha deve ter pelo menos 6 caracteres" });
+      const client = await storage.getClient(req.params.id as string);
+      if (!client) return res.status(404).json({ error: "Cliente não encontrado" });
+      const hashedPw = await hashPassword(password);
+      if (client.userId) {
+        await storage.updateUser(client.userId, { password: hashedPw });
+        res.json({ message: "Senha atualizada com sucesso" });
+      } else {
+        const loginName = (client.email || client.cpfCnpj || client.name).toLowerCase().replace(/[^a-z0-9._@-]/g, "").slice(0, 50);
+        const existingUser = await storage.getUserByUsername(loginName);
+        if (existingUser) return res.status(400).json({ error: `Usuário '${loginName}' já existe. Use outro e-mail/CPF.` });
+        const newUser = await storage.createUser({
+          username: loginName,
+          password: hashedPw,
+          role: "cliente",
+          name: client.name,
+          email: client.email,
+          phone: client.phone || undefined,
+          cpfCnpj: client.cpfCnpj || undefined,
+          clientType: client.type || "PF",
+        });
+        await storage.updateClient(client.id, { userId: newUser.id });
+        res.json({ message: "Acesso criado com sucesso", username: loginName });
+      }
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
   // ── PROJECTS ───────────────────────────────────────────────────────
   app.get("/api/projects", requireAuth, async (req, res) => {
     try {

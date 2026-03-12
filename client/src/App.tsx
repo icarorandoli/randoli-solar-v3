@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AdminSidebar } from "@/components/admin-sidebar";
 import { PortalSidebar } from "@/components/portal-sidebar";
+import { ClienteSidebar } from "@/components/cliente-sidebar";
 
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -34,6 +35,9 @@ import PortalProjetosPage from "@/pages/portal/projetos";
 import NovoProjetoPage from "@/pages/portal/novo-projeto";
 import ContaPage from "@/pages/portal/conta";
 import PortalInformativosPage from "@/pages/portal/informativos";
+import ClienteHomePage from "@/pages/cliente/home";
+import ClienteProjetoPage from "@/pages/cliente/projeto";
+import ClienteContaPage from "@/pages/cliente/conta";
 import CompletarPerfilPage from "@/pages/completar-perfil";
 import NotFound from "@/pages/not-found";
 import StatusConfigPage from "@/pages/status-config";
@@ -198,6 +202,32 @@ function PortalLayout() {
   );
 }
 
+function ClienteLayout() {
+  return (
+    <SidebarProvider style={{ "--sidebar-width": "15rem", "--sidebar-width-icon": "3.5rem" } as React.CSSProperties}>
+      <div className="flex h-screen w-full overflow-hidden bg-background">
+        <ClienteSidebar />
+        <div className="flex flex-col flex-1 min-w-0">
+          <header className="flex items-center gap-3 px-4 py-2.5 border-b border-border/60 bg-background/80 backdrop-blur-sm sticky top-0 z-40">
+            <SidebarTrigger data-testid="button-cliente-sidebar-toggle" />
+            <div className="flex-1" />
+            <span className="text-xs text-muted-foreground font-medium hidden sm:block">Área do Cliente</span>
+            <ThemeToggle />
+          </header>
+          <main className="flex-1 overflow-auto">
+            <Switch>
+              <Route path="/cliente" component={ClienteHomePage} />
+              <Route path="/cliente/projeto/:id" component={ClienteProjetoPage} />
+              <Route path="/cliente/conta" component={ClienteContaPage} />
+              <Route><Redirect to="/cliente" /></Route>
+            </Switch>
+          </main>
+        </div>
+      </div>
+    </SidebarProvider>
+  );
+}
+
 function AppRoutes() {
   const { user, isLoading } = useAuth();
   const [location] = useLocation();
@@ -220,6 +250,7 @@ function AppRoutes() {
     if (user) {
       if (user.needsProfileCompletion) return <Redirect to="/completar-perfil" />;
       const isAdminRole = ["admin", "engenharia", "financeiro", "tecnico"].includes(user.role);
+      if (user.role === "cliente") return <Redirect to="/cliente" />;
       return <Redirect to={isAdminRole ? "/" : "/portal"} />;
     }
     return (
@@ -243,10 +274,17 @@ function AppRoutes() {
   const isAdminRole = ["admin", "engenharia", "financeiro", "tecnico"].includes(user.role);
 
   if (isAdminRole) {
-    if (location.startsWith("/portal")) {
+    if (location.startsWith("/portal") || location.startsWith("/cliente")) {
       return <Redirect to="/" />;
     }
     return <AdminLayout />;
+  }
+
+  if (user.role === "cliente") {
+    if (!location.startsWith("/cliente")) {
+      return <Redirect to="/cliente" />;
+    }
+    return <ClienteLayout />;
   }
 
   if (!location.startsWith("/portal")) {

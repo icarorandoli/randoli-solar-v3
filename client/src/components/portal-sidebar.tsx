@@ -135,7 +135,7 @@ function UserFooter({ user, logout }: { user: any; logout: () => void }) {
 export function PortalSidebar() {
   const [location] = useLocation();
   const { user, logout } = useAuth();
-  const { data: settings } = useQuery<Record<string, string>>({ queryKey: ["/api/settings"] });
+  const { data: settings } = useQuery<Record<string, string>>({ queryKey: ["/api/settings/public"] });
   const { data: chatUnread } = useQuery<{ count: number }>({
     queryKey: ["/api/chat/unread"],
     queryFn: () => apiRequest("GET", "/api/chat/unread").then(r => r.json()),

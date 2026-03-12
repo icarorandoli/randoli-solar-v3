@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<NFSe xmlns="http://www.sped.fazenda.gov.br/nfse" versao="1.01">
+	<infNFSe Id="NFS51079091243201226000163260000000000726030188720956">
+		<xLocEmi>SINOP</xLocEmi>
+		<xLocPrestacao>SINOP</xLocPrestacao>
+		<nNFSe>2600000000007</nNFSe>
+		<cLocIncid>5107909</cLocIncid>
+		<xLocIncid>SINOP</xLocIncid>
+		<xTribNac>Instalacao e montagem de aparelhos, maquinas e equipamentos, inclusive montagem industrial, prestados ao usuario final, exclusivamente com material por ele fornecido.</xTribNac>
+		<verAplic>1.00</verAplic>
+		<ambGer>1</ambGer>
+		<tpEmis>2</tpEmis>
+		<cStat>100</cStat>
+		<dhProc>2026-03-01T12:46:20-03:00</dhProc>
+		<nDFSe>18872095</nDFSe>
+		<emit>
+			<CNPJ>43201226000163</CNPJ>
+			<IM>40690</IM>
+			<xNome>ICARO RANDOLI E SILVA LTDA</xNome>
+			<xFant>RANDOLI SOLAR</xFant>
+			<enderNac>
+				<xLgr>HATSUE SAKAGUSCHI</xLgr>
+				<nro>599</nro>
+				<xBairro>JARDIM DAS ACACIAS</xBairro>
+				<cMun>5107909</cMun>
+				<UF>MT</UF>
+				<CEP>78553285</CEP>
+			</enderNac>
+			<email>icaro@randolisolar.com.br</email>
+		</emit>
+		<valores>
+			<vBC>6413.20</vBC>
+			<vISSQN>0.00</vISSQN>
+			<vLiq>6413.20</vLiq>
+		</valores>
+		<xOutInf>/ ESTA NOTA PODE SER CANCELADA EM 24 HORAS APoS A GERAcaO. / ESTA NFSE FOI EMITDA VIA WEBSERVICES.</xOutInf>
+		<DPS xmlns="http://www.sped.fazenda.gov.br/nfse" versao="1.01">
+			<infDPS Id="DPS510790924320122600016300001000000214748446">
+				<tpAmb>1</tpAmb>
+				<dhEmi>2026-03-01T12:46:20-03:00</dhEmi>
+				<verAplic>1.01</verAplic>
+				<serie>1</serie>
+				<nDPS>214748446</nDPS>
+				<dCompet>2026-03-01</dCompet>
+				<tpEmit>1</tpEmit>
+				<cLocEmi>5107909</cLocEmi>
+				<prest>
+					<CNPJ>43201226000163</CNPJ>
+					<IM>40690</IM>
+					<email>icaro@randolisolar.com.br</email>
+					<regTrib>
+						<opSimpNac>3</opSimpNac>
+						<regApTribSN>1</regApTribSN>
+						<regEspTrib>0</regEspTrib>
+					</regTrib>
+				</prest>
+				<toma>
+					<CPF>05711825186</CPF>
+					<xNome>ROBSON JULIANO DAMASCENO</xNome>
+					<end>
+						<endNac>
+							<cMun>5107909</cMun>
+							<CEP>78550001</CEP>
+						</endNac>
+						<xLgr>AV SAO FRANCISCO</xLgr>
+						<nro>1226</nro>
+						<xCpl>QD 19 LT 03</xCpl>
+						<xBairro>JD SAO FRANCISCO</xBairro>
+					</end>
+				</toma>
+				<serv>
+					<locPrest>
+						<cLocPrestacao>5107909</cLocPrestacao>
+					</locPrest>
+					<cServ>
+						<cTribNac>140601</cTribNac>
+						<xDescServ>MAO DE OBRA PARA INSTALACAO, IMPLANTACAO SISTEMA FOTOVOLTAICO, KIT DE INFRAESTRUTURA + INSTALACAO DE GERADOR FOTOVOLTAICO, SERVICOS TECNICOS PARA INSTALACAO SISTEMA FOTOVOLTAICO, PROJETO DE INSTALACAO EQUIPAMENTO FOTOVOLTAICO, MONTAGEM DE SISTEMA FOT</xDescServ>
+						<cNBS>101061900</cNBS>
+					</cServ>
+					<infoCompl>
+						<xInfComp>INFORMACOES COMPLEMENTARESEMITIDO POR ME OU EPP OPTANTE PELO Simples Nacional; e II NAO GERA DIREITOFISCAL DE ICMS, DE ISS E DE IPI ICMS DOCUMENTO EMITIDO POR ME OU EPP OPTANTESIMPLES NACIONAL. NAO GERA DIREITO A CREDITO FISCAL DE ICMS, ISS E IPI.</xInfComp>
+					</infoCompl>
+				</serv>
+				<valores>
+					<vServPrest>
+						<vServ>6413.20</vServ>
+					</vServPrest>
+					<trib>
+						<tribMun>
+							<tribISSQN>1</tribISSQN>
+							<tpRetISSQN>1</tpRetISSQN>
+						</tribMun>
+						<tribFed>
+							<piscofins>
+								<CST>00</CST>
+							</piscofins>
+						</tribFed>
+						<totTrib>
+							<indTotTrib>0</indTotTrib>
+						</totTrib>
+					</trib>
+				</valores>
+			</infDPS>
+		</DPS>
+	</infNFSe>
+</NFSe>
+
+

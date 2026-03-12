@@ -934,15 +934,24 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
   const [inscricaoMunicipal, setInscricaoMunicipal] = useState("");
   const [municipioCodigo, setMunicipioCodigo] = useState("5107909");
   const [razaoSocial, setRazaoSocial] = useState("");
-  const [cTribNac, setCTribNac] = useState("010102");
-  const [cTribMun, setCTribMun] = useState("0101010001");
-  const [cNBS, setCNBS] = useState("100000000");
+  const [nomeFantasia, setNomeFantasia] = useState("");
+  const [emailPrestador, setEmailPrestador] = useState("");
+  const [logradouro, setLogradouro] = useState("");
+  const [numeroPrest, setNumeroPrest] = useState("");
+  const [bairroPrest, setBairroPrest] = useState("");
+  const [cepPrest, setCepPrest] = useState("");
+  const [ufPrest, setUfPrest] = useState("");
+  const [cTribNac, setCTribNac] = useState("140601");
+  const [cTribMun, setCTribMun] = useState("");
+  const [cNBS, setCNBS] = useState("101061900");
   const [aliquotaIss, setAliquotaIss] = useState("2.00");
   const [opSimpNac, setOpSimpNac] = useState("3");
+  const [regApTribSN, setRegApTribSN] = useState("1");
   const [regEspTrib, setRegEspTrib] = useState("0");
   const [serieDps, setSerieDps] = useState("1");
   const [proximoDps, setProximoDps] = useState("1");
   const [descricaoServico, setDescricaoServico] = useState("");
+  const [infoComplementares, setInfoComplementares] = useState("");
   const [certSenha, setCertSenha] = useState("");
   const [certFile, setCertFile] = useState<File | null>(null);
   const [certName, setCertName] = useState("");
@@ -957,15 +966,24 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
     setInscricaoMunicipal(settingsRaw.nfse_inscricao_municipal || "");
     setMunicipioCodigo(settingsRaw.nfse_municipio_codigo || "5107909");
     setRazaoSocial(settingsRaw.nfse_razao_social || "");
-    setCTribNac(settingsRaw.nfse_ctrib_nac || "010102");
-    setCTribMun(settingsRaw.nfse_ctrib_mun || "0101010001");
-    setCNBS(settingsRaw.nfse_cnbs || "100000000");
+    setNomeFantasia(settingsRaw.nfse_nome_fantasia || "");
+    setEmailPrestador(settingsRaw.nfse_email_prestador || "");
+    setLogradouro(settingsRaw.nfse_logradouro || "");
+    setNumeroPrest(settingsRaw.nfse_numero || "");
+    setBairroPrest(settingsRaw.nfse_bairro || "");
+    setCepPrest(settingsRaw.nfse_cep || "");
+    setUfPrest(settingsRaw.nfse_uf || "");
+    setCTribNac(settingsRaw.nfse_ctrib_nac || "140601");
+    setCTribMun(settingsRaw.nfse_ctrib_mun || "");
+    setCNBS(settingsRaw.nfse_cnbs || "101061900");
     setAliquotaIss(settingsRaw.nfse_aliquota_iss || "2.00");
     setOpSimpNac(settingsRaw.nfse_op_simples_nac || "3");
+    setRegApTribSN(settingsRaw.nfse_reg_ap_trib_sn || "1");
     setRegEspTrib(settingsRaw.nfse_reg_esp_trib || "0");
     setSerieDps(settingsRaw.nfse_serie_dps || settingsRaw.nfse_serie_rps || "1");
     setProximoDps(settingsRaw.nfse_proximo_dps || settingsRaw.nfse_proximo_rps || "1");
     setDescricaoServico(settingsRaw.nfse_descricao_servico || "Prestação de serviços de engenharia e homologação de sistemas fotovoltaicos");
+    setInfoComplementares(settingsRaw.nfse_informacoes_complementares || "");
     if (settingsRaw.nfse_certificado_pfx) setCertName("Certificado carregado ✓");
     setInitialized(true);
   }
@@ -980,15 +998,24 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
         { key: "nfse_inscricao_municipal", value: inscricaoMunicipal },
         { key: "nfse_municipio_codigo", value: municipioCodigo },
         { key: "nfse_razao_social", value: razaoSocial },
+        { key: "nfse_nome_fantasia", value: nomeFantasia },
+        { key: "nfse_email_prestador", value: emailPrestador },
+        { key: "nfse_logradouro", value: logradouro },
+        { key: "nfse_numero", value: numeroPrest },
+        { key: "nfse_bairro", value: bairroPrest },
+        { key: "nfse_cep", value: cepPrest },
+        { key: "nfse_uf", value: ufPrest },
         { key: "nfse_ctrib_nac", value: cTribNac },
         { key: "nfse_ctrib_mun", value: cTribMun },
         { key: "nfse_cnbs", value: cNBS },
         { key: "nfse_aliquota_iss", value: aliquotaIss },
         { key: "nfse_op_simples_nac", value: opSimpNac },
+        { key: "nfse_reg_ap_trib_sn", value: regApTribSN },
         { key: "nfse_reg_esp_trib", value: regEspTrib },
         { key: "nfse_serie_dps", value: serieDps },
         { key: "nfse_proximo_dps", value: proximoDps },
         { key: "nfse_descricao_servico", value: descricaoServico },
+        { key: "nfse_informacoes_complementares", value: infoComplementares },
       ];
       if (certSenha && certSenha !== "••••••••") {
         pairs.push({ key: "nfse_certificado_senha", value: certSenha });
@@ -1076,34 +1103,71 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
             </div>
           </div>
 
-          <div className="border-t pt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-t pt-4">Dados do Prestador (Emitente)</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>CNPJ do Prestador</Label>
-              <Input value={cnpjPrestador} onChange={e => setCnpjPrestador(e.target.value)} placeholder="00.000.000/0001-00" data-testid="input-nfse-cnpj" />
+              <Input value={cnpjPrestador} onChange={e => setCnpjPrestador(e.target.value)} placeholder="43.201.226/0001-63" data-testid="input-nfse-cnpj" />
             </div>
             <div className="space-y-2">
               <Label>Razão Social</Label>
-              <Input value={razaoSocial} onChange={e => setRazaoSocial(e.target.value)} placeholder="Randoli Engenharia Solar" data-testid="input-nfse-razao-social" />
+              <Input value={razaoSocial} onChange={e => setRazaoSocial(e.target.value)} placeholder="ICARO RANDOLI E SILVA LTDA" data-testid="input-nfse-razao-social" />
+            </div>
+            <div className="space-y-2">
+              <Label>Nome Fantasia</Label>
+              <Input value={nomeFantasia} onChange={e => setNomeFantasia(e.target.value)} placeholder="RANDOLI SOLAR" data-testid="input-nfse-nome-fantasia" />
+            </div>
+            <div className="space-y-2">
+              <Label>E-mail do Prestador</Label>
+              <Input value={emailPrestador} onChange={e => setEmailPrestador(e.target.value)} placeholder="icaro@randolisolar.com.br" data-testid="input-nfse-email" />
             </div>
             <div className="space-y-2">
               <Label>Inscrição Municipal (IM)</Label>
-              <Input value={inscricaoMunicipal} onChange={e => setInscricaoMunicipal(e.target.value)} placeholder="000000" data-testid="input-nfse-im" />
+              <Input value={inscricaoMunicipal} onChange={e => setInscricaoMunicipal(e.target.value)} placeholder="40690" data-testid="input-nfse-im" />
             </div>
             <div className="space-y-2">
               <Label>Código IBGE do Município (cLocEmi)</Label>
               <Input value={municipioCodigo} onChange={e => setMunicipioCodigo(e.target.value)} placeholder="5107909 (Sinop/MT)" data-testid="input-nfse-municipio" />
             </div>
-            <div className="space-y-2">
-              <Label>cTribNac — Cód. Tributação Nacional (6 dígitos)</Label>
-              <Input value={cTribNac} onChange={e => setCTribNac(e.target.value)} placeholder="010102" data-testid="input-nfse-ctrib-nac" />
+          </div>
+
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-t pt-4">Endereço do Prestador</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2 md:col-span-2">
+              <Label>Logradouro</Label>
+              <Input value={logradouro} onChange={e => setLogradouro(e.target.value)} placeholder="HATSUE SAKAGUSCHI" data-testid="input-nfse-logradouro" />
             </div>
             <div className="space-y-2">
-              <Label>cTribMun — Cód. Tributação Municipal (10 dígitos)</Label>
-              <Input value={cTribMun} onChange={e => setCTribMun(e.target.value)} placeholder="0101010001" data-testid="input-nfse-ctrib-mun" />
+              <Label>Número</Label>
+              <Input value={numeroPrest} onChange={e => setNumeroPrest(e.target.value)} placeholder="599" data-testid="input-nfse-numero" />
+            </div>
+            <div className="space-y-2">
+              <Label>Bairro</Label>
+              <Input value={bairroPrest} onChange={e => setBairroPrest(e.target.value)} placeholder="JARDIM DAS ACACIAS" data-testid="input-nfse-bairro" />
+            </div>
+            <div className="space-y-2">
+              <Label>CEP</Label>
+              <Input value={cepPrest} onChange={e => setCepPrest(e.target.value)} placeholder="78553285" data-testid="input-nfse-cep" />
+            </div>
+            <div className="space-y-2">
+              <Label>UF</Label>
+              <Input value={ufPrest} onChange={e => setUfPrest(e.target.value)} placeholder="MT" maxLength={2} data-testid="input-nfse-uf" />
+            </div>
+          </div>
+
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-t pt-4">Tributação e Serviço</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>cTribNac — Cód. Tributação Nacional (6 dígitos)</Label>
+              <Input value={cTribNac} onChange={e => setCTribNac(e.target.value)} placeholder="140601" data-testid="input-nfse-ctrib-nac" />
+            </div>
+            <div className="space-y-2">
+              <Label>cTribMun — Cód. Tributação Municipal (opcional)</Label>
+              <Input value={cTribMun} onChange={e => setCTribMun(e.target.value)} placeholder="" data-testid="input-nfse-ctrib-mun" />
             </div>
             <div className="space-y-2">
               <Label>cNBS — Nomenclatura Brasileira de Serviços (9 dígitos)</Label>
-              <Input value={cNBS} onChange={e => setCNBS(e.target.value)} placeholder="100000000" data-testid="input-nfse-cnbs" />
+              <Input value={cNBS} onChange={e => setCNBS(e.target.value)} placeholder="101061900" data-testid="input-nfse-cnbs" />
             </div>
             <div className="space-y-2">
               <Label>Alíquota ISS (%)</Label>
@@ -1117,6 +1181,16 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
                   <SelectItem value="1">1 — Não Optante</SelectItem>
                   <SelectItem value="2">2 — MEI</SelectItem>
                   <SelectItem value="3">3 — ME/EPP</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Apuração Tributária SN (regApTribSN)</Label>
+              <Select value={regApTribSN} onValueChange={setRegApTribSN}>
+                <SelectTrigger data-testid="select-nfse-reg-ap"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">1 — Receita Bruta</SelectItem>
+                  <SelectItem value="2">2 — Valor Fixo</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -1147,7 +1221,12 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
 
           <div className="space-y-2">
             <Label>Descrição Padrão do Serviço (xDescServ)</Label>
-            <Textarea value={descricaoServico} onChange={e => setDescricaoServico(e.target.value)} rows={2} placeholder="Prestação de serviços de engenharia e homologação de sistemas fotovoltaicos" data-testid="textarea-nfse-descricao" />
+            <Textarea value={descricaoServico} onChange={e => setDescricaoServico(e.target.value)} rows={2} placeholder="MAO DE OBRA PARA INSTALACAO, IMPLANTACAO SISTEMA FOTOVOLTAICO..." data-testid="textarea-nfse-descricao" />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Informações Complementares (xInfComp)</Label>
+            <Textarea value={infoComplementares} onChange={e => setInfoComplementares(e.target.value)} rows={2} placeholder="EMITIDO POR ME OU EPP OPTANTE PELO Simples Nacional..." data-testid="textarea-nfse-info-compl" />
           </div>
 
           <div className="border-t pt-4 space-y-3">

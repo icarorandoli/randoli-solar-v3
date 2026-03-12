@@ -10,11 +10,19 @@ export interface NfseConfig {
   inscricaoMunicipal: string;
   municipioCodigo: string;
   razaoSocial: string;
+  nomeFantasia: string;
+  emailPrestador: string;
+  logradouro: string;
+  numero: string;
+  bairro: string;
+  cep: string;
+  uf: string;
   cTribNac: string;
   cTribMun: string;
   cNBS: string;
   aliquotaIss: string;
   opSimpNac: string;
+  regApTribSN: string;
   regEspTrib: string;
   serie: string;
   proximoDps: number;
@@ -38,6 +46,7 @@ export interface EmitirNfseParams {
   tomadorCidade?: string;
   tomadorUf?: string;
   tomadorCodigoMunicipio?: string;
+  tomadorComplemento?: string;
   descricaoServico?: string;
   dataEmissao?: Date;
 }
@@ -78,12 +87,13 @@ function buildDpsXml(params: EmitirNfseParams): string {
   const dCompet = formatDateOnly(now);
   const tpAmb = cfg.ambiente === "producao" ? "1" : "2";
   const descricao = params.descricaoServico || cfg.descricaoServico ||
-    "Prestação de serviços de engenharia solar fotovoltaica";
+    "Prestação de serviços de engenharia e homologação de sistemas fotovoltaicos";
   const nDPS = params.numeroDps;
-  const dpsId = `DPS${String(nDPS).padStart(15, "0")}`;
   const cnpjPrestador = cleanDoc(cfg.cnpjPrestador);
   const imPrestador = cfg.inscricaoMunicipal.replace(/\D/g, "");
   const cLocEmi = cfg.municipioCodigo || "5107909";
+
+  const dpsId = `DPS${cLocEmi}${cnpjPrestador}${String(cfg.serie).padStart(5, "0")}${String(nDPS).padStart(15, "0")}`;
 
   const tomadorDoc = cleanDoc(params.tomadorCpfCnpj || "");
   const tomadorDocTag = tomadorDoc.length === 11
@@ -91,36 +101,30 @@ function buildDpsXml(params: EmitirNfseParams): string {
     : `<CNPJ>${tomadorDoc}</CNPJ>`;
 
   const valorServico = parseFloat(params.valor.replace(",", ".")).toFixed(2);
-  const pAliq = parseFloat(cfg.aliquotaIss).toFixed(2);
-
-  const enderecoPrestador = `<end>
-        <endNac>
-          <cMun>${cLocEmi}</cMun>
-          <CEP>78555000</CEP>
-        </endNac>
-        <xLgr>Av. dos Ingás</xLgr>
-        <nro>SN</nro>
-        <xBairro>Centro</xBairro>
-      </end>`;
 
   let tomaEnd = "";
   if (params.tomadorCodigoMunicipio && params.tomadorCep) {
-    tomaEnd = `<end>
-        <endNac>
-          <cMun>${params.tomadorCodigoMunicipio}</cMun>
-          <CEP>${cleanDoc(params.tomadorCep)}</CEP>
-        </endNac>
-        ${params.tomadorLogradouro ? `<xLgr>${params.tomadorLogradouro}</xLgr>` : ""}
-        ${params.tomadorNumero ? `<nro>${params.tomadorNumero}</nro>` : ""}
-        ${params.tomadorBairro ? `<xBairro>${params.tomadorBairro}</xBairro>` : ""}
-      </end>`;
+    tomaEnd = `
+          <end>
+            <endNac>
+              <cMun>${params.tomadorCodigoMunicipio}</cMun>
+              <CEP>${cleanDoc(params.tomadorCep)}</CEP>
+            </endNac>
+            ${params.tomadorLogradouro ? `<xLgr>${params.tomadorLogradouro}</xLgr>` : ""}
+            ${params.tomadorNumero ? `<nro>${params.tomadorNumero}</nro>` : ""}
+            ${params.tomadorComplemento ? `<xCpl>${params.tomadorComplemento}</xCpl>` : ""}
+            ${params.tomadorBairro ? `<xBairro>${params.tomadorBairro}</xBairro>` : ""}
+          </end>`;
   }
+
+  const infoCompl = cfg.informacoesComplementares ||
+    "EMITIDO POR ME OU EPP OPTANTE PELO Simples Nacional; e II NAO GERA DIREITO FISCAL DE ICMS, DE ISS E DE IPI ICMS DOCUMENTO EMITIDO POR ME OU EPP OPTANTE SIMPLES NACIONAL. NAO GERA DIREITO A CREDITO FISCAL DE ICMS, ISS E IPI.";
 
   return `<DPS versao="1.01" xmlns="http://www.sped.fazenda.gov.br/nfse">
   <infDPS Id="${dpsId}">
     <tpAmb>${tpAmb}</tpAmb>
     <dhEmi>${dhEmi}</dhEmi>
-    <verAplic>RandoliSolar1.00</verAplic>
+    <verAplic>1.01</verAplic>
     <serie>${cfg.serie || "1"}</serie>
     <nDPS>${nDPS}</nDPS>
     <dCompet>${dCompet}</dCompet>
@@ -129,23 +133,30 @@ function buildDpsXml(params: EmitirNfseParams): string {
     <prest>
       <CNPJ>${cnpjPrestador}</CNPJ>
       <IM>${imPrestador}</IM>
+      ${cfg.emailPrestador ? `<email>${cfg.emailPrestador}</email>` : ""}
+      <regTrib>
+        <opSimpNac>${cfg.opSimpNac || "3"}</opSimpNac>
+        <regApTribSN>${cfg.regApTribSN || "1"}</regApTribSN>
+        <regEspTrib>${cfg.regEspTrib || "0"}</regEspTrib>
+      </regTrib>
     </prest>
     <toma>
       ${tomadorDocTag}
       <xNome>${params.tomadorNome}</xNome>
-      ${params.tomadorEmail ? `<email>${params.tomadorEmail}</email>` : ""}
-      ${tomaEnd}
+      ${params.tomadorEmail ? `<email>${params.tomadorEmail}</email>` : ""}${tomaEnd}
     </toma>
     <serv>
       <locPrest>
         <cLocPrestacao>${cLocEmi}</cLocPrestacao>
       </locPrest>
       <cServ>
-        <cTribNac>${cfg.cTribNac || "010102"}</cTribNac>
-        <cTribMun>${cfg.cTribMun || "0101010001"}</cTribMun>
+        <cTribNac>${cfg.cTribNac || "140601"}</cTribNac>
         <xDescServ>${descricao}</xDescServ>
-        <cNBS>${cfg.cNBS || "100000000"}</cNBS>
+        <cNBS>${cfg.cNBS || "101061900"}</cNBS>
       </cServ>
+      <infoCompl>
+        <xInfComp>${infoCompl}</xInfComp>
+      </infoCompl>
     </serv>
     <valores>
       <vServPrest>
@@ -155,17 +166,17 @@ function buildDpsXml(params: EmitirNfseParams): string {
         <tribMun>
           <tribISSQN>1</tribISSQN>
           <tpRetISSQN>1</tpRetISSQN>
-          <pAliq>${pAliq}</pAliq>
         </tribMun>
+        <tribFed>
+          <piscofins>
+            <CST>00</CST>
+          </piscofins>
+        </tribFed>
         <totTrib>
           <indTotTrib>0</indTotTrib>
         </totTrib>
       </trib>
     </valores>
-    <regTrib>
-      <opSimpNac>${cfg.opSimpNac || "3"}</opSimpNac>
-      <regEspTrib>${cfg.regEspTrib || "0"}</regEspTrib>
-    </regTrib>
   </infDPS>
 </DPS>`;
 }
@@ -270,7 +281,7 @@ export async function emitirNfse(params: EmitirNfseParams): Promise<NfseResult> 
     const soapBody = buildSoapEnvelope(loteXml);
 
     console.log(`[nfse-sped] Emitindo DPS ${params.numeroDps} ambiente=${config.ambiente} url=${config.webserviceUrl}`);
-    console.log(`[nfse-sped] DPS XML preview:\n${dpsXml.slice(0, 800)}`);
+    console.log(`[nfse-sped] DPS XML preview:\n${dpsXml.slice(0, 1200)}`);
 
     const response = await makeHttpsRequest(
       config.webserviceUrl,
@@ -279,7 +290,7 @@ export async function emitirNfse(params: EmitirNfseParams): Promise<NfseResult> 
       config.certificadoSenha
     );
 
-    console.log("[nfse-sped] Resposta recebida:", response.slice(0, 800));
+    console.log("[nfse-sped] Resposta recebida:", response.slice(0, 1200));
 
     const hasNfse =
       response.includes("nNFSe") ||
@@ -332,11 +343,19 @@ export function getNfseConfig(settingsMap: Record<string, string>): NfseConfig |
     inscricaoMunicipal: settingsMap["nfse_inscricao_municipal"] || "",
     municipioCodigo: settingsMap["nfse_municipio_codigo"] || "5107909",
     razaoSocial: settingsMap["nfse_razao_social"] || "",
-    cTribNac: settingsMap["nfse_ctrib_nac"] || "010102",
-    cTribMun: settingsMap["nfse_ctrib_mun"] || "0101010001",
-    cNBS: settingsMap["nfse_cnbs"] || "100000000",
+    nomeFantasia: settingsMap["nfse_nome_fantasia"] || "",
+    emailPrestador: settingsMap["nfse_email_prestador"] || "",
+    logradouro: settingsMap["nfse_logradouro"] || "",
+    numero: settingsMap["nfse_numero"] || "",
+    bairro: settingsMap["nfse_bairro"] || "",
+    cep: settingsMap["nfse_cep"] || "",
+    uf: settingsMap["nfse_uf"] || "",
+    cTribNac: settingsMap["nfse_ctrib_nac"] || "140601",
+    cTribMun: settingsMap["nfse_ctrib_mun"] || "",
+    cNBS: settingsMap["nfse_cnbs"] || "101061900",
     aliquotaIss: settingsMap["nfse_aliquota_iss"] || "2.00",
     opSimpNac: settingsMap["nfse_op_simples_nac"] || "3",
+    regApTribSN: settingsMap["nfse_reg_ap_trib_sn"] || "1",
     regEspTrib: settingsMap["nfse_reg_esp_trib"] || "0",
     serie: settingsMap["nfse_serie_dps"] || settingsMap["nfse_serie_rps"] || "1",
     proximoDps: parseInt(settingsMap["nfse_proximo_dps"] || settingsMap["nfse_proximo_rps"] || "1"),

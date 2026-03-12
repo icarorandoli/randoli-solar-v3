@@ -2614,7 +2614,37 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     if (missing.length > 0) {
       return res.json({ success: false, error: `Campos obrigatórios faltando: ${missing.join(", ")}` });
     }
-    res.json({ success: true, message: `Configuração OK! URL: ${config.webserviceUrl}. Certificado presente (${Math.round(config.certificadoPfxBase64.length * 0.75 / 1024)}KB). CNPJ: ${config.cnpjPrestador}, IM: ${config.inscricaoMunicipal}. Ambiente: ${config.ambiente}.` });
+
+    try {
+      const testResult = await emitirNfse({
+        config,
+        numeroDps: "99999",
+        valor: "1.00",
+        tomadorNome: "TESTE CONEXAO",
+        tomadorCpfCnpj: "00000000000",
+        descricaoServico: "Teste de conexão com o webservice NFS-e",
+      });
+
+      if (testResult.success) {
+        res.json({
+          success: true,
+          message: `Conexão OK! O webservice respondeu com sucesso. NFS-e teste nº ${testResult.numeroNota || "–"}. Ambiente: ${config.ambiente}. URL: ${config.webserviceUrl}.`,
+          xmlResponse: testResult.xmlContent?.slice(0, 2000),
+        });
+      } else {
+        res.json({
+          success: false,
+          error: `Webservice respondeu com erro: ${testResult.error}`,
+          message: `A conexão com o webservice funcionou, mas retornou erro (normal em teste). Ambiente: ${config.ambiente}. URL: ${config.webserviceUrl}. CNPJ: ${config.cnpjPrestador}, IM: ${config.inscricaoMunicipal}. Certificado: ${Math.round(config.certificadoPfxBase64.length * 0.75 / 1024)}KB.`,
+          xmlResponse: testResult.xmlContent?.slice(0, 2000),
+        });
+      }
+    } catch (err: any) {
+      res.json({
+        success: false,
+        error: `Erro ao conectar ao webservice: ${err?.message || "Erro desconhecido"}. Verifique a URL e o certificado digital.`,
+      });
+    }
   });
 
   return httpServer;

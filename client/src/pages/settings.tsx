@@ -1072,9 +1072,15 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
     },
     onSuccess: (data: any) => {
       if (data.success) {
-        toast({ title: "✓ Configuração OK", description: data.message });
+        toast({ title: "Conexão OK!", description: data.message });
       } else {
-        toast({ title: "Erro na configuração", description: data.error || "Verifique os campos", variant: "destructive" });
+        const desc = data.message
+          ? `${data.error}\n\n${data.message}`
+          : (data.error || "Verifique os campos");
+        toast({ title: "Resultado do Teste", description: desc, variant: "destructive", duration: 15000 });
+      }
+      if (data.xmlResponse) {
+        console.log("[NFS-e Test] XML Response:", data.xmlResponse);
       }
     },
     onError: (err: any) => toast({ title: "Erro de conexão", description: err?.message || "Não foi possível conectar ao servidor", variant: "destructive" }),

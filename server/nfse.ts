@@ -201,38 +201,25 @@ ${dpsXml}
 </EnviarLoteDpsSincronoEnvio>`;
 }
 
-function buildSoapEnvelope(xml: string): string {
-  const cabecalho = `<?xml version="1.0" encoding="UTF-8"?><cabecalho xmlns="http://www.sped.fazenda.gov.br/nfse" versao="1.01"><versaoDados>1.01</versaoDados></cabecalho>`;
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:e="http://www.sped.fazenda.gov.br/nfse">
-  <soapenv:Header/>
-  <soapenv:Body>
-    <e:RecepcionarLoteDpsSincrono>
-      <nfseCabecMsg><![CDATA[${cabecalho}]]></nfseCabecMsg>
-      <nfseDadosMsg><![CDATA[${xml}]]></nfseDadosMsg>
-    </e:RecepcionarLoteDpsSincrono>
-  </soapenv:Body>
-</soapenv:Envelope>`;
-}
-
 function makeHttpsRequest(
   urlStr: string,
   body: string,
   pfxBuffer: Buffer,
-  passphrase: string
+  passphrase: string,
+  contentType: string = "application/xml"
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     const url = new URL(urlStr);
+    const headers: Record<string, string | number> = {
+      "Content-Type": `${contentType}; charset=utf-8`,
+      "Content-Length": Buffer.byteLength(body, "utf-8"),
+    };
     const options: https.RequestOptions = {
       hostname: url.hostname,
       port: url.port ? parseInt(url.port) : 443,
       path: url.pathname + url.search,
       method: "POST",
-      headers: {
-        "Content-Type": "text/xml; charset=utf-8",
-        "SOAPAction": "http://www.sped.fazenda.gov.br/nfse/RecepcionarLoteDpsSincrono",
-        "Content-Length": Buffer.byteLength(body, "utf-8"),
-      },
+      headers,
       pfx: pfxBuffer,
       passphrase,
       rejectUnauthorized: false,
@@ -240,7 +227,10 @@ function makeHttpsRequest(
     const req = https.request(options, (res) => {
       let data = "";
       res.on("data", (chunk) => { data += chunk; });
-      res.on("end", () => resolve(data));
+      res.on("end", () => {
+        console.log(`[nfse-sped] HTTP ${res.statusCode} from ${url.hostname}`);
+        resolve(data);
+      });
     });
     req.on("error", reject);
     req.write(body);
@@ -278,16 +268,16 @@ export async function emitirNfse(params: EmitirNfseParams): Promise<NfseResult> 
     const loteNum = Date.now();
     const dpsXml = buildDpsXml(params);
     const loteXml = buildLoteDpsXml(dpsXml, config, loteNum);
-    const soapBody = buildSoapEnvelope(loteXml);
 
     console.log(`[nfse-sped] Emitindo DPS ${params.numeroDps} ambiente=${config.ambiente} url=${config.webserviceUrl}`);
-    console.log(`[nfse-sped] DPS XML preview:\n${dpsXml.slice(0, 1200)}`);
+    console.log(`[nfse-sped] Lote XML preview:\n${loteXml.slice(0, 1500)}`);
 
     const response = await makeHttpsRequest(
       config.webserviceUrl,
-      soapBody,
+      loteXml,
       pfxBuffer,
-      config.certificadoSenha
+      config.certificadoSenha,
+      "application/xml"
     );
 
     console.log("[nfse-sped] Resposta recebida:", response.slice(0, 1200));

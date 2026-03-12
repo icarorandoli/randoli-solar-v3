@@ -1331,9 +1331,14 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
   // ── MERCADO PAGO WEBHOOK ──────────────────────────────────────────
   async function advanceProjectAfterPayment(project: any, projectId: string, paymentId: string, paidValue: number, gatewayName: string, settingsMap?: Record<string, string>) {
+    const sMap = settingsMap || await getSettingsMap();
     const STATUS_ORDER = ["orcamento", "aprovado_pagamento_pendente", "projeto_tecnico", "aguardando_art", "protocolado", "parecer_acesso", "instalacao", "vistoria", "projeto_aprovado", "homologado", "finalizado", "cancelado"];
-    const currentIdx = STATUS_ORDER.indexOf(project.status);
-    const nextStatus = currentIdx >= 0 && currentIdx < STATUS_ORDER.length - 1 ? STATUS_ORDER[currentIdx + 1] : "projeto_tecnico";
+    
+    let nextStatus = sMap["payment_next_status"] || undefined;
+    if (!nextStatus || !STATUS_ORDER.includes(nextStatus)) {
+      const currentIdx = STATUS_ORDER.indexOf(project.status);
+      nextStatus = currentIdx >= 0 && currentIdx < STATUS_ORDER.length - 1 ? STATUS_ORDER[currentIdx + 1] : "projeto_tecnico";
+    }
 
     const STATUS_LABELS: Record<string, string> = {
       "orcamento": "Orçamento",
@@ -1420,7 +1425,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     })();
 
     // Auto NFS-e emission after payment
-    const sMap = settingsMap || await getSettingsMap();
     if (sMap["nfse_auto_emit"] === "true") {
       try {
         const nfseConfig = getNfseConfig(sMap);

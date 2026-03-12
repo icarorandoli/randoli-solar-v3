@@ -314,6 +314,7 @@ export default function SettingsPage() {
   const [showPsToken, setShowPsToken] = useState(false);
 
   const [nfseAutoEmit, setNfseAutoEmit] = useState(false);
+  const [paymentNextStatus, setPaymentNextStatus] = useState("projeto_tecnico");
   const [showMpToken, setShowMpToken] = useState(false);
 
 
@@ -366,6 +367,7 @@ export default function SettingsPage() {
     setPsToken(settings.pagseguro_token || "");
     setPsEmail(settings.pagseguro_email || "");
     setNfseAutoEmit(settings.nfse_auto_emit === "true");
+    setPaymentNextStatus(settings.payment_next_status || "projeto_tecnico");
     if (settings.login_badge_text) setLoginBadgeText(settings.login_badge_text);
     if (settings.login_headline) setLoginHeadline(settings.login_headline);
     if (settings.login_headline_highlight) setLoginHighlight(settings.login_headline_highlight);
@@ -419,6 +421,7 @@ export default function SettingsPage() {
         pairs.push({ key: "pagseguro_token", value: psToken });
       }
       pairs.push({ key: "nfse_auto_emit", value: nfseAutoEmit ? "true" : "false" });
+      pairs.push({ key: "payment_next_status", value: paymentNextStatus });
       pairs.push({ key: "favicon_url", value: faviconUrl });
       pairs.push(
         { key: "login_badge_text", value: loginBadgeText },
@@ -853,6 +856,38 @@ export default function SettingsPage() {
                           </button>
                         </div>
                       </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-muted/40 shadow-md">
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <ArrowRight className="h-4 w-4 text-primary" />
+                      <CardTitle className="text-lg">Avanço Automático Após Pagamento</CardTitle>
+                    </div>
+                    <CardDescription>Defina para qual status o projeto deve avançar quando o pagamento for confirmado.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Próximo Status Após Pagamento</Label>
+                      <Select value={paymentNextStatus} onValueChange={setPaymentNextStatus}>
+                        <SelectTrigger data-testid="select-payment-next-status">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="projeto_tecnico">Projeto Técnico</SelectItem>
+                          <SelectItem value="aguardando_art">Aguardando ART</SelectItem>
+                          <SelectItem value="protocolado">Protocolado</SelectItem>
+                          <SelectItem value="parecer_acesso">Parecer de Acesso</SelectItem>
+                          <SelectItem value="instalacao">Em Instalação</SelectItem>
+                          <SelectItem value="vistoria">Aguardando Vistoria</SelectItem>
+                          <SelectItem value="projeto_aprovado">Projeto Aprovado</SelectItem>
+                          <SelectItem value="homologado">Homologado</SelectItem>
+                          <SelectItem value="finalizado">Finalizado</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">Escolha o status para o qual o projeto avançará automaticamente após pagamento confirmado.</p>
                     </div>
                   </CardContent>
                 </Card>

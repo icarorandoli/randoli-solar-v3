@@ -1061,7 +1061,7 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
     onError: () => toast({ title: "Erro", description: "Não foi possível salvar.", variant: "destructive" }),
   });
 
-  const [testResult, setTestResult] = useState<{ success: boolean; error?: string; message?: string; xmlResponse?: string } | null>(null);
+  const [testResult, setTestResult] = useState<{ success: boolean; error?: string; message?: string; testErrors?: string; xmlResponse?: string } | null>(null);
   const testMut = useMutation({
     mutationFn: async () => {
       const r = await fetch("/api/nfse/testar-conexao", {
@@ -1318,10 +1318,16 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
           {testResult && (
             <div className={`mt-4 p-4 rounded-lg border ${testResult.success ? "bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800" : "bg-red-50 border-red-200 dark:bg-red-950 dark:border-red-800"}`} data-testid="nfse-test-result">
               <p className={`font-semibold text-sm ${testResult.success ? "text-green-800 dark:text-green-200" : "text-red-800 dark:text-red-200"}`}>
-                {testResult.success ? "Conexão OK!" : "Resultado do Teste"}
+                {testResult.success ? "Configuração OK! Pronto para emitir NFS-e." : "Erro na Configuração"}
               </p>
-              {testResult.error && <p className="text-sm mt-1 text-red-700 dark:text-red-300">{testResult.error}</p>}
-              {testResult.message && <p className="text-xs mt-1 text-muted-foreground">{testResult.message}</p>}
+              {testResult.message && <p className="text-xs mt-2 text-muted-foreground">{testResult.message}</p>}
+              {testResult.testErrors && (
+                <details className="mt-2">
+                  <summary className="text-xs cursor-pointer text-amber-700 dark:text-amber-300 hover:text-foreground">Erros esperados do teste (dados fictícios)</summary>
+                  <p className="text-xs mt-1 text-amber-600 dark:text-amber-400">{testResult.testErrors}</p>
+                </details>
+              )}
+              {testResult.error && <p className="text-sm mt-2 text-red-700 dark:text-red-300">{testResult.error}</p>}
               {testResult.xmlResponse && (
                 <details className="mt-2">
                   <summary className="text-xs cursor-pointer text-muted-foreground hover:text-foreground">Ver resposta XML do webservice</summary>

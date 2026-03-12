@@ -2619,13 +2619,13 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         config,
         numeroDps: "99999",
         valor: "1.00",
-        tomadorNome: "PREFEITURA MUNICIPAL DE SINOP",
-        tomadorCpfCnpj: "03259014000102",
+        tomadorNome: "EMPRESA TESTE LTDA",
+        tomadorCpfCnpj: "33000167000101",
         tomadorCodigoMunicipio: config.municipioCodigo || "5107909",
-        tomadorCep: "78550000",
-        tomadorLogradouro: "AV DAS ITAUBAS",
-        tomadorNumero: "3163",
-        tomadorBairro: "SETOR COMERCIAL",
+        tomadorCep: config.cep || "78550000",
+        tomadorLogradouro: "RUA TESTE",
+        tomadorNumero: "100",
+        tomadorBairro: "CENTRO",
         descricaoServico: config.descricaoServico || "Teste de conexao com o webservice NFS-e",
       });
 
@@ -2633,16 +2633,30 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       if (testResult.success) {
         res.json({
           success: true,
-          message: `Conexão OK! O webservice respondeu com sucesso. NFS-e teste nº ${testResult.numeroNota || "–"}. Ambiente: ${config.ambiente}. URL: ${wsUrl}.`,
-          xmlResponse: testResult.xmlContent?.slice(0, 2000),
+          message: `Conexão OK! NFS-e teste gerada com sucesso (nº ${testResult.numeroNota || "–"}). Ambiente: ${config.ambiente}. URL: ${wsUrl}.`,
+          xmlResponse: testResult.xmlContent?.slice(0, 5000),
         });
       } else {
-        res.json({
-          success: false,
-          error: `Webservice respondeu com erro: ${testResult.error}`,
-          message: `A conexão com o webservice funcionou, mas retornou erro (normal em teste). Ambiente: ${config.ambiente}. URL: ${wsUrl}. CNPJ: ${config.cnpjPrestador}, IM: ${config.inscricaoMunicipal}. Certificado: ${Math.round(config.certificadoPfxBase64.length * 0.75 / 1024)}KB.`,
-          xmlResponse: testResult.xmlContent?.slice(0, 2000),
-        });
+        const errorStr = testResult.error || "";
+        const onlyTestErrors = /^(E39|E47|E52|E242|E243)\b/;
+        const errorCodes = errorStr.split("; ").map(e => e.trim());
+        const allTestOnly = errorCodes.every(e => onlyTestErrors.test(e));
+
+        if (allTestOnly) {
+          res.json({
+            success: true,
+            message: `Configuração OK! A conexão SOAP, certificado digital e códigos tributários estão corretos. Os erros abaixo são esperados no teste (dados fictícios do tomador) e não ocorrerão na emissão real. Ambiente: ${config.ambiente}. URL: ${wsUrl}. CNPJ: ${config.cnpjPrestador}, IM: ${config.inscricaoMunicipal}.`,
+            testErrors: errorStr,
+            xmlResponse: testResult.xmlContent?.slice(0, 5000),
+          });
+        } else {
+          res.json({
+            success: false,
+            error: `Webservice respondeu com erro: ${errorStr}`,
+            message: `A conexão funcionou, mas há erros de configuração. Ambiente: ${config.ambiente}. URL: ${wsUrl}. CNPJ: ${config.cnpjPrestador}, IM: ${config.inscricaoMunicipal}. Certificado: ${Math.round(config.certificadoPfxBase64.length * 0.75 / 1024)}KB.`,
+            xmlResponse: testResult.xmlContent?.slice(0, 5000),
+          });
+        }
       }
     } catch (err: any) {
       res.json({

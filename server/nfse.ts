@@ -338,8 +338,8 @@ export async function emitirNfse(params: EmitirNfseParams): Promise<NfseResult> 
     const loteXml = buildLoteDpsXml(dpsXml, config, loteNum);
 
     let baseUrl = config.webserviceUrl.replace(/\/+$/, "");
-    if (!baseUrl.includes("/recepcionar-lote-dps-sincrono")) {
-      baseUrl += "/recepcionar-lote-dps-sincrono";
+    if (!baseUrl.includes("RecepcionarLoteDpsSincrono") && !baseUrl.includes("recepcionar-lote-dps-sincrono")) {
+      baseUrl += "/RecepcionarLoteDpsSincrono";
     }
 
     console.log(`[nfse-sped] Emitindo DPS ${params.numeroDps} ambiente=${config.ambiente} url=${baseUrl}`);

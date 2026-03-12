@@ -2608,7 +2608,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const missing: string[] = [];
     if (!config.cnpjPrestador) missing.push("CNPJ do Prestador");
     if (!config.inscricaoMunicipal) missing.push("Inscrição Municipal");
-    if (!config.webserviceUrl) missing.push("URL do Webservice");
     if (!config.certificadoPfxBase64) missing.push("Certificado Digital (.pfx)");
     if (!config.certificadoSenha) missing.push("Senha do Certificado");
     if (missing.length > 0) {
@@ -2625,17 +2624,18 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         descricaoServico: "Teste de conexão com o webservice NFS-e",
       });
 
+      const wsUrl = config.webserviceUrl || (config.ambiente === "producao" ? `https://gp.srv.br/tributario/${config.municipioNome || "sinop"}/anfse_ws` : `https://coplan.inf.br/tributario/${config.municipioNome || "sinop"}/anfse_ws`);
       if (testResult.success) {
         res.json({
           success: true,
-          message: `Conexão OK! O webservice respondeu com sucesso. NFS-e teste nº ${testResult.numeroNota || "–"}. Ambiente: ${config.ambiente}. URL: ${config.webserviceUrl}.`,
+          message: `Conexão OK! O webservice respondeu com sucesso. NFS-e teste nº ${testResult.numeroNota || "–"}. Ambiente: ${config.ambiente}. URL: ${wsUrl}.`,
           xmlResponse: testResult.xmlContent?.slice(0, 2000),
         });
       } else {
         res.json({
           success: false,
           error: `Webservice respondeu com erro: ${testResult.error}`,
-          message: `A conexão com o webservice funcionou, mas retornou erro (normal em teste). Ambiente: ${config.ambiente}. URL: ${config.webserviceUrl}. CNPJ: ${config.cnpjPrestador}, IM: ${config.inscricaoMunicipal}. Certificado: ${Math.round(config.certificadoPfxBase64.length * 0.75 / 1024)}KB.`,
+          message: `A conexão com o webservice funcionou, mas retornou erro (normal em teste). Ambiente: ${config.ambiente}. URL: ${wsUrl}. CNPJ: ${config.cnpjPrestador}, IM: ${config.inscricaoMunicipal}. Certificado: ${Math.round(config.certificadoPfxBase64.length * 0.75 / 1024)}KB.`,
           xmlResponse: testResult.xmlContent?.slice(0, 2000),
         });
       }

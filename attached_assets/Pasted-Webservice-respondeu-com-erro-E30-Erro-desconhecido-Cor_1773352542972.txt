@@ -1,0 +1,41 @@
+Webservice respondeu com erro: E30: Erro desconhecido (Correção: Consulte a legislacao vigente para saber o item da lista de servico que devera ser informado.); E352: Erro desconhecido (Correção: Informe o codigo NBS com nove caracteres conforme padrao da Receita Federal do Brasil); E215: Erro desconhecido (Correção: Consulte o Manual da NFS-e para verificar a correlacao entre o codigo de tributacao e o item da lista de servico..); E47: Erro desconhecido (Correção: Informe corretamente o CPF/CNPJ do tomador do servico.)
+
+A conexão com o webservice funcionou, mas retornou erro (normal em teste). Ambiente: producao. URL: https://gp.srv.br/tributario/sinop/anfse_ws. CNPJ: 43.201.226/0001-63, IM: 40690. Certificado: 4KB.
+Ver resposta XML do webservice
+
+<?xml version="1.0" encoding="utf-8"?>
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<SOAP-ENV:Body>
+		<nfse_ws.GERARNFSEResponse xmlns="Tributario">
+			<Gerarnfseresponse>
+				<outputXML>
+					<![CDATA[<?xml version="1.0" encoding="UTF-8"?><GerarNfseResposta xmlns="http://www.sped.fazenda.gov.br/nfse">
+	<ListaMensagemRetorno>
+		<MensagemRetorno>
+			<Codigo>E30</Codigo>
+			<Mensagem>	Item da lista de servico inexistente.	</Mensagem>
+			<Correcao>	Consulte a legislacao vigente para saber o item da lista de servico que devera ser informado. 	</Correcao>
+		</MensagemRetorno>
+		<MensagemRetorno>
+			<Codigo>E352</Codigo>
+			<Mensagem>	Codigo NBS invalido.	</Mensagem>
+			<Correcao>	Informe o codigo NBS com nove caracteres conforme padrao da Receita Federal do Brasil	</Correcao>
+		</MensagemRetorno>
+		<MensagemRetorno>
+			<Codigo>E215</Codigo>
+			<Mensagem>	Item da lista de servico incompativel com o codigo de tributacao.	</Mensagem>
+			<Correcao>	Consulte o Manual da NFS-e para verificar a correlacao entre o codigo de tributacao e o item da lista de servico..	</Correcao>
+		</MensagemRetorno>
+		<MensagemRetorno>
+			<Codigo>E47</Codigo>
+			<Mensagem>	CPF/CNPJ do tomador do servico incorreto.	</Mensagem>
+			<Correcao>	Informe corretamente o CPF/CNPJ do tomador do servico.	</Correcao>
+		</MensagemRetorno>
+	</ListaMensagemRetorno>
+</GerarNfseResposta>
+]]>
+				</outputXML>
+			</Gerarnfseresponse>
+		</nfse_ws.GERARNFSEResponse>
+	</SOAP-ENV:Body>
+</SOAP-ENV:Envelope>

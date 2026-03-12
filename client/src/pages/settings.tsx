@@ -1218,24 +1218,24 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-t pt-4">Tributação e Serviço</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>cTribNac — Cód. Tributação Nacional (6 dígitos)</Label>
+              <Label>Atividade de Serviço (Código Municipal)</Label>
+              <Input value={cTribMun} onChange={e => setCTribMun(e.target.value)} placeholder="Ex: 1706" data-testid="input-nfse-ctrib-mun" />
+              <p className="text-xs text-muted-foreground">Mesmo código do campo "Atividade de serviço" no site da prefeitura. Ex: 1706. Apenas o número.</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Código NBS</Label>
+              <Input value={cNBS} onChange={e => setCNBS(e.target.value)} placeholder="Ex: 114061000" data-testid="input-nfse-cnbs" />
+              <p className="text-xs text-muted-foreground">Mesmo código do campo "Código NBS" no site da prefeitura. Ex: 1.1406.1 = 114061000 (9 dígitos, sem pontos).</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Código Tributação Nacional (cTribNac)</Label>
               <Input value={cTribNac} onChange={e => setCTribNac(e.target.value)} placeholder="140601" data-testid="input-nfse-ctrib-nac" />
-              <p className="text-xs text-muted-foreground">Ex: 140601 (instalação/montagem), 070100 (engenharia). Consulte a LC 116.</p>
+              <p className="text-xs text-muted-foreground">Código nacional LC 116 (6 dígitos). Deve corresponder à atividade municipal selecionada acima.</p>
             </div>
             <div className="space-y-2">
-              <Label>cTribMun — Cód. Tributação Municipal</Label>
-              <Input value={cTribMun} onChange={e => setCTribMun(e.target.value)} placeholder="Ex: 1406" data-testid="input-nfse-ctrib-mun" />
-              <p className="text-xs text-muted-foreground">Obrigatório. Código do serviço na legislação municipal de Sinop. Consulte a prefeitura.</p>
-            </div>
-            <div className="space-y-2">
-              <Label>cNBS — Nomenclatura Brasileira de Serviços (9 dígitos)</Label>
-              <Input value={cNBS} onChange={e => setCNBS(e.target.value)} placeholder="101061900" data-testid="input-nfse-cnbs" />
-              <p className="text-xs text-muted-foreground">Código NBS de 9 dígitos conforme tabela da Receita Federal.</p>
-            </div>
-            <div className="space-y-2">
-              <Label>Alíquota ISS (%) — Faixa do Simples Nacional</Label>
+              <Label>% Alíquota ISS</Label>
               <Input value={aliquotaIss} onChange={e => setAliquotaIss(e.target.value)} placeholder="2.00" data-testid="input-nfse-iss" />
-              <p className="text-xs text-muted-foreground">Para Simples Nacional: informe a alíquota ISS da sua faixa no DAS (entre 2.00 e 5.00).</p>
+              <p className="text-xs text-muted-foreground">Mesmo campo "% Alíquota" do site da prefeitura. Para Simples Nacional: alíquota da sua faixa no DAS.</p>
             </div>
             <div className="space-y-2">
               <Label>Simples Nacional (opSimpNac)</Label>

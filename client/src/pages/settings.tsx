@@ -1220,18 +1220,22 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
             <div className="space-y-2">
               <Label>cTribNac — Cód. Tributação Nacional (6 dígitos)</Label>
               <Input value={cTribNac} onChange={e => setCTribNac(e.target.value)} placeholder="140601" data-testid="input-nfse-ctrib-nac" />
+              <p className="text-xs text-muted-foreground">Ex: 140601 (instalação/montagem), 070100 (engenharia). Consulte a LC 116.</p>
             </div>
             <div className="space-y-2">
-              <Label>cTribMun — Cód. Tributação Municipal (opcional)</Label>
-              <Input value={cTribMun} onChange={e => setCTribMun(e.target.value)} placeholder="" data-testid="input-nfse-ctrib-mun" />
+              <Label>cTribMun — Cód. Tributação Municipal</Label>
+              <Input value={cTribMun} onChange={e => setCTribMun(e.target.value)} placeholder="Ex: 1406" data-testid="input-nfse-ctrib-mun" />
+              <p className="text-xs text-muted-foreground">Obrigatório. Código do serviço na legislação municipal de Sinop. Consulte a prefeitura.</p>
             </div>
             <div className="space-y-2">
               <Label>cNBS — Nomenclatura Brasileira de Serviços (9 dígitos)</Label>
               <Input value={cNBS} onChange={e => setCNBS(e.target.value)} placeholder="101061900" data-testid="input-nfse-cnbs" />
+              <p className="text-xs text-muted-foreground">Código NBS de 9 dígitos conforme tabela da Receita Federal.</p>
             </div>
             <div className="space-y-2">
-              <Label>Alíquota ISS (%)</Label>
+              <Label>Alíquota ISS (%) — Faixa do Simples Nacional</Label>
               <Input value={aliquotaIss} onChange={e => setAliquotaIss(e.target.value)} placeholder="2.00" data-testid="input-nfse-iss" />
+              <p className="text-xs text-muted-foreground">Para Simples Nacional: informe a alíquota ISS da sua faixa no DAS (entre 2.00 e 5.00).</p>
             </div>
             <div className="space-y-2">
               <Label>Simples Nacional (opSimpNac)</Label>

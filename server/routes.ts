@@ -2619,9 +2619,14 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         config,
         numeroDps: "99999",
         valor: "1.00",
-        tomadorNome: "TESTE CONEXAO",
-        tomadorCpfCnpj: "00000000000",
-        descricaoServico: "Teste de conexão com o webservice NFS-e",
+        tomadorNome: config.razaoSocial || "TESTE CONEXAO",
+        tomadorCpfCnpj: config.cnpjPrestador,
+        tomadorCodigoMunicipio: config.municipioCodigo || "5107909",
+        tomadorCep: config.cep || "78550000",
+        tomadorLogradouro: config.logradouro || "RUA TESTE",
+        tomadorNumero: config.numero || "1",
+        tomadorBairro: config.bairro || "CENTRO",
+        descricaoServico: config.descricaoServico || "Teste de conexao com o webservice NFS-e",
       });
 
       const wsUrl = config.webserviceUrl || (config.ambiente === "producao" ? `https://gp.srv.br/tributario/${config.municipioNome || "sinop"}/anfse_ws` : `https://coplan.inf.br/tributario/${config.municipioNome || "sinop"}/anfse_ws`);

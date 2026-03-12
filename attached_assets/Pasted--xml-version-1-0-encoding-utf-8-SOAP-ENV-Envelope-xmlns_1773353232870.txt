@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<SOAP-ENV:Body>
+		<nfse_ws.GERARNFSEResponse xmlns="Tributario">
+			<Gerarnfseresponse>
+				<outputXML>
+					<![CDATA[<?xml version="1.0" encoding="UTF-8"?><GerarNfseResposta xmlns="http://www.sped.fazenda.gov.br/nfse">
+	<ListaMensagemRetorno>
+		<MensagemRetorno>
+			<Codigo>E30</Codigo>
+			<Mensagem>	Item da lista de servico inexistente.	</Mensagem>
+			<Correcao>	Consulte a legislacao vigente para saber o item da lista de servico que devera ser informado. 	</Correcao>
+		</MensagemRetorno>
+		<MensagemRetorno>
+			<Codigo>E215</Codigo>
+			<Mensagem>	Item da lista de servico incompativel com o codigo de tributacao.	</Mensagem>
+			<Correcao>	Consulte o Manual da NFS-e para verificar a correlacao entre o codigo de tributacao e o item da lista de servico..	</Correcao>
+		</MensagemRetorno>
+		<MensagemRetorno>
+			<Codigo>E243</Codigo>
+			<Mensagem>	Esta NFS-e nao devera ter o ISSQN Retido pelo tomador do servico.	</Mensagem>
+			<Correcao>	Consulte a legislacao vigente para saber as regras de retencao do ISSQN na fonte e selecione ISS Retido = 2 (NaO).	</Correcao>
+		</MensagemRetorno>
+		<MensagemRetorno>
+			<Codigo>E52</Codigo>
+			<Mensagem>	O tomador do servico informado e o proprio prestador do servico. 	</Mensagem>
+			<Correcao>	Na emissao da NFS-e nao e permitido que o prestador do servico seja igual ao tomador do servico. 	</Correcao>
+		</MensagemRetorno>
+		<MensagemRetorno>
+			<Codigo>E242</Codigo>
+			<Mensagem>	Indicador de ISSQN retido incorreto.	</Mensagem>
+			<Correcao>	Nao e permitida a retencao do ISSQN quando o tomador do servico e o proprio prestador do servico. Altere o indicador de retencao do ISSQN devido para 2 - sem retencao.	</Correcao>
+		</MensagemRetorno>
+	</ListaMensagemRetorno>
+</

@@ -918,8 +918,6 @@ export default function SettingsPage() {
                           {[
                             { key: "mp", label: "Mercado Pago" },
                             { key: "pagseguro", label: "PagSeguro" },
-                            { key: "inter_pix", label: "Banco Inter (PIX)" },
-                            { key: "inter_boleto", label: "Banco Inter (Boleto)" },
                             { key: "manual", label: "Pagamento Manual" },
                           ].map(gw => (
                             <label key={gw.key} className="flex items-center gap-2 p-2 rounded border border-muted/40 bg-background cursor-pointer hover:bg-muted/20 transition-colors">

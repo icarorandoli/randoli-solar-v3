@@ -973,7 +973,7 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
   const [cepPrest, setCepPrest] = useState("");
   const [ufPrest, setUfPrest] = useState("");
   const [cTribNac, setCTribNac] = useState("170600");
-  const [cTribMun, setCTribMun] = useState("1706");
+  const [cTribMun, setCTribMun] = useState("");
   const [cNBS, setCNBS] = useState("114061100");
   const [aliquotaIss, setAliquotaIss] = useState("2.00");
   const [opSimpNac, setOpSimpNac] = useState("3");
@@ -1218,9 +1218,9 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide border-t pt-4">Tributação e Serviço</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Atividade de Serviço (Código Municipal)</Label>
-              <Input value={cTribMun} onChange={e => setCTribMun(e.target.value)} placeholder="Ex: 1706" data-testid="input-nfse-ctrib-mun" />
-              <p className="text-xs text-muted-foreground">Mesmo código do campo "Atividade de serviço" no site da prefeitura. Ex: 1706. Apenas o número.</p>
+              <Label>Código Tributação Municipal (opcional)</Label>
+              <Input value={cTribMun} onChange={e => setCTribMun(e.target.value)} placeholder="Deixe vazio se não souber" data-testid="input-nfse-ctrib-mun" />
+              <p className="text-xs text-muted-foreground">Opcional. Código municipal de 14 dígitos. Deixe vazio para usar apenas o código nacional (cTribNac).</p>
             </div>
             <div className="space-y-2">
               <Label>Código NBS</Label>

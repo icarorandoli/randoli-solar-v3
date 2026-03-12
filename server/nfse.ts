@@ -120,10 +120,7 @@ function buildGerarNfseEnvioXml(params: EmitirNfseParams): string {
     tomaEnd = `<end><endNac><cMun>${params.tomadorCodigoMunicipio}</cMun><CEP>${cleanDoc(params.tomadorCep)}</CEP></endNac>${params.tomadorLogradouro ? `<xLgr>${escapeXml(params.tomadorLogradouro)}</xLgr>` : ""}${params.tomadorNumero ? `<nro>${escapeXml(params.tomadorNumero)}</nro>` : ""}${params.tomadorComplemento ? `<xCpl>${escapeXml(params.tomadorComplemento)}</xCpl>` : ""}${params.tomadorBairro ? `<xBairro>${escapeXml(params.tomadorBairro)}</xBairro>` : ""}</end>`;
   }
 
-  if (!cfg.cTribMun) {
-    throw new Error("cTribMun (Código de Tributação Municipal) é obrigatório para emissão via COPLAN.");
-  }
-  const cTribMunTag = `<cTribMun>${cfg.cTribMun}</cTribMun>`;
+  const cTribMunTag = cfg.cTribMun ? `<cTribMun>${cfg.cTribMun}</cTribMun>` : "";
 
   const isSimplesNacional = cfg.opSimpNac === "2" || cfg.opSimpNac === "3";
 
@@ -442,7 +439,7 @@ export function getNfseConfig(settingsMap: Record<string, string>): NfseConfig |
     cep: settingsMap["nfse_cep"] || "",
     uf: settingsMap["nfse_uf"] || "",
     cTribNac: settingsMap["nfse_ctrib_nac"] || "170600",
-    cTribMun: settingsMap["nfse_ctrib_mun"] || "1706",
+    cTribMun: settingsMap["nfse_ctrib_mun"] || "",
     cNBS: settingsMap["nfse_cnbs"] || "114061100",
     aliquotaIss: settingsMap["nfse_aliquota_iss"] || "2.00",
     opSimpNac: settingsMap["nfse_op_simples_nac"] || "3",

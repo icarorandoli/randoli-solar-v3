@@ -113,8 +113,7 @@ function buildGerarNfseEnvioXml(params: EmitirNfseParams): string {
     : `<CNPJ>${tomadorDoc.padStart(14, "0")}</CNPJ>`;
 
   const valorServico = parseFloat(params.valor.replace(",", ".")).toFixed(2);
-  const isSimplesNacional = cfg.opSimpNac === "2" || cfg.opSimpNac === "3";
-  const aliquota = isSimplesNacional ? "0.00" : parseFloat(cfg.aliquotaIss || "0.00").toFixed(2);
+  const aliquota = parseFloat(cfg.aliquotaIss || "2.00").toFixed(2);
 
   let tomaEnd = "";
   if (params.tomadorCodigoMunicipio && params.tomadorCep) {

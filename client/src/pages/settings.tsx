@@ -1032,9 +1032,22 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
   });
 
   const testMut = useMutation({
-    mutationFn: () => apiRequest("POST", "/api/nfse/testar-conexao").then(r => r.json()),
-    onSuccess: (data: any) => toast({ title: data.success ? "✓ Configuração OK" : "Erro", description: data.message || data.error }),
-    onError: () => toast({ title: "Erro de conexão", variant: "destructive" }),
+    mutationFn: async () => {
+      const r = await fetch("/api/nfse/testar-conexao", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+      });
+      return r.json();
+    },
+    onSuccess: (data: any) => {
+      if (data.success) {
+        toast({ title: "✓ Configuração OK", description: data.message });
+      } else {
+        toast({ title: "Erro na configuração", description: data.error || "Verifique os campos", variant: "destructive" });
+      }
+    },
+    onError: (err: any) => toast({ title: "Erro de conexão", description: err?.message || "Não foi possível conectar ao servidor", variant: "destructive" }),
   });
 
   async function uploadCert() {

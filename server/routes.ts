@@ -2590,11 +2590,21 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     const user = await getCurrentUser(req);
     if (!user || user.role !== "admin") return res.status(403).json({ error: "Sem permissão" });
     const settingsMap = await getSettingsMap();
+    if (settingsMap["nfse_enabled"] !== "true") {
+      return res.json({ success: false, error: "NFS-e não está habilitada. Ative o switch 'Habilitar emissão de NFS-e' e salve antes de testar." });
+    }
     const config = getNfseConfig(settingsMap);
-    if (!config) return res.status(400).json({ error: "NFS-e não configurada" });
-    if (!config.webserviceUrl) return res.status(400).json({ error: "URL do webservice não configurada" });
-    if (!config.certificadoPfxBase64) return res.status(400).json({ error: "Certificado não enviado" });
-    res.json({ success: true, message: `Configuração carregada. URL: ${config.webserviceUrl}. Certificado presente (${Math.round(config.certificadoPfxBase64.length * 0.75 / 1024)}KB). Use emissão de nota teste no ambiente de homologação para validar.` });
+    if (!config) return res.json({ success: false, error: "NFS-e não configurada corretamente." });
+    const missing: string[] = [];
+    if (!config.cnpjPrestador) missing.push("CNPJ do Prestador");
+    if (!config.inscricaoMunicipal) missing.push("Inscrição Municipal");
+    if (!config.webserviceUrl) missing.push("URL do Webservice");
+    if (!config.certificadoPfxBase64) missing.push("Certificado Digital (.pfx)");
+    if (!config.certificadoSenha) missing.push("Senha do Certificado");
+    if (missing.length > 0) {
+      return res.json({ success: false, error: `Campos obrigatórios faltando: ${missing.join(", ")}` });
+    }
+    res.json({ success: true, message: `Configuração OK! URL: ${config.webserviceUrl}. Certificado presente (${Math.round(config.certificadoPfxBase64.length * 0.75 / 1024)}KB). CNPJ: ${config.cnpjPrestador}, IM: ${config.inscricaoMunicipal}. Ambiente: ${config.ambiente}.` });
   });
 
   return httpServer;

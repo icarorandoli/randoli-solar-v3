@@ -1456,8 +1456,18 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       } catch (err) { console.error("[whatsapp] Erro ao notificar pagamento:", err); }
     })();
 
-    // Auto NFS-e emission after payment
-    if (sMap["nfse_auto_emit"] === "true") {
+    // Auto NFS-e emission after payment (check gateway filter)
+    const nfseGatewayFilter = (sMap["nfse_auto_emit_gateways"] || "").split(",").filter(Boolean);
+    const gatewayKeyMap: Record<string, string> = {
+      "Mercado Pago": "mp", "mercado_pago": "mp", "mp": "mp",
+      "PagSeguro": "pagseguro", "pagseguro": "pagseguro",
+      "Inter PIX": "inter_pix", "inter_pix": "inter_pix", "Banco Inter PIX": "inter_pix",
+      "Inter Boleto": "inter_boleto", "inter_boleto": "inter_boleto", "Banco Inter Boleto": "inter_boleto",
+      "Manual": "manual", "manual": "manual",
+    };
+    const gatewayKey = gatewayKeyMap[gatewayName] || gatewayName.toLowerCase().replace(/\s+/g, "_");
+    const gatewayMatchesNfse = nfseGatewayFilter.length === 0 || nfseGatewayFilter.includes(gatewayKey);
+    if (sMap["nfse_auto_emit"] === "true" && gatewayMatchesNfse) {
       try {
         const nfseConfig = getNfseConfig(sMap);
         if (nfseConfig) {

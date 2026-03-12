@@ -314,6 +314,7 @@ export default function SettingsPage() {
   const [showPsToken, setShowPsToken] = useState(false);
 
   const [nfseAutoEmit, setNfseAutoEmit] = useState(false);
+  const [nfseGateways, setNfseGateways] = useState<string[]>([]);
   const [paymentNextStatus, setPaymentNextStatus] = useState("projeto_tecnico");
   const [showMpToken, setShowMpToken] = useState(false);
 
@@ -367,6 +368,7 @@ export default function SettingsPage() {
     setPsToken(settings.pagseguro_token || "");
     setPsEmail(settings.pagseguro_email || "");
     setNfseAutoEmit(settings.nfse_auto_emit === "true");
+    setNfseGateways(settings.nfse_auto_emit_gateways ? settings.nfse_auto_emit_gateways.split(",").filter(Boolean) : []);
     setPaymentNextStatus(settings.payment_next_status || "projeto_tecnico");
     if (settings.login_badge_text) setLoginBadgeText(settings.login_badge_text);
     if (settings.login_headline) setLoginHeadline(settings.login_headline);
@@ -421,6 +423,7 @@ export default function SettingsPage() {
         pairs.push({ key: "pagseguro_token", value: psToken });
       }
       pairs.push({ key: "nfse_auto_emit", value: nfseAutoEmit ? "true" : "false" });
+      pairs.push({ key: "nfse_auto_emit_gateways", value: nfseGateways.join(",") });
       pairs.push({ key: "payment_next_status", value: paymentNextStatus });
       pairs.push({ key: "favicon_url", value: faviconUrl });
       pairs.push(
@@ -908,6 +911,35 @@ export default function SettingsPage() {
                       </div>
                       <Switch checked={nfseAutoEmit} onCheckedChange={setNfseAutoEmit} data-testid="switch-nfse-auto-emit" />
                     </div>
+                    {nfseAutoEmit && (
+                      <div className="mt-3 p-3 rounded-lg bg-muted/30 border border-muted/40 space-y-3">
+                        <Label className="text-sm font-semibold">Emitir NFS-e para os seguintes métodos de pagamento:</Label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {[
+                            { key: "mp", label: "Mercado Pago" },
+                            { key: "pagseguro", label: "PagSeguro" },
+                            { key: "inter_pix", label: "Banco Inter (PIX)" },
+                            { key: "inter_boleto", label: "Banco Inter (Boleto)" },
+                            { key: "manual", label: "Pagamento Manual" },
+                          ].map(gw => (
+                            <label key={gw.key} className="flex items-center gap-2 p-2 rounded border border-muted/40 bg-background cursor-pointer hover:bg-muted/20 transition-colors">
+                              <input
+                                type="checkbox"
+                                className="rounded border-muted-foreground/30 h-4 w-4"
+                                checked={nfseGateways.includes(gw.key)}
+                                onChange={e => {
+                                  if (e.target.checked) setNfseGateways(prev => [...prev, gw.key]);
+                                  else setNfseGateways(prev => prev.filter(g => g !== gw.key));
+                                }}
+                                data-testid={`checkbox-nfse-gw-${gw.key}`}
+                              />
+                              <span className="text-sm">{gw.label}</span>
+                            </label>
+                          ))}
+                        </div>
+                        <p className="text-xs text-muted-foreground">Se nenhum for selecionado, a NFS-e será emitida para todos os métodos.</p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 

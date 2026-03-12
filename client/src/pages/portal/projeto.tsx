@@ -299,6 +299,7 @@ function DocumentUploadCard({ projectId }: { projectId: string }) {
   const [docName, setDocName] = useState("");
   const [docType, setDocType] = useState("outro");
   const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const addDocMut = useMutation({
     mutationFn: (data: any) => apiRequest("POST", `/api/projects/${projectId}/documents`, data),
@@ -333,10 +334,11 @@ function DocumentUploadCard({ projectId }: { projectId: string }) {
     if (!docName) setDocName(DOC_TYPE_LABELS[docType] || file.name.replace(/\.[^.]+$/, ""));
     setUploading(true);
     await uploadFile(file);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   return (
-    <Card className="border-border/40 shadow-xl shadow-black/5 overflow-hidden rounded-3xl">
+    <Card className="border-border/40 shadow-xl shadow-black/5 rounded-3xl">
       <CardHeader className="bg-muted/30 border-b border-border/40 px-8 py-6">
         <CardTitle className="text-lg font-bold flex items-center gap-2">
           <Upload className="h-5 w-5 text-primary" />
@@ -353,7 +355,7 @@ function DocumentUploadCard({ projectId }: { projectId: string }) {
             <SelectTrigger data-testid="select-doc-type" className="h-11 rounded-xl">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="max-h-60">
               {Object.entries(DOC_TYPE_LABELS).map(([v, l]) => (
                 <SelectItem key={v} value={v}>{l}</SelectItem>
               ))}
@@ -364,25 +366,25 @@ function DocumentUploadCard({ projectId }: { projectId: string }) {
           <Label className="text-xs font-bold uppercase tracking-wider">Nome do Documento</Label>
           <Input value={docName} onChange={e => setDocName(e.target.value)} placeholder="Ex: Conta de Energia — Janeiro/2025" data-testid="input-doc-name" className="h-11 rounded-xl" />
         </div>
-        <label className="block">
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full h-11 relative rounded-xl font-bold border-dashed border-2 hover:bg-primary/5 hover:border-primary/50 transition-all"
-            disabled={uploading || addDocMut.isPending}
-            data-testid="button-upload-doc"
-          >
-            <Upload className="h-4 w-4 mr-2" />
-            {uploading || addDocMut.isPending ? "Enviando arquivo..." : "Selecionar do Dispositivo"}
-            <input
-              type="file"
-              accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-              className="absolute inset-0 opacity-0 cursor-pointer"
-              onChange={handleFile}
-              disabled={uploading || addDocMut.isPending}
-            />
-          </Button>
-        </label>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+          className="hidden"
+          onChange={handleFile}
+          disabled={uploading || addDocMut.isPending}
+        />
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full h-11 rounded-xl font-bold border-dashed border-2 hover:bg-primary/5 hover:border-primary/50 transition-all"
+          disabled={uploading || addDocMut.isPending}
+          onClick={() => fileInputRef.current?.click()}
+          data-testid="button-upload-doc"
+        >
+          <Upload className="h-4 w-4 mr-2" />
+          {uploading || addDocMut.isPending ? "Enviando arquivo..." : "Selecionar do Dispositivo"}
+        </Button>
         <p className="text-[10px] text-center text-muted-foreground font-medium uppercase tracking-widest">Formatos aceitos: PDF, JPG, PNG, DOC (Max 10MB)</p>
       </CardContent>
     </Card>

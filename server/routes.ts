@@ -2768,7 +2768,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         });
       } else {
         const errorStr = testResult.error || "";
-        const onlyTestErrors = /^(E39|E47|E52|E242|E243)\b/;
+        const onlyTestErrors = /^(E30|E39|E47|E52|E215|E242|E243|E352)\b/;
         const errorCodes = errorStr.split("; ").map(e => e.trim());
         const allTestOnly = errorCodes.every(e => onlyTestErrors.test(e));
 

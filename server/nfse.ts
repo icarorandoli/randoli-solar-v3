@@ -113,7 +113,8 @@ function buildGerarNfseEnvioXml(params: EmitirNfseParams): string {
     : `<CNPJ>${tomadorDoc.padStart(14, "0")}</CNPJ>`;
 
   const valorServico = parseFloat(params.valor.replace(",", ".")).toFixed(2);
-  const aliquota = parseFloat(cfg.aliquotaIss || "2.00").toFixed(2);
+  const isSimplesNacional = cfg.opSimpNac === "2" || cfg.opSimpNac === "3";
+  const aliquota = isSimplesNacional ? "0.00" : parseFloat(cfg.aliquotaIss || "0.00").toFixed(2);
 
   let tomaEnd = "";
   if (params.tomadorCodigoMunicipio && params.tomadorCep) {
@@ -125,7 +126,7 @@ function buildGerarNfseEnvioXml(params: EmitirNfseParams): string {
   }
   const cTribMunTag = `<cTribMun>${cfg.cTribMun}</cTribMun>`;
 
-  const dpsXml = `<GerarNfseEnvio xmlns="http://www.sped.fazenda.gov.br/nfse" xmlns:dsig="http://www.w3.org/2000/09/xmldsig#" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><DPS versao="1.01"><infDPS Id="${dpsId}"><tpAmb>${tpAmb}</tpAmb><dhEmi>${dhEmi}</dhEmi><verAplic>1.01</verAplic><serie>${cfg.serie || "1"}</serie><nDPS>${nDPS}</nDPS><dCompet>${dCompet}</dCompet><tpEmit>1</tpEmit><cLocEmi>${cLocEmi}</cLocEmi><prest><CNPJ>${cnpjPrestador}</CNPJ><IM>${imPrestador}</IM><xNome>${escapeXml(cfg.razaoSocial)}</xNome><regTrib><opSimpNac>${cfg.opSimpNac || "1"}</opSimpNac><regEspTrib>${cfg.regEspTrib || "0"}</regEspTrib></regTrib></prest><toma>${tomadorDocTag}<xNome>${escapeXml(params.tomadorNome)}</xNome>${tomaEnd}</toma><serv><locPrest><cLocPrestacao>${cLocEmi}</cLocPrestacao></locPrest><cServ><cTribNac>${cfg.cTribNac || "140601"}</cTribNac>${cTribMunTag}<xDescServ>${escapeXml(descricao)}</xDescServ><cNBS>${cfg.cNBS || "101061900"}</cNBS></cServ></serv><valores><vServPrest><vReceb>${valorServico}</vReceb><vServ>${valorServico}</vServ></vServPrest><trib><tribMun><tribISSQN>1</tribISSQN><tpRetISSQN>2</tpRetISSQN><pAliq>${aliquota}</pAliq></tribMun><totTrib><indTotTrib>0</indTotTrib></totTrib></trib></valores></infDPS></DPS></GerarNfseEnvio>`;
+  const dpsXml = `<GerarNfseEnvio xmlns="http://www.sped.fazenda.gov.br/nfse" xmlns:dsig="http://www.w3.org/2000/09/xmldsig#" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><DPS versao="1.01"><infDPS Id="${dpsId}"><tpAmb>${tpAmb}</tpAmb><dhEmi>${dhEmi}</dhEmi><verAplic>1.01</verAplic><serie>${cfg.serie || "1"}</serie><nDPS>${nDPS}</nDPS><dCompet>${dCompet}</dCompet><tpEmit>1</tpEmit><cLocEmi>${cLocEmi}</cLocEmi><prest><CNPJ>${cnpjPrestador}</CNPJ><IM>${imPrestador}</IM><xNome>${escapeXml(cfg.razaoSocial)}</xNome><regTrib><opSimpNac>${cfg.opSimpNac || "3"}</opSimpNac><regEspTrib>${cfg.regEspTrib || "0"}</regEspTrib></regTrib></prest><toma>${tomadorDocTag}<xNome>${escapeXml(params.tomadorNome)}</xNome>${tomaEnd}</toma><serv><locPrest><cLocPrestacao>${cLocEmi}</cLocPrestacao></locPrest><cServ><cTribNac>${cfg.cTribNac || "140601"}</cTribNac>${cTribMunTag}<xDescServ>${escapeXml(descricao)}</xDescServ><cNBS>${cfg.cNBS || "101061900"}</cNBS></cServ></serv><valores><vServPrest><vReceb>${valorServico}</vReceb><vServ>${valorServico}</vServ></vServPrest><trib><tribMun><tribISSQN>1</tribISSQN><tpRetISSQN>2</tpRetISSQN><pAliq>${aliquota}</pAliq></tribMun><totTrib><indTotTrib>0</indTotTrib></totTrib></trib></valores></infDPS></DPS></GerarNfseEnvio>`;
 
   return dpsXml;
 }
@@ -431,7 +432,7 @@ export function getNfseConfig(settingsMap: Record<string, string>): NfseConfig |
     cTribMun: settingsMap["nfse_ctrib_mun"] || "",
     cNBS: settingsMap["nfse_cnbs"] || "101061900",
     aliquotaIss: settingsMap["nfse_aliquota_iss"] || "2.00",
-    opSimpNac: settingsMap["nfse_op_simples_nac"] || "1",
+    opSimpNac: settingsMap["nfse_op_simples_nac"] || "3",
     regEspTrib: settingsMap["nfse_reg_esp_trib"] || "0",
     serie: settingsMap["nfse_serie_dps"] || settingsMap["nfse_serie_rps"] || "1",
     proximoDps: parseInt(settingsMap["nfse_proximo_dps"] || settingsMap["nfse_proximo_rps"] || "1"),

@@ -976,7 +976,7 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
   const [cTribMun, setCTribMun] = useState("");
   const [cNBS, setCNBS] = useState("101061900");
   const [aliquotaIss, setAliquotaIss] = useState("2.00");
-  const [opSimpNac, setOpSimpNac] = useState("1");
+  const [opSimpNac, setOpSimpNac] = useState("3");
   const [regEspTrib, setRegEspTrib] = useState("0");
   const [serieDps, setSerieDps] = useState("1");
   const [proximoDps, setProximoDps] = useState("1");
@@ -1008,7 +1008,7 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
     setCTribMun(settingsRaw.nfse_ctrib_mun || "");
     setCNBS(settingsRaw.nfse_cnbs || "101061900");
     setAliquotaIss(settingsRaw.nfse_aliquota_iss || "2.00");
-    setOpSimpNac(settingsRaw.nfse_op_simples_nac || "1");
+    setOpSimpNac(settingsRaw.nfse_op_simples_nac || "3");
     setRegEspTrib(settingsRaw.nfse_reg_esp_trib || "0");
     setSerieDps(settingsRaw.nfse_serie_dps || settingsRaw.nfse_serie_rps || "1");
     setProximoDps(settingsRaw.nfse_proximo_dps || settingsRaw.nfse_proximo_rps || "1");

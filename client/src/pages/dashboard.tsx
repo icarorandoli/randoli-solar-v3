@@ -175,7 +175,7 @@ export default function DashboardPage() {
 
   const recentProjects = projects.slice(0, 5);
 
-  const homologados = stats?.byStatus?.homologado ?? 0;
+  const homologados = (stats?.byStatus?.homologado ?? 0) + (stats?.byStatus?.finalizado ?? 0);
   const emAndamento = Object.entries(stats?.byStatus || {})
     .filter(([s]) => !["orcamento", "homologado", "cancelado", "finalizado"].includes(s))
     .reduce((sum, [, v]) => sum + v, 0);

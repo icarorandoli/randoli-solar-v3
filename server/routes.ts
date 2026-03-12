@@ -2563,13 +2563,27 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     res.json({ success: true });
   });
 
-  app.post("/api/nfse/upload-certificado", requireAuth, memUpload.single("certificado"), async (req, res) => {
-    const user = await getCurrentUser(req);
-    if (!user || user.role !== "admin") return res.status(403).json({ error: "Sem permissão" });
-    if (!req.file) return res.status(400).json({ error: "Nenhum arquivo enviado" });
-    const base64 = req.file.buffer.toString("base64");
-    await storage.updateSetting("nfse_certificado_pfx", base64);
-    res.json({ success: true, size: req.file.size, originalname: req.file.originalname });
+  app.post("/api/nfse/upload-certificado", requireAuth, (req, res, next) => {
+    memUpload.single("certificado")(req, res, (err: any) => {
+      if (err) {
+        console.error("[nfse] upload error:", err.message);
+        return res.status(400).json({ error: err.message || "Erro no upload do arquivo" });
+      }
+      next();
+    });
+  }, async (req, res) => {
+    try {
+      const user = await getCurrentUser(req);
+      if (!user || user.role !== "admin") return res.status(403).json({ error: "Sem permissão" });
+      if (!req.file) return res.status(400).json({ error: "Nenhum arquivo enviado. Selecione um arquivo .pfx primeiro." });
+      const base64 = req.file.buffer.toString("base64");
+      await storage.updateSetting("nfse_certificado_pfx", base64);
+      console.log(`[nfse] certificado uploaded: ${req.file.originalname} (${req.file.size} bytes)`);
+      res.json({ success: true, size: req.file.size, originalname: req.file.originalname });
+    } catch (err: any) {
+      console.error("[nfse] upload processing error:", err);
+      res.status(500).json({ error: "Erro ao processar certificado: " + (err.message || "erro interno") });
+    }
   });
 
   app.post("/api/nfse/testar-conexao", requireAuth, async (req, res) => {

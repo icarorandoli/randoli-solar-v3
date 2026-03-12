@@ -1016,14 +1016,27 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
     try {
       const fd = new FormData();
       fd.append("certificado", certFile);
-      const r = await fetch("/api/nfse/upload-certificado", { method: "POST", body: fd });
+      const r = await fetch("/api/nfse/upload-certificado", {
+        method: "POST",
+        body: fd,
+        credentials: "include",
+      });
+      if (!r.ok) {
+        const text = await r.text();
+        let msg = `HTTP ${r.status}`;
+        try { const j = JSON.parse(text); msg = j.error || msg; } catch {}
+        toast({ title: "Erro ao enviar certificado", description: msg, variant: "destructive" });
+        return;
+      }
       const data = await r.json();
       if (data.success) {
         setCertName(`${certFile.name} (${Math.round((data.size || 0) / 1024)}KB) ✓`);
         toast({ title: "Certificado enviado com sucesso!" });
       } else {
-        toast({ title: "Erro ao enviar", description: data.error, variant: "destructive" });
+        toast({ title: "Erro ao enviar", description: data.error || "Erro desconhecido", variant: "destructive" });
       }
+    } catch (err: any) {
+      toast({ title: "Erro ao enviar certificado", description: err?.message || "Falha de conexão", variant: "destructive" });
     } finally {
       setUploadingCert(false);
     }

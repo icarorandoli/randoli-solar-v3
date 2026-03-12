@@ -1140,10 +1140,7 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Ambiente</Label>
-              <Select value={ambiente} onValueChange={v => {
-                setAmbiente(v);
-                setWebserviceUrl("https://sefin.nfse.gov.br/sefinnacional");
-              }}>
+              <Select value={ambiente} onValueChange={v => setAmbiente(v)}>
                 <SelectTrigger data-testid="select-nfse-ambiente"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="homologacao">Homologação (Testes)</SelectItem>
@@ -1153,8 +1150,18 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
             </div>
             <div className="space-y-2">
               <Label>URL do Webservice (opcional)</Label>
-              <Input value={webserviceUrl} onChange={e => setWebserviceUrl(e.target.value)} placeholder="Auto-detectado pelo município e ambiente" data-testid="input-nfse-webservice-url" />
-              <p className="text-[10px] text-muted-foreground">Deixe vazio para usar URL padrão COPLAN. Prod: gp.srv.br | Homol: coplan.inf.br</p>
+              <Input value={webserviceUrl} onChange={e => setWebserviceUrl(e.target.value)} placeholder={ambiente === "producao" ? `https://gp.srv.br/tributario/${municipioNome || "sinop"}/anfse_ws` : `https://coplan.inf.br/tributario/${municipioNome || "sinop"}/anfse_ws`} data-testid="input-nfse-webservice-url" />
+              <p className="text-[10px] text-muted-foreground">{`Deixe vazio para auto-detectar. Produção: https://gp.srv.br/tributario/${municipioNome || "sinop"}/anfse_ws | Homologação: https://coplan.inf.br/tributario/${municipioNome || "sinop"}/anfse_ws`}</p>
+              <div className="flex flex-col gap-1 mt-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-muted-foreground font-medium">Produção:</span>
+                  <button type="button" className="text-[10px] text-primary hover:underline cursor-pointer bg-transparent border-none p-0" data-testid="btn-copy-url-producao" onClick={() => { const url = `https://gp.srv.br/tributario/${municipioNome || "sinop"}/anfse_ws`; navigator.clipboard.writeText(url).then(() => toast({ title: "URL copiada", description: "URL de produção copiada e preenchida." })).catch(() => {}); setWebserviceUrl(url); }}>{`https://gp.srv.br/tributario/${municipioNome || "sinop"}/anfse_ws`}</button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-muted-foreground font-medium">Homologação:</span>
+                  <button type="button" className="text-[10px] text-primary hover:underline cursor-pointer bg-transparent border-none p-0" data-testid="btn-copy-url-homologacao" onClick={() => { const url = `https://coplan.inf.br/tributario/${municipioNome || "sinop"}/anfse_ws`; navigator.clipboard.writeText(url).then(() => toast({ title: "URL copiada", description: "URL de homologação copiada e preenchida." })).catch(() => {}); setWebserviceUrl(url); }}>{`https://coplan.inf.br/tributario/${municipioNome || "sinop"}/anfse_ws`}</button>
+                </div>
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Nome do Município (para URL)</Label>

@@ -370,7 +370,9 @@ function DocumentUploadCard({ projectId }: { projectId: string }) {
           ref={fileInputRef}
           type="file"
           accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-          className="hidden"
+          style={{ position: "fixed", top: 0, left: 0, width: "1px", height: "1px", opacity: 0, pointerEvents: "none" }}
+          tabIndex={-1}
+          aria-hidden="true"
           onChange={handleFile}
           disabled={uploading || addDocMut.isPending}
         />

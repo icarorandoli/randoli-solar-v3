@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -988,7 +988,8 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
   const [uploadingCert, setUploadingCert] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  if (settingsRaw && !initialized) {
+  useEffect(() => {
+    if (!settingsRaw || initialized) return;
     setNfseEnabled(settingsRaw.nfse_enabled === "true");
     setAmbiente(settingsRaw.nfse_ambiente || "homologacao");
     setWebserviceUrl(settingsRaw.nfse_webservice_url || "");
@@ -1016,7 +1017,7 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
     setInfoComplementares(settingsRaw.nfse_informacoes_complementares || "");
     if (settingsRaw.nfse_certificado_pfx) setCertName("Certificado carregado ✓");
     setInitialized(true);
-  }
+  }, [settingsRaw, initialized]);
 
   const saveMut = useMutation({
     mutationFn: async () => {

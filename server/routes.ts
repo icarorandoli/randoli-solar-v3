@@ -17,7 +17,7 @@ import { sendStatusEmail, sendTestEmail, sendPasswordResetEmail, sendDocumentEma
 import { createPaymentPreference, createPixPayment, getPaymentInfo, getMerchantOrder, verifyWebhookSignature } from "./mercadopago";
 import { createPagSeguroPixCharge, getPagSeguroOrderInfo, verifyPagSeguroWebhookSignature, extractPagSeguroPaymentStatus } from "./pagseguro";
 import { testWhatsAppConnection, type WhatsAppConfig, sendWhatsAppNewProjectNotification, sendWhatsAppAdminCreatedProjectNotification, sendWhatsAppStatusNotification, sendWhatsAppTimelineNotification, sendWhatsAppDocumentNotification, sendWhatsAppPaymentNotification } from "./whatsapp";
-import { emitirNfse, getNfseConfig } from "./nfse";
+import { emitirNfse, getNfseConfig, lookupMunicipioIbge } from "./nfse";
 import { registerUploadRoutes } from "./upload";
 import { calculateSystemSize, phaseFromConsumption } from "./ai/solar-calculator";
 import { dimensionSystem } from "./ai/solar-dimensioning";
@@ -960,6 +960,10 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
                 tomadorNome: client?.name || "",
                 tomadorCpfCnpj: client?.cpfCnpj || "",
               });
+              const autoFinCep = client?.cep || proj.cep || undefined;
+              const autoFinCidade = client?.cidade || proj.cidade || undefined;
+              const autoFinUf = client?.estado || proj.estado || undefined;
+              const autoFinIbge = await lookupMunicipioIbge(autoFinCep, autoFinCidade, autoFinUf) || undefined;
               const result = await emitirNfse({
                 config: nfseConfig,
                 numeroDps: String(proximoDps),
@@ -970,9 +974,10 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
                 tomadorLogradouro: client?.rua || proj.rua || undefined,
                 tomadorNumero: client?.numero || proj.numero || undefined,
                 tomadorBairro: client?.bairro || proj.bairro || undefined,
-                tomadorCep: client?.cep || proj.cep || undefined,
-                tomadorCidade: client?.cidade || proj.cidade || undefined,
-                tomadorUf: client?.estado || proj.estado || undefined,
+                tomadorCep: autoFinCep,
+                tomadorCidade: autoFinCidade,
+                tomadorUf: autoFinUf,
+                tomadorCodigoMunicipio: autoFinIbge,
                 descricaoServico: nfseConfig.descricaoServico,
               });
               if (result.success) {
@@ -1546,6 +1551,10 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             tomadorNome: client?.name || "",
             tomadorCpfCnpj: client?.cpfCnpj || "",
           });
+          const payWbkCep = client?.cep || project.cep || undefined;
+          const payWbkCidade = client?.cidade || project.cidade || undefined;
+          const payWbkUf = client?.estado || project.estado || undefined;
+          const payWbkIbge = await lookupMunicipioIbge(payWbkCep, payWbkCidade, payWbkUf) || undefined;
           const result = await emitirNfse({
             config: nfseConfig,
             numeroDps: String(proximoDps),
@@ -1556,9 +1565,10 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             tomadorLogradouro: client?.rua || project.rua || undefined,
             tomadorNumero: client?.numero || project.numero || undefined,
             tomadorBairro: client?.bairro || project.bairro || undefined,
-            tomadorCep: client?.cep || project.cep || undefined,
-            tomadorCidade: client?.cidade || project.cidade || undefined,
-            tomadorUf: client?.estado || project.estado || undefined,
+            tomadorCep: payWbkCep,
+            tomadorCidade: payWbkCidade,
+            tomadorUf: payWbkUf,
+            tomadorCodigoMunicipio: payWbkIbge,
             descricaoServico: nfseConfig.descricaoServico,
           });
           if (result.success) {
@@ -2577,6 +2587,11 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         tomadorCpfCnpj: client?.cpfCnpj || req.body.tomadorCpfCnpj || "",
       });
 
+      const tomadorCep = client?.cep || project.cep || undefined;
+      const tomadorCidade = client?.cidade || project.cidade || undefined;
+      const tomadorUf = client?.estado || project.estado || undefined;
+      const tomadorCodigoMunicipio = await lookupMunicipioIbge(tomadorCep, tomadorCidade, tomadorUf) || undefined;
+
       const result = await emitirNfse({
         config,
         numeroDps: String(proximoDps),
@@ -2587,9 +2602,10 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         tomadorLogradouro: client?.rua || project.rua || undefined,
         tomadorNumero: client?.numero || project.numero || undefined,
         tomadorBairro: client?.bairro || project.bairro || undefined,
-        tomadorCep: client?.cep || project.cep || undefined,
-        tomadorCidade: client?.cidade || project.cidade || undefined,
-        tomadorUf: client?.estado || project.estado || undefined,
+        tomadorCep,
+        tomadorCidade,
+        tomadorUf,
+        tomadorCodigoMunicipio,
         descricaoServico: req.body.descricaoServico || config.descricaoServico,
       });
 
@@ -2639,6 +2655,10 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const client = project.client;
       await storage.updateNfseNota(nota.id, { status: "pendente", errorMessage: undefined });
 
+      const reemitCep = client?.cep || project.cep || undefined;
+      const reemitCidade = client?.cidade || project.cidade || undefined;
+      const reemitUf = client?.estado || project.estado || undefined;
+      const reemitIbge = await lookupMunicipioIbge(reemitCep, reemitCidade, reemitUf) || undefined;
       const result = await emitirNfse({
         config,
         numeroDps: nota.numeroRps,
@@ -2649,9 +2669,10 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         tomadorLogradouro: client?.rua || project.rua || undefined,
         tomadorNumero: client?.numero || project.numero || undefined,
         tomadorBairro: client?.bairro || project.bairro || undefined,
-        tomadorCep: client?.cep || project.cep || undefined,
-        tomadorCidade: client?.cidade || project.cidade || undefined,
-        tomadorUf: client?.estado || project.estado || undefined,
+        tomadorCep: reemitCep,
+        tomadorCidade: reemitCidade,
+        tomadorUf: reemitUf,
+        tomadorCodigoMunicipio: reemitIbge,
         descricaoServico: config.descricaoServico,
       });
 

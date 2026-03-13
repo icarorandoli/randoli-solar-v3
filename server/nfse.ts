@@ -426,6 +426,55 @@ export async function emitirNfse(params: EmitirNfseParams): Promise<NfseResult> 
   }
 }
 
+export async function lookupMunicipioIbge(
+  cep?: string,
+  cidade?: string,
+  uf?: string
+): Promise<string | null> {
+  if (cep) {
+    const cleanCep = cep.replace(/\D/g, "");
+    if (cleanCep.length === 8) {
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`, { signal: AbortSignal.timeout(5000) });
+        if (res.ok) {
+          const data = await res.json() as any;
+          if (data.ibge && !data.erro) {
+            console.log(`[nfse-ibge] CEP ${cleanCep} → IBGE ${data.ibge} (${data.localidade}/${data.uf})`);
+            return String(data.ibge);
+          }
+        }
+      } catch (e: any) {
+        console.warn(`[nfse-ibge] ViaCEP lookup failed for ${cleanCep}: ${e?.message}`);
+      }
+    }
+  }
+
+  if (cidade) {
+    try {
+      const endpoint = uf
+        ? `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${encodeURIComponent(uf.trim().toUpperCase())}/municipios`
+        : `https://servicodados.ibge.gov.br/api/v1/localidades/municipios`;
+      const res = await fetch(endpoint, { signal: AbortSignal.timeout(5000) });
+      if (res.ok) {
+        const municipios = await res.json() as Array<{ id: number; nome: string }>;
+        const normalize = (s: string) =>
+          s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+        const normalizedCidade = normalize(cidade);
+        const found = municipios.find(m => normalize(m.nome) === normalizedCidade);
+        if (found) {
+          console.log(`[nfse-ibge] Cidade "${cidade}"/${uf} → IBGE ${found.id}`);
+          return String(found.id);
+        }
+        console.warn(`[nfse-ibge] Cidade "${cidade}"/${uf} não encontrada na API IBGE`);
+      }
+    } catch (e: any) {
+      console.warn(`[nfse-ibge] IBGE API lookup failed for "${cidade}": ${e?.message}`);
+    }
+  }
+
+  return null;
+}
+
 export function getNfseConfig(settingsMap: Record<string, string>): NfseConfig | null {
   if (settingsMap["nfse_enabled"] !== "true") return null;
   return {

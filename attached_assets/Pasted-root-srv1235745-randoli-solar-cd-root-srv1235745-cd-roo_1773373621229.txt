@@ -1,0 +1,68 @@
+root@srv1235745:~/randoli-solar# cd
+root@srv1235745:~# cd /root/randoli-solar \
+>   && git fetch origin \
+>   && git reset --hard origin/main \
+>   && npm install \
+>   && npm run build \
+>   && pm2 restart all
+HEAD is now at 0172648 fix: opSimpNac=1, vReceb e pAliq no XML conforme exemplo COPLAN Sinop
+
+up to date, audited 654 packages in 2s
+
+101 packages are looking for funding
+  run `npm fund` for details
+
+8 vulnerabilities (6 low, 2 high)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+
+> rest-express@1.0.0 build
+> tsx script/build.ts
+
+building client...
+vite v7.3.0 building client environment for production...
+transforming (4) src/App.tsx
+A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.
+✓ 2408 modules transformed.
+../dist/public/index.html                     1.34 kB │ gzip:   0.60 kB
+../dist/public/assets/index-BaUpX6hp.css    132.91 kB │ gzip:  19.78 kB
+../dist/public/assets/index-a4GXCMK6.js   1,427.11 kB │ gzip: 384.51 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 9.26s
+building server...
+
+  dist/index.cjs  167.5kb
+
+⚡ Done in 36ms
+copying session table SQL...
+Use --update-env to update environment variables
+[PM2] Applying action restartProcessId on app [all](ids: [ 0, 1 ])
+[PM2] [randoli](0) ✓
+[PM2] [randoli-crm](1) ✓
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ randoli            │ fork     │ 41   │ online    │ 0%       │ 57.5mb   │
+│ 1  │ randoli-crm        │ cluster  │ 41   │ online    │ 0%       │ 39.5mb   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+root@srv1235745:~/randoli-solar# node -e "
+> const { Pool } = require('pg');
+> const pool = new Pool({ connectionString: 'postgresql://randoli:Icba281287%40@localhost:5432/randoli_solar' });
+> pool.query(\"UPDATE site_settings SET value='140601' WHERE key='nfse_ctrib_nac'\")
+>   .then(() => pool.query(\"UPDATE site_settings SET value='101061900' WHERE key='nfse_cnbs'\"))
+>   .then(() => pool.query(\"UPDATE site_settings SET value='' WHERE key='nfse_ctrib_mun'\"))
+>   .then(() => pool.query(\"UPDATE site_settings SET value='' WHERE key='nfse_webservice_url'\"))
+>   .then(() => { console.log('Banco OK'); pool.end(); });
+> "
+Banco OK
+root@srv1235745:~/randoli-solar#

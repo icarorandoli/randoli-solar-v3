@@ -132,7 +132,11 @@ function buildGerarNfseEnvioXml(params: EmitirNfseParams): string {
   const opSimpNac = cfg.opSimpNac || "3";
   const regEspTrib = cfg.regEspTrib || "0";
   const regApTribSN = cfg.regApTribSN || "1";
-  const dpsXml = `<GerarNfseEnvio xmlns="http://www.sped.fazenda.gov.br/nfse" xmlns:dsig="http://www.w3.org/2000/09/xmldsig#" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><DPS versao="1.01"><infDPS Id="${dpsId}"><tpAmb>${tpAmb}</tpAmb><dhEmi>${dhEmi}</dhEmi><verAplic>1.01</verAplic><serie>${cfg.serie || "1"}</serie><nDPS>${nDPS}</nDPS><dCompet>${dCompet}</dCompet><tpEmit>1</tpEmit><cLocEmi>${cLocEmi}</cLocEmi><prest><CNPJ>${cnpjPrestador}</CNPJ><IM>${imPrestador}</IM><email>${escapeXml(cfg.emailPrestador)}</email><regTrib><opSimpNac>${opSimpNac}</opSimpNac><regApTribSN>${regApTribSN}</regApTribSN><regEspTrib>${regEspTrib}</regEspTrib></regTrib></prest><toma>${tomadorDocTag}<xNome>${escapeXml(params.tomadorNome)}</xNome>${tomaEnd}</toma><serv><locPrest><cLocPrestacao>${cLocEmi}</cLocPrestacao></locPrest><cServ><cTribNac>${cfg.cTribNac || "140601"}</cTribNac>${cTribMunTag}<xDescServ>${escapeXml(descricao)}</xDescServ><cNBS>${cfg.cNBS || "101061900"}</cNBS></cServ></serv><valores><vServPrest><vReceb>${valorServico}</vReceb><vServ>${valorServico}</vServ></vServPrest><trib><tribMun><tribISSQN>1</tribISSQN><tpRetISSQN>2</tpRetISSQN><pAliq>${aliquotaIss}</pAliq></tribMun><totTrib>${totTribContent}</totTrib></trib></valores>${xInfCompTag}</infDPS></DPS></GerarNfseEnvio>`;
+  // Para empresas do Simples Nacional (opSimpNac=2 MEI, 3 ME/EPP), o ISS é apurado via DAS
+  // A NFS-e de produção confirmada não inclui <pAliq> para SN — somente para Não-Optantes
+  const isSimplesNacional = opSimpNac === "2" || opSimpNac === "3";
+  const pAliqTag = isSimplesNacional ? "" : `<pAliq>${aliquotaIss}</pAliq>`;
+  const dpsXml = `<GerarNfseEnvio xmlns="http://www.sped.fazenda.gov.br/nfse" xmlns:dsig="http://www.w3.org/2000/09/xmldsig#" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><DPS versao="1.01"><infDPS Id="${dpsId}"><tpAmb>${tpAmb}</tpAmb><dhEmi>${dhEmi}</dhEmi><verAplic>1.01</verAplic><serie>${cfg.serie || "1"}</serie><nDPS>${nDPS}</nDPS><dCompet>${dCompet}</dCompet><tpEmit>1</tpEmit><cLocEmi>${cLocEmi}</cLocEmi><prest><CNPJ>${cnpjPrestador}</CNPJ><IM>${imPrestador}</IM><email>${escapeXml(cfg.emailPrestador)}</email><regTrib><opSimpNac>${opSimpNac}</opSimpNac><regApTribSN>${regApTribSN}</regApTribSN><regEspTrib>${regEspTrib}</regEspTrib></regTrib></prest><toma>${tomadorDocTag}<xNome>${escapeXml(params.tomadorNome)}</xNome>${tomaEnd}</toma><serv><locPrest><cLocPrestacao>${cLocEmi}</cLocPrestacao></locPrest><cServ><cTribNac>${cfg.cTribNac || "140601"}</cTribNac>${cTribMunTag}<xDescServ>${escapeXml(descricao)}</xDescServ><cNBS>${cfg.cNBS || "101061900"}</cNBS></cServ></serv><valores><vServPrest><vReceb>${valorServico}</vReceb><vServ>${valorServico}</vServ></vServPrest><trib><tribMun><tribISSQN>1</tribISSQN><tpRetISSQN>2</tpRetISSQN>${pAliqTag}</tribMun><totTrib>${totTribContent}</totTrib></trib></valores>${xInfCompTag}</infDPS></DPS></GerarNfseEnvio>`;
 
   return dpsXml;
 }
@@ -239,7 +243,8 @@ function makeHttpsRequest(
   urlStr: string,
   body: string,
   pfxBuffer: Buffer,
-  passphrase: string
+  passphrase: string,
+  producao: boolean
 ): Promise<{ statusCode: number; body: string }> {
   return new Promise((resolve, reject) => {
     const url = new URL(urlStr);
@@ -267,7 +272,7 @@ function makeHttpsRequest(
       method: "POST",
       headers,
       ...tlsOptions,
-      rejectUnauthorized: false,
+      rejectUnauthorized: producao,
     };
 
     const req = https.request(options, (res) => {
@@ -399,7 +404,8 @@ export async function emitirNfse(params: EmitirNfseParams): Promise<NfseResult> 
       wsUrl,
       soapEnvelope,
       pfxBuffer,
-      config.certificadoSenha
+      config.certificadoSenha,
+      config.ambiente === "producao"
     );
 
     console.log(`[nfse-coplan] HTTP ${response.statusCode} - Resposta: ${response.body.slice(0, 2000)}`);

@@ -121,8 +121,6 @@ function buildGerarNfseEnvioXml(params: EmitirNfseParams): string {
 
   const cTribMunTag = cfg.cTribMun ? `<cTribMun>${cfg.cTribMun}</cTribMun>` : "";
 
-  const isSimplesNacional = cfg.opSimpNac === "2" || cfg.opSimpNac === "3";
-
   let xInfCompTag = "";
   if (cfg.informacoesComplementares && cfg.informacoesComplementares.trim()) {
     xInfCompTag = `<xInfComp>${escapeXml(cfg.informacoesComplementares.trim())}</xInfComp>`;
@@ -130,7 +128,7 @@ function buildGerarNfseEnvioXml(params: EmitirNfseParams): string {
 
   const totTribContent = `<indTotTrib>0</indTotTrib>`;
 
-  const dpsXml = `<GerarNfseEnvio xmlns="http://www.sped.fazenda.gov.br/nfse" xmlns:dsig="http://www.w3.org/2000/09/xmldsig#" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><DPS versao="1.01"><infDPS Id="${dpsId}"><tpAmb>${tpAmb}</tpAmb><dhEmi>${dhEmi}</dhEmi><verAplic>1.01</verAplic><serie>${cfg.serie || "1"}</serie><nDPS>${nDPS}</nDPS><dCompet>${dCompet}</dCompet><tpEmit>1</tpEmit><cLocEmi>${cLocEmi}</cLocEmi><prest><CNPJ>${cnpjPrestador}</CNPJ><IM>${imPrestador}</IM><xNome>${escapeXml(cfg.razaoSocial)}</xNome><regTrib><opSimpNac>${cfg.opSimpNac || "3"}</opSimpNac>${isSimplesNacional && cfg.regApTribSN ? `<regApTribSN>${cfg.regApTribSN}</regApTribSN>` : ""}<regEspTrib>${cfg.regEspTrib || "0"}</regEspTrib></regTrib></prest><toma>${tomadorDocTag}<xNome>${escapeXml(params.tomadorNome)}</xNome>${tomaEnd}</toma><serv><locPrest><cLocPrestacao>${cLocEmi}</cLocPrestacao></locPrest><cServ><cTribNac>${cfg.cTribNac || "140601"}</cTribNac>${cTribMunTag}<xDescServ>${escapeXml(descricao)}</xDescServ><cNBS>${cfg.cNBS || "101061900"}</cNBS></cServ></serv><valores><vServPrest><vServ>${valorServico}</vServ></vServPrest><trib><tribMun><tribISSQN>1</tribISSQN><tpRetISSQN>2</tpRetISSQN></tribMun><totTrib>${totTribContent}</totTrib></trib></valores>${xInfCompTag}</infDPS></DPS></GerarNfseEnvio>`;
+  const dpsXml = `<GerarNfseEnvio xmlns="http://www.sped.fazenda.gov.br/nfse" xmlns:dsig="http://www.w3.org/2000/09/xmldsig#" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><DPS versao="1.01"><infDPS Id="${dpsId}"><tpAmb>${tpAmb}</tpAmb><dhEmi>${dhEmi}</dhEmi><verAplic>1.01</verAplic><serie>${cfg.serie || "1"}</serie><nDPS>${nDPS}</nDPS><dCompet>${dCompet}</dCompet><tpEmit>1</tpEmit><cLocEmi>${cLocEmi}</cLocEmi><prest><CNPJ>${cnpjPrestador}</CNPJ><IM>${imPrestador}</IM><xNome>${escapeXml(cfg.razaoSocial)}</xNome><regTrib><opSimpNac>${cfg.opSimpNac || "3"}</opSimpNac><regEspTrib>${cfg.regEspTrib || "0"}</regEspTrib></regTrib></prest><toma>${tomadorDocTag}<xNome>${escapeXml(params.tomadorNome)}</xNome>${tomaEnd}</toma><serv><locPrest><cLocPrestacao>${cLocEmi}</cLocPrestacao></locPrest><cServ><cTribNac>${cfg.cTribNac || "140601"}</cTribNac>${cTribMunTag}<xDescServ>${escapeXml(descricao)}</xDescServ><cNBS>${cfg.cNBS || "101061900"}</cNBS></cServ></serv><valores><vServPrest><vServ>${valorServico}</vServ></vServPrest><trib><tribMun><tribISSQN>1</tribISSQN><tpRetISSQN>2</tpRetISSQN></tribMun><totTrib>${totTribContent}</totTrib></trib></valores>${xInfCompTag}</infDPS></DPS></GerarNfseEnvio>`;
 
   return dpsXml;
 }

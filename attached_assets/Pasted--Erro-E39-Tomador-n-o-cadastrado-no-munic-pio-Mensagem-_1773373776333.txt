@@ -1,0 +1,43 @@
+🔴 Erro E39 — Tomador não cadastrado no município
+Mensagem: "O tomador do serviço não foi encontrado na base de dados do município, não sendo permitida a retenção."
+Causa: O CNPJ/Inscrição Municipal do tomador (cliente) não existe no cadastro da prefeitura de Sinop. Por isso ela não permite retenção de ISSQN.
+Correção: No XML, altere o campo tpRetISSQN de 1 para 2:
+xml<!-- ANTES (com retenção - causa o erro) -->
+<tpRetISSQN>1</tpRetISSQN>
+
+<!-- DEPOIS (sem retenção - correto para tomador de fora) -->
+<tpRetISSQN>2</tpRetISSQN>
+
+🔴 Erro E188 — Regime Especial de Tributação inválido
+Mensagem: "Quando se tratar de empresa com Regime Especial de Tributação informar 2 para MEI do simples nacional e 3 para Empresas com ME ou EPP do simples nacional."
+Causa: No XML de exemplo, opSimpNac está como 1 (optante do Simples Nacional), mas regEspTrib está como 0. Isso é contraditório.
+Correção: Ajuste regEspTrib de acordo com o porte da empresa:
+xml<regTrib>
+  <opSimpNac>1</opSimpNac>
+
+  <!-- Se for MEI: -->
+  <regEspTrib>2</regEspTrib>
+
+  <!-- Se for ME ou EPP: -->
+  <regEspTrib>3</regEspTrib>
+</regTrib>
+
+✅ Resumo das correções no XML
+CampoValor atualValor corretotpRetISSQN12 (sem retenção)regEspTrib02 (MEI) ou 3 (ME/EPP)
+
+A empresa ICARO RANDOLI E SILVA LTDA com inscrição 01851670122 — você sabe se ela é MEI ou ME/EPP? Isso define qual valor usar no regEspTrib. Com isso a nota deve passar sem erros.a empresa é ltda23:49Analisou regime tributário e classificação da empresa LTDAAnalisou regime tributário e classificação da empresa LTDASe é LTDA comum (Lucro Presumido ou Lucro Real, fora do Simples Nacional), a correção é diferente:
+
+✅ Corrija o regTrib assim:
+xml<regTrib>
+  <opSimpNac>0</opSimpNac>   <!-- 0 = NÃO optante do Simples -->
+  <regEspTrib>0</regEspTrib>  <!-- 0 = Nenhum regime especial -->
+</regTrib>
+No XML de exemplo estava opSimpNac>1 (optante do Simples), o que provavelmente não é o caso de uma LTDA padrão — e isso gerava o conflito com o regEspTrib>0.
+
+Resumo final das duas correções:
+CampoAntesDepoistpRetISSQN12opSimpNac10regEspTrib00
+
+
+⚠️ Exceção: Se a LTDA for enquadrada como EPP no Simples Nacional (receita até R$ 4,8M/ano), aí seria opSimpNac>1 + regEspTrib>3. Mas para uma LTDA comum, opSimpNac>0 resolve.
+
+Tenta re-emitir com essas alterações e me conta o retorno!

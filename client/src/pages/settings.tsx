@@ -1019,6 +1019,7 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
   const [cNBS, setCNBS] = useState("114061100");
   const [aliquotaIss, setAliquotaIss] = useState("2.00");
   const [opSimpNac, setOpSimpNac] = useState("3");
+  const [regApTribSN, setRegApTribSN] = useState("1");
   const [regEspTrib, setRegEspTrib] = useState("0");
   const [tpRetIssqn, setTpRetIssqn] = useState("2");
   const [serieDps, setSerieDps] = useState("1");
@@ -1053,6 +1054,7 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
     setCNBS(settingsRaw.nfse_cnbs || "101061900");
     setAliquotaIss(settingsRaw.nfse_aliquota_iss || "2.00");
     setOpSimpNac(settingsRaw.nfse_op_simples_nac || "3");
+    setRegApTribSN(settingsRaw.nfse_reg_ap_trib_sn || "1");
     setRegEspTrib(settingsRaw.nfse_reg_esp_trib || "0");
     setTpRetIssqn(settingsRaw.nfse_tp_ret_issqn || "2");
     setSerieDps(settingsRaw.nfse_serie_dps || settingsRaw.nfse_serie_rps || "1");
@@ -1086,6 +1088,7 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
         { key: "nfse_cnbs", value: cNBS },
         { key: "nfse_aliquota_iss", value: aliquotaIss },
         { key: "nfse_op_simples_nac", value: opSimpNac },
+        { key: "nfse_reg_ap_trib_sn", value: regApTribSN },
         { key: "nfse_reg_esp_trib", value: regEspTrib },
         { key: "nfse_tp_ret_issqn", value: tpRetIssqn },
         { key: "nfse_serie_dps", value: serieDps },
@@ -1300,6 +1303,18 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
                   <SelectItem value="3">3 — ME/EPP</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Porte no Simples (regApTribSN)</Label>
+              <Select value={regApTribSN} onValueChange={setRegApTribSN}>
+                <SelectTrigger data-testid="select-nfse-reg-ap-trib-sn"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">1 — MEI</SelectItem>
+                  <SelectItem value="2">2 — ME (até R$360k/ano)</SelectItem>
+                  <SelectItem value="3">3 — EPP (até R$4,8M/ano)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">Porte da empresa no Simples Nacional. ME: faturamento até R$360k/ano. EPP: até R$4,8M/ano.</p>
             </div>
             <div className="space-y-2">
               <Label>Regime Especial de Tributação (regEspTrib)</Label>

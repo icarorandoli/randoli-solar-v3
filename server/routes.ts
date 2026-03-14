@@ -94,6 +94,12 @@ async function getWhatsAppConfig(): Promise<WhatsAppConfig> {
     apiUrl: map["whatsapp_api_url"] || "",
     apiKey: map["whatsapp_api_key"] || "",
     instanceName: map["whatsapp_instance_name"] || "",
+    notifyNovoProjeto: map["whatsapp_notify_novo_projeto"] !== "false",
+    notifyStatus: map["whatsapp_notify_status"] !== "false",
+    notifyDocumento: map["whatsapp_notify_documento"] === "true",
+    notifyTimeline: map["whatsapp_notify_timeline"] === "true",
+    notifyPagamento: map["whatsapp_notify_pagamento"] !== "false",
+    cooldownMinutos: parseInt(map["whatsapp_cooldown_minutos"] || "10"),
   };
 }
 

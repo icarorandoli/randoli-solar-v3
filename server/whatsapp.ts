@@ -3,9 +3,35 @@ export interface WhatsAppConfig {
   apiUrl: string;
   apiKey: string;
   instanceName: string;
+  notifyNovoProjeto: boolean;
+  notifyStatus: boolean;
+  notifyDocumento: boolean;
+  notifyTimeline: boolean;
+  notifyPagamento: boolean;
+  cooldownMinutos: number;
 }
 
-async function sendEvolutionMessage(config: WhatsAppConfig, phone: string, text: string): Promise<boolean> {
+const rateMap = new Map<string, number>();
+
+function checkRateLimit(phone: string, eventType: string, cooldownMs: number): boolean {
+  if (cooldownMs <= 0) return true;
+  const key = `${phone}:${eventType}`;
+  const lastSent = rateMap.get(key) || 0;
+  const now = Date.now();
+  if (now - lastSent < cooldownMs) {
+    console.log(`[whatsapp] Rate-limit: ${phone} (${eventType}) bloqueado por cooldown (${Math.round((cooldownMs - (now - lastSent)) / 1000)}s restantes)`);
+    return false;
+  }
+  rateMap.set(key, now);
+  return true;
+}
+
+async function sendEvolutionMessage(
+  config: WhatsAppConfig,
+  phone: string,
+  text: string,
+  eventType: string
+): Promise<boolean> {
   if (!config.enabled || !config.apiUrl || !config.apiKey || !config.instanceName) {
     return false;
   }
@@ -14,6 +40,9 @@ async function sendEvolutionMessage(config: WhatsAppConfig, phone: string, text:
   if (digits.length < 10) return false;
 
   const number = digits.startsWith("55") ? digits : `55${digits}`;
+  const cooldownMs = (config.cooldownMinutos || 0) * 60 * 1000;
+
+  if (!checkRateLimit(number, eventType, cooldownMs)) return false;
 
   const url = `${config.apiUrl.replace(/\/+$/, "")}/message/sendText/${config.instanceName}`;
 
@@ -36,7 +65,7 @@ async function sendEvolutionMessage(config: WhatsAppConfig, phone: string, text:
       return false;
     }
 
-    console.log(`[whatsapp] Mensagem enviada para ${number}`);
+    console.log(`[whatsapp] Mensagem enviada para ${number} (evento: ${eventType})`);
     return true;
   } catch (err: any) {
     console.error(`[whatsapp] Falha na requisição: ${err.message}`);
@@ -61,15 +90,15 @@ export async function sendWhatsAppStatusNotification({
   newStatus: string;
   changedBy: string;
 }): Promise<boolean> {
+  if (!config.notifyStatus) return false;
   const text =
     `🔔 *Atualização de Projeto*\n\n` +
     `Olá, ${integradorName}!\n\n` +
-    `O projeto *${projectTitle}* (${ticketNumber}) foi atualizado.\n\n` +
-    `📋 *Novo status:* ${newStatus}\n` +
-    `👤 *Alterado por:* ${changedBy}\n\n` +
+    `O projeto *${projectTitle}* (${ticketNumber}) teve seu status atualizado.\n\n` +
+    `📋 *Novo status:* ${newStatus}\n\n` +
     `Acesse o portal para mais detalhes.`;
 
-  return sendEvolutionMessage(config, phone, text);
+  return sendEvolutionMessage(config, phone, text, `status:${ticketNumber}`);
 }
 
 export async function sendWhatsAppNewProjectNotification({
@@ -89,15 +118,16 @@ export async function sendWhatsAppNewProjectNotification({
   ticketNumber: string;
   potencia?: string;
 }): Promise<boolean> {
+  if (!config.notifyNovoProjeto) return false;
   const text =
     `📌 *Novo Projeto Cadastrado*\n\n` +
     `${adminName}, um novo projeto foi cadastrado pelo integrador *${integradorName}*.\n\n` +
     `📋 *Projeto:* ${projectTitle}\n` +
     `🔖 *Ticket:* ${ticketNumber}\n` +
     (potencia ? `⚡ *Potência:* ${potencia} kWp\n` : ``) +
-    `\nAcesse o painel administrativo para revisar.`;
+    `\nAcesse o painel para revisar.`;
 
-  return sendEvolutionMessage(config, phone, text);
+  return sendEvolutionMessage(config, phone, text, `novo_projeto:${ticketNumber}`);
 }
 
 export async function sendWhatsAppAdminCreatedProjectNotification({
@@ -113,6 +143,7 @@ export async function sendWhatsAppAdminCreatedProjectNotification({
   projectTitle: string;
   ticketNumber: string;
 }): Promise<boolean> {
+  if (!config.notifyNovoProjeto) return false;
   const text =
     `🌟 *Seu projeto foi cadastrado!*\n\n` +
     `Olá, *${clientName}*! Seu projeto solar foi cadastrado pela nossa equipe.\n\n` +
@@ -120,7 +151,7 @@ export async function sendWhatsAppAdminCreatedProjectNotification({
     `🔖 *Ticket:* ${ticketNumber}\n\n` +
     `Nossa equipe já está analisando. Você receberá atualizações por aqui.`;
 
-  return sendEvolutionMessage(config, phone, text);
+  return sendEvolutionMessage(config, phone, text, `novo_projeto:${ticketNumber}`);
 }
 
 export async function sendWhatsAppDocumentNotification({
@@ -140,15 +171,16 @@ export async function sendWhatsAppDocumentNotification({
   documentName: string;
   uploadedBy: string;
 }): Promise<boolean> {
+  if (!config.notifyDocumento) return false;
   const text =
-    `📄 *Novo Documento Enviado*\n\n` +
+    `📄 *Novo Documento*\n\n` +
     `Olá, ${recipientName}!\n\n` +
     `Um novo documento foi adicionado ao projeto *${projectTitle}* (${ticketNumber}).\n\n` +
     `📎 *Documento:* ${documentName}\n` +
     `👤 *Enviado por:* ${uploadedBy}\n\n` +
     `Acesse o portal para visualizar.`;
 
-  return sendEvolutionMessage(config, phone, text);
+  return sendEvolutionMessage(config, phone, text, `documento:${ticketNumber}`);
 }
 
 export async function sendWhatsAppTimelineNotification({
@@ -168,6 +200,7 @@ export async function sendWhatsAppTimelineNotification({
   event: string;
   details?: string;
 }): Promise<boolean> {
+  if (!config.notifyTimeline) return false;
   const text =
     `📝 *Atualização no Projeto*\n\n` +
     `Olá, ${recipientName}!\n\n` +
@@ -176,7 +209,7 @@ export async function sendWhatsAppTimelineNotification({
     (details ? `💬 *Detalhes:* ${details}\n` : ``) +
     `\nAcesse o portal para mais informações.`;
 
-  return sendEvolutionMessage(config, phone, text);
+  return sendEvolutionMessage(config, phone, text, `timeline:${ticketNumber}`);
 }
 
 export async function sendWhatsAppPaymentNotification({
@@ -194,6 +227,7 @@ export async function sendWhatsAppPaymentNotification({
   ticketNumber: string;
   valor: string;
 }): Promise<boolean> {
+  if (!config.notifyPagamento) return false;
   const text =
     `💰 *Pagamento Confirmado*\n\n` +
     `Olá, ${recipientName}!\n\n` +
@@ -201,7 +235,7 @@ export async function sendWhatsAppPaymentNotification({
     `💵 *Valor:* R$ ${valor}\n\n` +
     `O projeto será avançado automaticamente. Acesse o portal para acompanhar.`;
 
-  return sendEvolutionMessage(config, phone, text);
+  return sendEvolutionMessage(config, phone, text, `pagamento:${ticketNumber}`);
 }
 
 export async function testWhatsAppConnection(config: WhatsAppConfig): Promise<{ ok: boolean; message: string }> {

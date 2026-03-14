@@ -343,6 +343,12 @@ export default function SettingsPage() {
   const [whatsappInstanceName, setWhatsappInstanceName] = useState("");
   const [whatsappAdminPhone, setWhatsappAdminPhone] = useState("");
   const [showWhatsappKey, setShowWhatsappKey] = useState(false);
+  const [waNotifyNovoProjeto, setWaNotifyNovoProjeto] = useState(true);
+  const [waNotifyStatus, setWaNotifyStatus] = useState(true);
+  const [waNotifyDocumento, setWaNotifyDocumento] = useState(false);
+  const [waNotifyTimeline, setWaNotifyTimeline] = useState(false);
+  const [waNotifyPagamento, setWaNotifyPagamento] = useState(true);
+  const [waCooldownMinutos, setWaCooldownMinutos] = useState("10");
 
   const [faviconUrl, setFaviconUrl] = useState("");
   const [initialized, setInitialized] = useState(false);
@@ -390,6 +396,12 @@ export default function SettingsPage() {
     setWhatsappApiKey(settings.whatsapp_api_key || "");
     setWhatsappInstanceName(settings.whatsapp_instance_name || "");
     setWhatsappAdminPhone(settings.whatsapp_admin_phone || "");
+    setWaNotifyNovoProjeto(settings.whatsapp_notify_novo_projeto !== "false");
+    setWaNotifyStatus(settings.whatsapp_notify_status !== "false");
+    setWaNotifyDocumento(settings.whatsapp_notify_documento === "true");
+    setWaNotifyTimeline(settings.whatsapp_notify_timeline === "true");
+    setWaNotifyPagamento(settings.whatsapp_notify_pagamento !== "false");
+    setWaCooldownMinutos(settings.whatsapp_cooldown_minutos || "10");
     setInitialized(true);
   }
 
@@ -446,6 +458,12 @@ export default function SettingsPage() {
         { key: "whatsapp_api_url", value: whatsappApiUrl },
         { key: "whatsapp_instance_name", value: whatsappInstanceName },
         { key: "whatsapp_admin_phone", value: whatsappAdminPhone },
+        { key: "whatsapp_notify_novo_projeto", value: waNotifyNovoProjeto ? "true" : "false" },
+        { key: "whatsapp_notify_status", value: waNotifyStatus ? "true" : "false" },
+        { key: "whatsapp_notify_documento", value: waNotifyDocumento ? "true" : "false" },
+        { key: "whatsapp_notify_timeline", value: waNotifyTimeline ? "true" : "false" },
+        { key: "whatsapp_notify_pagamento", value: waNotifyPagamento ? "true" : "false" },
+        { key: "whatsapp_cooldown_minutos", value: waCooldownMinutos || "10" },
       );
       if (whatsappApiKey && whatsappApiKey !== "••••••••") {
         pairs.push({ key: "whatsapp_api_key", value: whatsappApiKey });
@@ -763,14 +781,38 @@ export default function SettingsPage() {
                         Testar Conexão
                       </Button>
                     </div>
-                    <div className="rounded-lg bg-muted/30 p-4 border border-muted/40">
-                      <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Quando o WhatsApp notifica:</p>
-                      <ul className="text-xs text-muted-foreground space-y-1">
-                        <li>• Admin recebe aviso quando integrador cadastra um novo projeto</li>
-                        <li>• Integrador recebe aviso quando admin altera o status do projeto</li>
-                        <li>• Integrador recebe aviso quando admin adiciona documento ou nota na timeline</li>
-                        <li>• Integrador e admin recebem aviso quando pagamento é confirmado</li>
-                      </ul>
+                    <div className="rounded-lg bg-muted/30 p-4 border border-muted/40 space-y-3">
+                      <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Quais eventos disparam notificação:</p>
+                      {[
+                        { label: "Novo projeto cadastrado", desc: "Avisa o admin (ou cliente) quando um projeto é criado.", value: waNotifyNovoProjeto, set: setWaNotifyNovoProjeto, testId: "switch-wa-novo-projeto" },
+                        { label: "Mudança de status", desc: "Avisa o integrador quando o admin altera o status.", value: waNotifyStatus, set: setWaNotifyStatus, testId: "switch-wa-status" },
+                        { label: "Pagamento confirmado", desc: "Avisa integrador e admin quando o pagamento é confirmado.", value: waNotifyPagamento, set: setWaNotifyPagamento, testId: "switch-wa-pagamento" },
+                        { label: "Documento enviado", desc: "Avisa quando um arquivo é adicionado ao projeto. ⚠️ Pode gerar spam se muitos documentos forem enviados.", value: waNotifyDocumento, set: setWaNotifyDocumento, testId: "switch-wa-documento" },
+                        { label: "Nota na timeline", desc: "Avisa sobre cada nota/evento adicionado. ⚠️ Muito frequente — pode causar banimento.", value: waNotifyTimeline, set: setWaNotifyTimeline, testId: "switch-wa-timeline" },
+                      ].map(item => (
+                        <div key={item.testId} className="flex items-center justify-between gap-4">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium">{item.label}</p>
+                            <p className="text-[11px] text-muted-foreground">{item.desc}</p>
+                          </div>
+                          <Switch checked={item.value} onCheckedChange={item.set} data-testid={item.testId} />
+                        </div>
+                      ))}
+                      <div className="pt-2 border-t border-muted/40 flex items-center gap-4">
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">Cooldown entre mensagens (minutos)</p>
+                          <p className="text-[11px] text-muted-foreground">Impede enviar o mesmo tipo de notificação para o mesmo número dentro desse intervalo. Recomendado: 10.</p>
+                        </div>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="120"
+                          className="w-20 text-center"
+                          value={waCooldownMinutos}
+                          onChange={e => setWaCooldownMinutos(e.target.value)}
+                          data-testid="input-wa-cooldown"
+                        />
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

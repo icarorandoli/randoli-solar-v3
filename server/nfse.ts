@@ -26,6 +26,7 @@ export interface NfseConfig {
   opSimpNac: string;
   regEspTrib: string;
   regApTribSN: string;
+  tpRetISSQN: string;
   serie: string;
   proximoDps: number;
   informacoesComplementares: string;
@@ -131,10 +132,8 @@ function buildGerarNfseEnvioXml(params: EmitirNfseParams): string {
   const aliquotaIss = cfg.aliquotaIss || "2.00";
   const opSimpNac = cfg.opSimpNac || "1";
   const isSimplesNacional = opSimpNac === "2" || opSimpNac === "3";
-  const tomadorMunicipio = params.tomadorCodigoMunicipio || cLocEmi;
-  const isTomaLocalSinop = tomadorMunicipio === cLocEmi;
-  const tpRetISSQN = isTomaLocalSinop ? "1" : "2";
-  const pAliqTag = (isTomaLocalSinop && isSimplesNacional) ? `<pAliq>${aliquotaIss}</pAliq>` : "";
+  const tpRetISSQN = cfg.tpRetISSQN || "2";
+  const pAliqTag = (tpRetISSQN === "1" && isSimplesNacional) ? `<pAliq>${aliquotaIss}</pAliq>` : "";
   const regApTribSN = cfg.regApTribSN || "1";
   const dpsXml = `<GerarNfseEnvio xmlns="http://www.sped.fazenda.gov.br/nfse" xmlns:dsig="http://www.w3.org/2000/09/xmldsig#" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><DPS versao="1.01"><infDPS Id="${dpsId}"><tpAmb>${tpAmb}</tpAmb><dhEmi>${dhEmi}</dhEmi><verAplic>1.01</verAplic><serie>${cfg.serie || "1"}</serie><nDPS>${nDPS}</nDPS><dCompet>${dCompet}</dCompet><tpEmit>1</tpEmit><cLocEmi>${cLocEmi}</cLocEmi><prest><CNPJ>${cnpjPrestador}</CNPJ><IM>${imPrestador}</IM><xNome>${escapeXml(cfg.razaoSocial)}</xNome><regTrib><opSimpNac>${opSimpNac}</opSimpNac><regApTribSN>${regApTribSN}</regApTribSN><regEspTrib>${cfg.regEspTrib}</regEspTrib></regTrib></prest><toma>${tomadorDocTag}<xNome>${escapeXml(params.tomadorNome)}</xNome>${tomaEnd}</toma><serv><locPrest><cLocPrestacao>${cLocEmi}</cLocPrestacao></locPrest><cServ><cTribNac>${cfg.cTribNac || "140601"}</cTribNac>${cTribMunTag}<xDescServ>${escapeXml(descricao)}</xDescServ><cNBS>${cfg.cNBS || "101061900"}</cNBS></cServ></serv><valores><vServPrest><vReceb>${valorServico}</vReceb><vServ>${valorServico}</vServ></vServPrest><trib><tribMun><tribISSQN>1</tribISSQN><tpRetISSQN>${tpRetISSQN}</tpRetISSQN>${pAliqTag}</tribMun><totTrib>${totTribContent}</totTrib></trib></valores>${xInfCompTag}</infDPS></DPS></GerarNfseEnvio>`;
 
@@ -500,6 +499,7 @@ export function getNfseConfig(settingsMap: Record<string, string>): NfseConfig |
     opSimpNac: settingsMap["nfse_op_simples_nac"] || "0",
     regEspTrib: settingsMap["nfse_reg_esp_trib"] || "0",
     regApTribSN: settingsMap["nfse_reg_ap_trib_sn"] || "0",
+    tpRetISSQN: settingsMap["nfse_tp_ret_issqn"] || "2",
     serie: settingsMap["nfse_serie_dps"] || settingsMap["nfse_serie_rps"] || "1",
     proximoDps: parseInt(settingsMap["nfse_proximo_dps"] || settingsMap["nfse_proximo_rps"] || "1"),
     informacoesComplementares: settingsMap["nfse_informacoes_complementares"] || "",

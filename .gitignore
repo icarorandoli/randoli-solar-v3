@@ -5,4 +5,6 @@ server/public
 vite.config.ts.*
 *.tar.gz
 uploads/*
-!uploads/.gitkeep
+!uploads/.gitkeep.bash_history
+.pm2/
+*.log

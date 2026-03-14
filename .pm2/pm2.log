@@ -1,0 +1,1706 @@
+2026-03-05T05:36:37: PM2 log: ===============================================================================
+2026-03-05T05:36:37: PM2 log: --- New PM2 Daemon started ----------------------------------------------------
+2026-03-05T05:36:37: PM2 log: Time                 : Thu Mar 05 2026 05:36:37 GMT+0000 (Coordinated Universal Time)
+2026-03-05T05:36:37: PM2 log: PM2 version          : 6.0.14
+2026-03-05T05:36:37: PM2 log: Node.js version      : 20.20.0
+2026-03-05T05:36:37: PM2 log: Current arch         : x64
+2026-03-05T05:36:37: PM2 log: PM2 home             : /root/.pm2
+2026-03-05T05:36:37: PM2 log: PM2 PID file         : /root/.pm2/pm2.pid
+2026-03-05T05:36:37: PM2 log: RPC socket file      : /root/.pm2/rpc.sock
+2026-03-05T05:36:37: PM2 log: BUS socket file      : /root/.pm2/pub.sock
+2026-03-05T05:36:37: PM2 log: Application log path : /root/.pm2/logs
+2026-03-05T05:36:37: PM2 log: Worker Interval      : 30000
+2026-03-05T05:36:37: PM2 log: Process dump file    : /root/.pm2/dump.pm2
+2026-03-05T05:36:37: PM2 log: Concurrent actions   : 2
+2026-03-05T05:36:37: PM2 log: SIGTERM timeout      : 1600
+2026-03-05T05:36:37: PM2 log: Runtime Binary       : /usr/bin/node
+2026-03-05T05:36:37: PM2 log: ===============================================================================
+2026-03-05T05:36:38: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-05T05:36:38: PM2 log: App [randoli:0] online
+2026-03-05T06:09:47: PM2 log: Stopping app:randoli id:0
+2026-03-05T06:09:47: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-05T06:09:47: PM2 log: pid=5860 msg=process killed
+2026-03-05T06:09:47: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-05T06:09:47: PM2 log: App [randoli:0] online
+2026-03-05T11:58:42: PM2 log: Stopping app:randoli id:0
+2026-03-05T11:58:42: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-05T11:58:42: PM2 log: pid=6723 msg=process killed
+2026-03-05T11:58:42: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-05T11:58:42: PM2 log: App [randoli:0] online
+2026-03-05T12:52:36: PM2 log: Stopping app:randoli id:0
+2026-03-05T12:52:36: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-05T12:52:36: PM2 log: pid=16072 msg=process killed
+2026-03-05T12:52:36: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-05T12:52:36: PM2 log: App [randoli:0] online
+2026-03-05T15:24:28: PM2 log: Stopping app:randoli id:0
+2026-03-05T15:24:28: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-05T15:24:28: PM2 log: pid=16481 msg=process killed
+2026-03-05T15:24:28: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-05T15:24:28: PM2 log: App [randoli:0] online
+2026-03-05T15:55:16: PM2 log: Stopping app:randoli id:0
+2026-03-05T15:55:16: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-05T15:55:16: PM2 log: pid=17337 msg=process killed
+2026-03-05T15:55:16: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-05T15:55:16: PM2 log: App [randoli:0] online
+2026-03-05T16:17:55: PM2 log: Stopping app:randoli id:0
+2026-03-05T16:17:55: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-05T16:17:55: PM2 log: pid=17746 msg=process killed
+2026-03-05T16:17:55: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-05T16:17:55: PM2 log: App [randoli:0] online
+2026-03-05T18:47:51: PM2 log: Stopping app:randoli id:0
+2026-03-05T18:47:51: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-05T18:47:51: PM2 log: pid=18058 msg=process killed
+2026-03-05T18:47:51: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-05T18:47:51: PM2 log: App [randoli:0] online
+2026-03-05T23:20:25: PM2 log: Stopping app:randoli id:0
+2026-03-05T23:20:25: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-05T23:20:25: PM2 log: pid=18962 msg=process killed
+2026-03-05T23:20:25: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-05T23:20:25: PM2 log: App [randoli:0] online
+2026-03-05T23:31:53: PM2 log: Stopping app:randoli id:0
+2026-03-05T23:31:53: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-05T23:31:53: PM2 log: pid=20598 msg=process killed
+2026-03-05T23:31:53: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-05T23:31:53: PM2 log: App [randoli:0] online
+2026-03-06T01:57:59: PM2 log: Stopping app:randoli id:0
+2026-03-06T01:57:59: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-06T01:57:59: PM2 log: pid=21105 msg=process killed
+2026-03-06T01:57:59: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-06T01:57:59: PM2 log: App [randoli:0] online
+2026-03-06T02:14:18: PM2 log: Stopping app:randoli id:0
+2026-03-06T02:14:18: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-06T02:14:18: PM2 log: pid=22513 msg=process killed
+2026-03-06T02:14:18: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-06T02:14:18: PM2 log: App [randoli:0] online
+2026-03-06T02:31:49: PM2 log: Stopping app:randoli id:0
+2026-03-06T02:31:49: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-06T02:31:49: PM2 log: pid=22812 msg=process killed
+2026-03-06T02:31:49: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-06T02:31:49: PM2 log: App [randoli:0] online
+2026-03-06T02:43:50: PM2 log: Stopping app:randoli id:0
+2026-03-06T02:43:50: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-06T02:43:50: PM2 log: pid=23080 msg=process killed
+2026-03-06T02:44:21: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-06T02:44:21: PM2 log: App [randoli:0] online
+2026-03-06T02:47:10: PM2 log: Stopping app:randoli id:0
+2026-03-06T02:47:10: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-06T02:47:10: PM2 log: pid=23560 msg=process killed
+2026-03-06T02:47:10: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-06T02:47:10: PM2 log: App [randoli:0] online
+2026-03-06T03:03:48: PM2 log: Stopping app:randoli id:0
+2026-03-06T03:03:48: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-06T03:03:48: PM2 log: pid=23622 msg=process killed
+2026-03-06T03:03:48: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-06T03:03:48: PM2 log: App [randoli:0] online
+2026-03-06T03:09:15: PM2 log: Stopping app:randoli id:0
+2026-03-06T03:09:15: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-06T03:09:15: PM2 log: pid=23822 msg=process killed
+2026-03-06T03:09:15: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-06T03:09:15: PM2 log: App [randoli:0] online
+2026-03-06T03:17:50: PM2 log: Stopping app:randoli id:0
+2026-03-06T03:17:50: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-06T03:17:50: PM2 log: pid=23942 msg=process killed
+2026-03-06T03:17:50: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-06T03:17:50: PM2 log: App [randoli:0] online
+2026-03-06T17:32:51: PM2 log: ===============================================================================
+2026-03-06T17:32:51: PM2 log: --- New PM2 Daemon started ----------------------------------------------------
+2026-03-06T17:32:51: PM2 log: Time                 : Fri Mar 06 2026 17:32:51 GMT+0000 (Coordinated Universal Time)
+2026-03-06T17:32:51: PM2 log: PM2 version          : 6.0.14
+2026-03-06T17:32:51: PM2 log: Node.js version      : 20.20.0
+2026-03-06T17:32:51: PM2 log: Current arch         : x64
+2026-03-06T17:32:51: PM2 log: PM2 home             : /root/.pm2
+2026-03-06T17:32:51: PM2 log: PM2 PID file         : /root/.pm2/pm2.pid
+2026-03-06T17:32:51: PM2 log: RPC socket file      : /root/.pm2/rpc.sock
+2026-03-06T17:32:51: PM2 log: BUS socket file      : /root/.pm2/pub.sock
+2026-03-06T17:32:51: PM2 log: Application log path : /root/.pm2/logs
+2026-03-06T17:32:51: PM2 log: Worker Interval      : 30000
+2026-03-06T17:32:51: PM2 log: Process dump file    : /root/.pm2/dump.pm2
+2026-03-06T17:32:51: PM2 log: Concurrent actions   : 2
+2026-03-06T17:32:51: PM2 log: SIGTERM timeout      : 1600
+2026-03-06T17:32:51: PM2 log: Runtime Binary       : /usr/bin/node
+2026-03-06T17:32:51: PM2 log: ===============================================================================
+2026-03-06T17:32:51: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-06T17:32:51: PM2 log: App [randoli:0] online
+2026-03-06T17:41:36: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-06T17:41:36: PM2 log: App [randoli-crm:1] online
+2026-03-06T17:53:19: PM2 log: Stopping app:randoli-crm id:1
+2026-03-06T17:53:19: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-06T17:53:19: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-06T17:53:19: PM2 log: pid=1947 msg=process killed
+2026-03-06T17:53:19: PM2 log: App [randoli-crm:2] starting in -cluster mode-
+2026-03-06T17:53:19: PM2 log: App [randoli-crm:2] online
+2026-03-06T17:55:59: PM2 log: Stopping app:randoli-crm id:2
+2026-03-06T17:55:59: PM2 log: App name:randoli-crm id:2 disconnected
+2026-03-06T17:55:59: PM2 log: App [randoli-crm:2] exited with code [0] via signal [SIGINT]
+2026-03-06T17:55:59: PM2 log: pid=2262 msg=process killed
+2026-03-06T17:55:59: PM2 log: App [randoli-crm:3] starting in -cluster mode-
+2026-03-06T17:56:00: PM2 log: App [randoli-crm:3] online
+2026-03-06T18:55:10: PM2 log: Stopping app:randoli id:0
+2026-03-06T18:55:10: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-06T18:55:10: PM2 log: pid=981 msg=process killed
+2026-03-06T18:55:10: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-06T18:55:10: PM2 log: App [randoli:0] online
+2026-03-06T19:09:40: PM2 log: Stopping app:randoli id:0
+2026-03-06T19:09:40: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-06T19:09:40: PM2 log: pid=2849 msg=process killed
+2026-03-06T19:09:40: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-06T19:09:40: PM2 log: App [randoli:0] online
+2026-03-06T19:19:19: PM2 log: Stopping app:randoli id:0
+2026-03-06T19:19:19: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-06T19:19:19: PM2 log: pid=3061 msg=process killed
+2026-03-06T19:19:19: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-06T19:19:19: PM2 log: App [randoli:0] online
+2026-03-06T19:32:01: PM2 log: Stopping app:randoli id:0
+2026-03-06T19:32:01: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-06T19:32:01: PM2 log: pid=3262 msg=process killed
+2026-03-06T19:32:01: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-06T19:32:01: PM2 log: App [randoli:0] online
+2026-03-06T19:39:29: PM2 log: Stopping app:randoli id:0
+2026-03-06T19:39:29: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-06T19:39:29: PM2 log: pid=3367 msg=process killed
+2026-03-06T19:39:29: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-06T19:39:29: PM2 log: App [randoli:0] online
+2026-03-06T19:40:19: PM2 log: Stopping app:randoli id:0
+2026-03-06T19:40:19: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-06T19:40:19: PM2 log: pid=3515 msg=process killed
+2026-03-06T19:40:19: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-06T19:40:19: PM2 log: App [randoli:0] online
+2026-03-07T06:00:42: PM2 log: Stopping app:randoli id:0
+2026-03-07T06:00:42: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-07T06:00:42: PM2 log: pid=3597 msg=process killed
+2026-03-07T06:00:42: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-07T06:00:42: PM2 log: App [randoli:0] online
+2026-03-07T06:00:42: PM2 log: Stopping app:randoli-crm id:3
+2026-03-07T06:00:42: PM2 log: App name:randoli-crm id:3 disconnected
+2026-03-07T06:00:42: PM2 log: App [randoli-crm:3] exited with code [0] via signal [SIGINT]
+2026-03-07T06:00:42: PM2 log: pid=2422 msg=process killed
+2026-03-07T06:00:42: PM2 log: App [randoli-crm:3] starting in -cluster mode-
+2026-03-07T06:00:42: PM2 log: App [randoli-crm:3] online
+2026-03-07T12:37:41: PM2 log: Stopping app:randoli id:0
+2026-03-07T12:37:41: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-07T12:37:41: PM2 log: pid=8171 msg=process killed
+2026-03-07T12:37:41: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-07T12:37:41: PM2 log: App [randoli:0] online
+2026-03-07T13:22:21: PM2 log: Stopping app:randoli id:0
+2026-03-07T13:22:21: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-07T13:22:21: PM2 log: pid=10204 msg=process killed
+2026-03-07T13:22:21: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-07T13:22:21: PM2 log: App [randoli:0] online
+2026-03-07T13:25:35: PM2 log: Stopping app:randoli id:0
+2026-03-07T13:25:35: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-07T13:25:35: PM2 log: pid=10666 msg=process killed
+2026-03-07T13:25:35: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-07T13:25:35: PM2 log: App [randoli:0] online
+2026-03-07T14:17:53: PM2 log: Stopping app:randoli id:0
+2026-03-07T14:17:53: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-07T14:17:53: PM2 log: pid=10781 msg=process killed
+2026-03-07T14:17:53: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-07T14:17:54: PM2 log: App [randoli:0] online
+2026-03-07T14:36:06: PM2 log: Stopping app:randoli-crm id:3
+2026-03-07T14:36:06: PM2 log: App name:randoli-crm id:3 disconnected
+2026-03-07T14:36:06: PM2 log: App [randoli-crm:3] exited with code [0] via signal [SIGINT]
+2026-03-07T14:36:06: PM2 log: pid=8179 msg=process killed
+2026-03-07T14:36:06: PM2 log: App [randoli-crm:3] starting in -cluster mode-
+2026-03-07T14:36:06: PM2 log: App [randoli-crm:3] online
+2026-03-07T14:58:11: PM2 log: Stopping app:randoli-crm id:3
+2026-03-07T14:58:11: PM2 log: App name:randoli-crm id:3 disconnected
+2026-03-07T14:58:11: PM2 log: App [randoli-crm:3] exited with code [0] via signal [SIGINT]
+2026-03-07T14:58:11: PM2 log: pid=11400 msg=process killed
+2026-03-07T14:58:11: PM2 log: App [randoli-crm:3] starting in -cluster mode-
+2026-03-07T14:58:11: PM2 log: App [randoli-crm:3] online
+2026-03-07T15:24:21: PM2 log: Stopping app:randoli-crm id:3
+2026-03-07T15:24:21: PM2 log: App name:randoli-crm id:3 disconnected
+2026-03-07T15:24:21: PM2 log: App [randoli-crm:3] exited with code [0] via signal [SIGINT]
+2026-03-07T15:24:21: PM2 log: pid=11704 msg=process killed
+2026-03-07T15:24:21: PM2 log: App [randoli-crm:3] starting in -cluster mode-
+2026-03-07T15:24:21: PM2 log: App [randoli-crm:3] online
+2026-03-07T17:11:02: PM2 log: Stopping app:randoli id:0
+2026-03-07T17:11:02: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-07T17:11:02: PM2 log: pid=11175 msg=process killed
+2026-03-07T17:11:02: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-07T17:11:02: PM2 log: App [randoli:0] online
+2026-03-07T17:13:50: PM2 log: Stopping app:randoli id:0
+2026-03-07T17:13:50: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-07T17:13:50: PM2 log: pid=12754 msg=process killed
+2026-03-07T17:13:50: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-07T17:13:50: PM2 log: App [randoli:0] online
+2026-03-08T03:51:58: PM2 log: Stopping app:randoli id:0
+2026-03-08T03:51:58: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-08T03:51:58: PM2 log: pid=12892 msg=process killed
+2026-03-08T03:51:58: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-08T03:51:58: PM2 log: App [randoli:0] online
+2026-03-08T05:01:06: PM2 log: Stopping app:randoli id:0
+2026-03-08T05:01:06: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-08T05:01:06: PM2 log: pid=16419 msg=process killed
+2026-03-08T05:01:06: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-08T05:01:06: PM2 log: App [randoli:0] online
+2026-03-08T05:03:52: PM2 log: Stopping app:randoli id:0
+2026-03-08T05:03:52: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-08T05:03:52: PM2 log: pid=16820 msg=process killed
+2026-03-08T05:03:52: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-08T05:03:52: PM2 log: App [randoli:0] online
+2026-03-08T05:13:26: PM2 log: Stopping app:randoli id:0
+2026-03-08T05:13:26: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-08T05:13:26: PM2 log: pid=16902 msg=process killed
+2026-03-08T05:13:26: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-08T05:13:26: PM2 log: App [randoli:0] online
+2026-03-08T05:55:05: PM2 log: Stopping app:randoli id:0
+2026-03-08T05:55:06: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-08T05:55:06: PM2 log: pid=17043 msg=process killed
+2026-03-08T05:55:06: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-08T05:55:06: PM2 log: App [randoli:0] online
+2026-03-08T05:55:06: PM2 log: Stopping app:randoli-crm id:3
+2026-03-08T05:55:06: PM2 log: App name:randoli-crm id:3 disconnected
+2026-03-08T05:55:06: PM2 log: App [randoli-crm:3] exited with code [0] via signal [SIGINT]
+2026-03-08T05:55:06: PM2 log: pid=11905 msg=process killed
+2026-03-08T05:55:06: PM2 log: App [randoli-crm:3] starting in -cluster mode-
+2026-03-08T05:55:06: PM2 log: App [randoli-crm:3] online
+2026-03-08T16:26:41: PM2 log: Stopping app:randoli id:0
+2026-03-08T16:26:42: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-08T16:26:42: PM2 log: pid=17361 msg=process killed
+2026-03-08T16:26:42: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-08T16:26:42: PM2 log: App [randoli:0] online
+2026-03-08T17:06:15: PM2 log: Stopping app:randoli id:0
+2026-03-08T17:06:15: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-08T17:06:15: PM2 log: pid=20685 msg=process killed
+2026-03-08T17:06:15: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-08T17:06:15: PM2 log: App [randoli:0] online
+2026-03-09T03:22:22: PM2 log: Stopping app:randoli id:0
+2026-03-09T03:22:22: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-09T03:22:22: PM2 log: pid=21209 msg=process killed
+2026-03-09T03:22:22: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-09T03:22:22: PM2 log: App [randoli:0] online
+2026-03-09T03:22:22: PM2 log: Stopping app:randoli-crm id:3
+2026-03-09T03:22:22: PM2 log: App name:randoli-crm id:3 disconnected
+2026-03-09T03:22:22: PM2 log: App [randoli-crm:3] exited with code [0] via signal [SIGINT]
+2026-03-09T03:22:22: PM2 log: pid=17369 msg=process killed
+2026-03-09T03:22:22: PM2 log: App [randoli-crm:3] starting in -cluster mode-
+2026-03-09T03:22:23: PM2 log: App [randoli-crm:3] online
+2026-03-09T03:29:03: PM2 log: Stopping app:randoli id:0
+2026-03-09T03:29:03: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-09T03:29:03: PM2 log: pid=24155 msg=process killed
+2026-03-09T03:29:03: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-09T03:29:03: PM2 log: App [randoli:0] online
+2026-03-09T03:29:03: PM2 log: Stopping app:randoli-crm id:3
+2026-03-09T03:29:03: PM2 log: App name:randoli-crm id:3 disconnected
+2026-03-09T03:29:03: PM2 log: App [randoli-crm:3] exited with code [0] via signal [SIGINT]
+2026-03-09T03:29:03: PM2 log: pid=24163 msg=process killed
+2026-03-09T03:29:03: PM2 log: App [randoli-crm:3] starting in -cluster mode-
+2026-03-09T03:29:03: PM2 log: App [randoli-crm:3] online
+2026-03-09T04:16:21: PM2 log: Stopping app:randoli id:0
+2026-03-09T04:16:21: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-09T04:16:21: PM2 log: pid=24294 msg=process killed
+2026-03-09T04:16:21: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-09T04:16:21: PM2 log: App [randoli:0] online
+2026-03-09T04:16:21: PM2 log: Stopping app:randoli-crm id:3
+2026-03-09T04:16:22: PM2 log: App name:randoli-crm id:3 disconnected
+2026-03-09T04:16:22: PM2 log: App [randoli-crm:3] exited with code [0] via signal [SIGINT]
+2026-03-09T04:16:22: PM2 log: pid=24306 msg=process killed
+2026-03-09T04:16:22: PM2 log: App [randoli-crm:3] starting in -cluster mode-
+2026-03-09T04:16:22: PM2 log: App [randoli-crm:3] online
+2026-03-09T04:52:39: PM2 log: Stopping app:randoli id:0
+2026-03-09T04:52:39: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-09T04:52:39: PM2 log: pid=24705 msg=process killed
+2026-03-09T04:52:39: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-09T04:52:40: PM2 log: App [randoli:0] online
+2026-03-09T04:52:40: PM2 log: Stopping app:randoli-crm id:3
+2026-03-09T04:52:40: PM2 log: App name:randoli-crm id:3 disconnected
+2026-03-09T04:52:40: PM2 log: App [randoli-crm:3] exited with code [0] via signal [SIGINT]
+2026-03-09T04:52:40: PM2 log: pid=24717 msg=process killed
+2026-03-09T04:52:40: PM2 log: App [randoli-crm:3] starting in -cluster mode-
+2026-03-09T04:52:40: PM2 log: App [randoli-crm:3] online
+2026-03-09T05:10:44: PM2 log: Stopping app:randoli id:0
+2026-03-09T05:10:44: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-09T05:10:44: PM2 log: pid=25202 msg=process killed
+2026-03-09T05:10:44: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-09T05:10:44: PM2 log: App [randoli:0] online
+2026-03-09T05:10:44: PM2 log: Stopping app:randoli-crm id:3
+2026-03-09T05:10:44: PM2 log: App name:randoli-crm id:3 disconnected
+2026-03-09T05:10:44: PM2 log: App [randoli-crm:3] exited with code [0] via signal [SIGINT]
+2026-03-09T05:10:45: PM2 log: pid=25214 msg=process killed
+2026-03-09T05:10:45: PM2 log: App [randoli-crm:3] starting in -cluster mode-
+2026-03-09T05:10:45: PM2 log: App [randoli-crm:3] online
+2026-03-09T05:26:37: PM2 log: Stopping app:randoli id:0
+2026-03-09T05:26:37: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-09T05:26:38: PM2 log: pid=25518 msg=process killed
+2026-03-09T05:26:38: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-09T05:26:38: PM2 log: App [randoli:0] online
+2026-03-09T05:26:38: PM2 log: Stopping app:randoli-crm id:3
+2026-03-09T05:26:38: PM2 log: App name:randoli-crm id:3 disconnected
+2026-03-09T05:26:38: PM2 log: App [randoli-crm:3] exited with code [0] via signal [SIGINT]
+2026-03-09T05:26:38: PM2 log: pid=25530 msg=process killed
+2026-03-09T05:26:38: PM2 log: App [randoli-crm:3] starting in -cluster mode-
+2026-03-09T05:26:38: PM2 log: App [randoli-crm:3] online
+2026-03-09T05:35:39: PM2 log: Stopping app:randoli id:0
+2026-03-09T05:35:39: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-09T05:35:39: PM2 log: pid=25849 msg=process killed
+2026-03-09T05:35:39: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-09T05:35:39: PM2 log: App [randoli:0] online
+2026-03-09T05:35:39: PM2 log: Stopping app:randoli-crm id:3
+2026-03-09T05:35:39: PM2 log: App name:randoli-crm id:3 disconnected
+2026-03-09T05:35:39: PM2 log: App [randoli-crm:3] exited with code [0] via signal [SIGINT]
+2026-03-09T05:35:39: PM2 log: pid=25861 msg=process killed
+2026-03-09T05:35:39: PM2 log: App [randoli-crm:3] starting in -cluster mode-
+2026-03-09T05:35:39: PM2 log: App [randoli-crm:3] online
+2026-03-09T05:43:50: PM2 log: Stopping app:randoli id:0
+2026-03-09T05:43:50: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-09T05:43:50: PM2 log: pid=26025 msg=process killed
+2026-03-09T05:43:50: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-09T05:43:50: PM2 log: App [randoli:0] online
+2026-03-09T05:43:50: PM2 log: Stopping app:randoli-crm id:3
+2026-03-09T05:43:50: PM2 log: App name:randoli-crm id:3 disconnected
+2026-03-09T05:43:50: PM2 log: App [randoli-crm:3] exited with code [0] via signal [SIGINT]
+2026-03-09T05:43:50: PM2 log: pid=26037 msg=process killed
+2026-03-09T05:43:50: PM2 log: App [randoli-crm:3] starting in -cluster mode-
+2026-03-09T05:43:50: PM2 log: App [randoli-crm:3] online
+2026-03-09T05:52:12: PM2 log: Stopping app:randoli id:0
+2026-03-09T05:52:12: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-09T05:52:12: PM2 log: pid=26191 msg=process killed
+2026-03-09T05:52:12: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-09T05:52:12: PM2 log: App [randoli:0] online
+2026-03-09T05:52:12: PM2 log: Stopping app:randoli-crm id:3
+2026-03-09T05:52:12: PM2 log: App name:randoli-crm id:3 disconnected
+2026-03-09T05:52:12: PM2 log: App [randoli-crm:3] exited with code [0] via signal [SIGINT]
+2026-03-09T05:52:12: PM2 log: pid=26203 msg=process killed
+2026-03-09T05:52:12: PM2 log: App [randoli-crm:3] starting in -cluster mode-
+2026-03-09T05:52:12: PM2 log: App [randoli-crm:3] online
+2026-03-09T05:57:24: PM2 log: Stopping app:randoli id:0
+2026-03-09T05:57:24: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-09T05:57:25: PM2 log: pid=26359 msg=process killed
+2026-03-09T05:57:25: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-09T05:57:25: PM2 log: App [randoli:0] online
+2026-03-09T05:57:25: PM2 log: Stopping app:randoli-crm id:3
+2026-03-09T05:57:25: PM2 log: App name:randoli-crm id:3 disconnected
+2026-03-09T05:57:25: PM2 log: App [randoli-crm:3] exited with code [0] via signal [SIGINT]
+2026-03-09T05:57:25: PM2 log: pid=26371 msg=process killed
+2026-03-09T05:57:25: PM2 log: App [randoli-crm:3] starting in -cluster mode-
+2026-03-09T05:57:25: PM2 log: App [randoli-crm:3] online
+2026-03-09T06:05:45: PM2 log: Stopping app:randoli id:0
+2026-03-09T06:05:45: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-09T06:05:45: PM2 log: pid=26499 msg=process killed
+2026-03-09T06:05:45: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-09T06:05:45: PM2 log: App [randoli:0] online
+2026-03-09T06:05:45: PM2 log: Stopping app:randoli-crm id:3
+2026-03-09T06:05:45: PM2 log: App name:randoli-crm id:3 disconnected
+2026-03-09T06:05:45: PM2 log: App [randoli-crm:3] exited with code [0] via signal [SIGINT]
+2026-03-09T06:05:45: PM2 log: pid=26511 msg=process killed
+2026-03-09T06:05:45: PM2 log: App [randoli-crm:3] starting in -cluster mode-
+2026-03-09T06:05:45: PM2 log: App [randoli-crm:3] online
+2026-03-09T06:10:38: PM2 log: Stopping app:randoli id:0
+2026-03-09T06:10:38: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-09T06:10:38: PM2 log: pid=26667 msg=process killed
+2026-03-09T06:10:38: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-09T06:10:38: PM2 log: App [randoli:0] online
+2026-03-09T06:10:38: PM2 log: Stopping app:randoli-crm id:3
+2026-03-09T06:10:38: PM2 log: App name:randoli-crm id:3 disconnected
+2026-03-09T06:10:38: PM2 log: App [randoli-crm:3] exited with code [0] via signal [SIGINT]
+2026-03-09T06:10:38: PM2 log: pid=26679 msg=process killed
+2026-03-09T06:10:38: PM2 log: App [randoli-crm:3] starting in -cluster mode-
+2026-03-09T06:10:38: PM2 log: App [randoli-crm:3] online
+2026-03-09T06:14:55: PM2 log: Stopping app:randoli id:0
+2026-03-09T06:14:55: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-09T06:14:55: PM2 log: pid=26813 msg=process killed
+2026-03-09T06:14:55: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-09T06:14:55: PM2 log: App [randoli:0] online
+2026-03-09T06:14:55: PM2 log: Stopping app:randoli-crm id:3
+2026-03-09T06:14:55: PM2 log: App name:randoli-crm id:3 disconnected
+2026-03-09T06:14:55: PM2 log: App [randoli-crm:3] exited with code [0] via signal [SIGINT]
+2026-03-09T06:14:55: PM2 log: pid=26825 msg=process killed
+2026-03-09T06:14:55: PM2 log: App [randoli-crm:3] starting in -cluster mode-
+2026-03-09T06:14:55: PM2 log: App [randoli-crm:3] online
+2026-03-09T06:28:38: PM2 log: Stopping app:randoli id:0
+2026-03-09T06:28:38: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-09T06:28:38: PM2 log: pid=26945 msg=process killed
+2026-03-09T06:28:38: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-09T06:28:38: PM2 log: App [randoli:0] online
+2026-03-09T06:28:38: PM2 log: Stopping app:randoli-crm id:3
+2026-03-09T06:28:38: PM2 log: App name:randoli-crm id:3 disconnected
+2026-03-09T06:28:38: PM2 log: App [randoli-crm:3] exited with code [0] via signal [SIGINT]
+2026-03-09T06:28:38: PM2 log: pid=26957 msg=process killed
+2026-03-09T06:28:38: PM2 log: App [randoli-crm:3] starting in -cluster mode-
+2026-03-09T06:28:38: PM2 log: App [randoli-crm:3] online
+2026-03-09T06:42:08: PM2 log: Stopping app:randoli id:0
+2026-03-09T06:42:08: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-09T06:42:08: PM2 log: pid=27271 msg=process killed
+2026-03-09T06:42:08: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-09T06:42:08: PM2 log: App [randoli:0] online
+2026-03-09T06:42:08: PM2 log: Stopping app:randoli-crm id:3
+2026-03-09T06:42:08: PM2 log: App name:randoli-crm id:3 disconnected
+2026-03-09T06:42:08: PM2 log: App [randoli-crm:3] exited with code [0] via signal [SIGINT]
+2026-03-09T06:42:08: PM2 log: pid=27283 msg=process killed
+2026-03-09T06:42:08: PM2 log: App [randoli-crm:3] starting in -cluster mode-
+2026-03-09T06:42:08: PM2 log: App [randoli-crm:3] online
+2026-03-09T07:03:07: PM2 log: Stopping app:randoli id:0
+2026-03-09T07:03:07: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-09T07:03:07: PM2 log: pid=27484 msg=process killed
+2026-03-09T07:03:07: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-09T07:03:07: PM2 log: App [randoli:0] online
+2026-03-09T07:03:07: PM2 log: Stopping app:randoli-crm id:3
+2026-03-09T07:03:07: PM2 log: App name:randoli-crm id:3 disconnected
+2026-03-09T07:03:07: PM2 log: App [randoli-crm:3] exited with code [0] via signal [SIGINT]
+2026-03-09T07:03:07: PM2 log: pid=27496 msg=process killed
+2026-03-09T07:03:07: PM2 log: App [randoli-crm:3] starting in -cluster mode-
+2026-03-09T07:03:07: PM2 log: App [randoli-crm:3] online
+2026-03-09T07:13:47: PM2 log: Stopping app:randoli id:0
+2026-03-09T07:13:47: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-09T07:13:47: PM2 log: pid=27830 msg=process killed
+2026-03-09T07:13:47: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-09T07:13:47: PM2 log: App [randoli:0] online
+2026-03-09T07:13:47: PM2 log: Stopping app:randoli-crm id:3
+2026-03-09T07:13:47: PM2 log: App name:randoli-crm id:3 disconnected
+2026-03-09T07:13:47: PM2 log: App [randoli-crm:3] exited with code [0] via signal [SIGINT]
+2026-03-09T07:13:47: PM2 log: pid=27842 msg=process killed
+2026-03-09T07:13:47: PM2 log: App [randoli-crm:3] starting in -cluster mode-
+2026-03-09T07:13:47: PM2 log: App [randoli-crm:3] online
+2026-03-09T07:26:06: PM2 log: Stopping app:randoli id:0
+2026-03-09T07:26:06: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-09T07:26:06: PM2 log: pid=28087 msg=process killed
+2026-03-09T07:26:06: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-09T07:26:06: PM2 log: App [randoli:0] online
+2026-03-09T07:26:06: PM2 log: Stopping app:randoli-crm id:3
+2026-03-09T07:26:06: PM2 log: App name:randoli-crm id:3 disconnected
+2026-03-09T07:26:06: PM2 log: App [randoli-crm:3] exited with code [0] via signal [SIGINT]
+2026-03-09T07:26:07: PM2 log: pid=28099 msg=process killed
+2026-03-09T07:26:07: PM2 log: App [randoli-crm:3] starting in -cluster mode-
+2026-03-09T07:26:07: PM2 log: App [randoli-crm:3] online
+2026-03-09T11:43:38: PM2 log: Stopping app:randoli id:0
+2026-03-09T11:43:38: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-09T11:43:38: PM2 log: pid=28314 msg=process killed
+2026-03-09T11:43:38: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-09T11:43:38: PM2 log: App [randoli:0] online
+2026-03-09T11:43:38: PM2 log: Stopping app:randoli-crm id:3
+2026-03-09T11:43:38: PM2 log: App name:randoli-crm id:3 disconnected
+2026-03-09T11:43:38: PM2 log: App [randoli-crm:3] exited with code [0] via signal [SIGINT]
+2026-03-09T11:43:38: PM2 log: pid=28326 msg=process killed
+2026-03-09T11:43:38: PM2 log: App [randoli-crm:3] starting in -cluster mode-
+2026-03-09T11:43:38: PM2 log: App [randoli-crm:3] online
+2026-03-09T11:57:54: PM2 log: Stopping app:randoli id:0
+2026-03-09T11:57:54: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-09T11:57:54: PM2 log: pid=30449 msg=process killed
+2026-03-09T11:57:54: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-09T11:57:54: PM2 log: App [randoli:0] online
+2026-03-09T11:57:54: PM2 log: Stopping app:randoli-crm id:3
+2026-03-09T11:57:54: PM2 log: App name:randoli-crm id:3 disconnected
+2026-03-09T11:57:54: PM2 log: App [randoli-crm:3] exited with code [0] via signal [SIGINT]
+2026-03-09T11:57:54: PM2 log: pid=30461 msg=process killed
+2026-03-09T11:57:54: PM2 log: App [randoli-crm:3] starting in -cluster mode-
+2026-03-09T11:57:54: PM2 log: App [randoli-crm:3] online
+2026-03-09T12:04:40: PM2 log: Stopping app:randoli id:0
+2026-03-09T12:04:40: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-09T12:04:40: PM2 log: pid=30637 msg=process killed
+2026-03-09T12:04:40: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-09T12:04:40: PM2 log: App [randoli:0] online
+2026-03-09T12:04:40: PM2 log: Stopping app:randoli-crm id:3
+2026-03-09T12:04:40: PM2 log: App name:randoli-crm id:3 disconnected
+2026-03-09T12:04:40: PM2 log: App [randoli-crm:3] exited with code [0] via signal [SIGINT]
+2026-03-09T12:04:40: PM2 log: pid=30649 msg=process killed
+2026-03-09T12:04:40: PM2 log: App [randoli-crm:3] starting in -cluster mode-
+2026-03-09T12:04:40: PM2 log: App [randoli-crm:3] online
+2026-03-09T12:11:15: PM2 log: Stopping app:randoli id:0
+2026-03-09T12:11:15: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-09T12:11:15: PM2 log: pid=30771 msg=process killed
+2026-03-09T12:11:15: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-09T12:11:15: PM2 log: App [randoli:0] online
+2026-03-09T12:11:15: PM2 log: Stopping app:randoli-crm id:3
+2026-03-09T12:11:15: PM2 log: App name:randoli-crm id:3 disconnected
+2026-03-09T12:11:15: PM2 log: App [randoli-crm:3] exited with code [0] via signal [SIGINT]
+2026-03-09T12:11:15: PM2 log: pid=30783 msg=process killed
+2026-03-09T12:11:15: PM2 log: App [randoli-crm:3] starting in -cluster mode-
+2026-03-09T12:11:15: PM2 log: App [randoli-crm:3] online
+2026-03-09T12:20:49: PM2 log: Stopping app:randoli id:0
+2026-03-09T12:20:49: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-09T12:20:49: PM2 log: pid=30897 msg=process killed
+2026-03-09T12:20:49: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-09T12:20:49: PM2 log: App [randoli:0] online
+2026-03-09T12:20:49: PM2 log: Stopping app:randoli-crm id:3
+2026-03-09T12:20:49: PM2 log: App name:randoli-crm id:3 disconnected
+2026-03-09T12:20:49: PM2 log: App [randoli-crm:3] exited with code [0] via signal [SIGINT]
+2026-03-09T12:20:49: PM2 log: pid=30909 msg=process killed
+2026-03-09T12:20:49: PM2 log: App [randoli-crm:3] starting in -cluster mode-
+2026-03-09T12:20:49: PM2 log: App [randoli-crm:3] online
+2026-03-09T12:24:14: PM2 log: Stopping app:randoli id:0
+2026-03-09T12:24:14: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-09T12:24:14: PM2 log: pid=31064 msg=process killed
+2026-03-09T12:24:14: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-09T12:24:14: PM2 log: App [randoli:0] online
+2026-03-09T12:24:14: PM2 log: Stopping app:randoli-crm id:3
+2026-03-09T12:24:14: PM2 log: App name:randoli-crm id:3 disconnected
+2026-03-09T12:24:14: PM2 log: App [randoli-crm:3] exited with code [0] via signal [SIGINT]
+2026-03-09T12:24:14: PM2 log: pid=31076 msg=process killed
+2026-03-09T12:24:14: PM2 log: App [randoli-crm:3] starting in -cluster mode-
+2026-03-09T12:24:14: PM2 log: App [randoli-crm:3] online
+2026-03-09T12:27:29: PM2 log: Stopping app:randoli id:0
+2026-03-09T12:27:29: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-09T12:27:29: PM2 log: pid=31200 msg=process killed
+2026-03-09T12:27:29: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-09T12:27:29: PM2 log: App [randoli:0] online
+2026-03-09T12:27:29: PM2 log: Stopping app:randoli-crm id:3
+2026-03-09T12:27:30: PM2 log: App name:randoli-crm id:3 disconnected
+2026-03-09T12:27:30: PM2 log: App [randoli-crm:3] exited with code [0] via signal [SIGINT]
+2026-03-09T12:27:30: PM2 log: pid=31212 msg=process killed
+2026-03-09T12:27:30: PM2 log: App [randoli-crm:3] starting in -cluster mode-
+2026-03-09T12:27:30: PM2 log: App [randoli-crm:3] online
+2026-03-09T12:40:27: PM2 log: Stopping app:randoli id:0
+2026-03-09T12:40:27: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-09T12:40:27: PM2 log: pid=31318 msg=process killed
+2026-03-09T12:40:27: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-09T12:40:27: PM2 log: App [randoli:0] online
+2026-03-09T12:40:27: PM2 log: Stopping app:randoli-crm id:3
+2026-03-09T12:40:27: PM2 log: App name:randoli-crm id:3 disconnected
+2026-03-09T12:40:27: PM2 log: App [randoli-crm:3] exited with code [0] via signal [SIGINT]
+2026-03-09T12:40:27: PM2 log: pid=31326 msg=process killed
+2026-03-09T12:40:27: PM2 log: App [randoli-crm:3] starting in -cluster mode-
+2026-03-09T12:40:27: PM2 log: App [randoli-crm:3] online
+2026-03-09T12:48:47: PM2 log: Stopping app:randoli id:0
+2026-03-09T12:48:47: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-09T12:48:47: PM2 log: pid=31486 msg=process killed
+2026-03-09T12:48:47: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-09T12:48:47: PM2 log: App [randoli:0] online
+2026-03-09T12:48:47: PM2 log: Stopping app:randoli-crm id:3
+2026-03-09T12:48:47: PM2 log: App name:randoli-crm id:3 disconnected
+2026-03-09T12:48:47: PM2 log: App [randoli-crm:3] exited with code [0] via signal [SIGINT]
+2026-03-09T12:48:47: PM2 log: pid=31498 msg=process killed
+2026-03-09T12:48:47: PM2 log: App [randoli-crm:3] starting in -cluster mode-
+2026-03-09T12:48:47: PM2 log: App [randoli-crm:3] online
+2026-03-09T12:56:31: PM2 log: Stopping app:randoli id:0
+2026-03-09T12:56:31: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-09T12:56:32: PM2 log: pid=31625 msg=process killed
+2026-03-09T12:56:32: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-09T12:56:32: PM2 log: App [randoli:0] online
+2026-03-09T12:56:32: PM2 log: Stopping app:randoli-crm id:3
+2026-03-09T12:56:32: PM2 log: App name:randoli-crm id:3 disconnected
+2026-03-09T12:56:32: PM2 log: App [randoli-crm:3] exited with code [0] via signal [SIGINT]
+2026-03-09T12:56:32: PM2 log: pid=31637 msg=process killed
+2026-03-09T12:56:32: PM2 log: App [randoli-crm:3] starting in -cluster mode-
+2026-03-09T12:56:32: PM2 log: App [randoli-crm:3] online
+2026-03-09T13:02:34: PM2 log: Stopping app:randoli id:0
+2026-03-09T13:02:34: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-09T13:02:34: PM2 log: pid=32222 msg=process killed
+2026-03-09T13:02:34: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-09T13:02:34: PM2 log: App [randoli:0] online
+2026-03-09T13:02:34: PM2 log: Stopping app:randoli-crm id:3
+2026-03-09T13:02:34: PM2 log: App name:randoli-crm id:3 disconnected
+2026-03-09T13:02:34: PM2 log: App [randoli-crm:3] exited with code [0] via signal [SIGINT]
+2026-03-09T13:02:34: PM2 log: pid=32234 msg=process killed
+2026-03-09T13:02:34: PM2 log: App [randoli-crm:3] starting in -cluster mode-
+2026-03-09T13:02:34: PM2 log: App [randoli-crm:3] online
+2026-03-09T15:37:30: PM2 log: Stopping app:randoli id:0
+2026-03-09T15:37:30: PM2 log: pid=32354 msg=failed to kill - retrying in 100ms
+2026-03-09T15:37:30: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-09T15:37:30: PM2 log: pid=32354 msg=process killed
+2026-03-09T15:37:30: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-09T15:37:30: PM2 log: App [randoli:0] online
+2026-03-10T18:37:47: PM2 log: ===============================================================================
+2026-03-10T18:37:47: PM2 log: --- New PM2 Daemon started ----------------------------------------------------
+2026-03-10T18:37:47: PM2 log: Time                 : Tue Mar 10 2026 18:37:47 GMT+0000 (Coordinated Universal Time)
+2026-03-10T18:37:47: PM2 log: PM2 version          : 6.0.14
+2026-03-10T18:37:47: PM2 log: Node.js version      : 20.20.0
+2026-03-10T18:37:47: PM2 log: Current arch         : x64
+2026-03-10T18:37:47: PM2 log: PM2 home             : /root/.pm2
+2026-03-10T18:37:47: PM2 log: PM2 PID file         : /root/.pm2/pm2.pid
+2026-03-10T18:37:47: PM2 log: RPC socket file      : /root/.pm2/rpc.sock
+2026-03-10T18:37:47: PM2 log: BUS socket file      : /root/.pm2/pub.sock
+2026-03-10T18:37:47: PM2 log: Application log path : /root/.pm2/logs
+2026-03-10T18:37:47: PM2 log: Worker Interval      : 30000
+2026-03-10T18:37:47: PM2 log: Process dump file    : /root/.pm2/dump.pm2
+2026-03-10T18:37:47: PM2 log: Concurrent actions   : 2
+2026-03-10T18:37:47: PM2 log: SIGTERM timeout      : 1600
+2026-03-10T18:37:47: PM2 log: Runtime Binary       : /usr/bin/node
+2026-03-10T18:37:47: PM2 log: ===============================================================================
+2026-03-10T18:37:48: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-10T18:37:48: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-10T18:37:48: PM2 log: App [randoli:0] online
+2026-03-10T18:37:48: PM2 log: App [randoli-crm:1] online
+2026-03-10T19:26:47: PM2 log: ===============================================================================
+2026-03-10T19:26:47: PM2 log: --- New PM2 Daemon started ----------------------------------------------------
+2026-03-10T19:26:47: PM2 log: Time                 : Tue Mar 10 2026 19:26:47 GMT+0000 (Coordinated Universal Time)
+2026-03-10T19:26:47: PM2 log: PM2 version          : 6.0.14
+2026-03-10T19:26:47: PM2 log: Node.js version      : 20.20.0
+2026-03-10T19:26:47: PM2 log: Current arch         : x64
+2026-03-10T19:26:47: PM2 log: PM2 home             : /root/.pm2
+2026-03-10T19:26:47: PM2 log: PM2 PID file         : /root/.pm2/pm2.pid
+2026-03-10T19:26:47: PM2 log: RPC socket file      : /root/.pm2/rpc.sock
+2026-03-10T19:26:47: PM2 log: BUS socket file      : /root/.pm2/pub.sock
+2026-03-10T19:26:47: PM2 log: Application log path : /root/.pm2/logs
+2026-03-10T19:26:47: PM2 log: Worker Interval      : 30000
+2026-03-10T19:26:47: PM2 log: Process dump file    : /root/.pm2/dump.pm2
+2026-03-10T19:26:47: PM2 log: Concurrent actions   : 2
+2026-03-10T19:26:47: PM2 log: SIGTERM timeout      : 1600
+2026-03-10T19:26:47: PM2 log: Runtime Binary       : /usr/bin/node
+2026-03-10T19:26:47: PM2 log: ===============================================================================
+2026-03-10T19:26:47: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-10T19:26:47: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-10T19:26:47: PM2 log: App [randoli:0] online
+2026-03-10T19:26:47: PM2 log: App [randoli-crm:1] online
+2026-03-10T21:43:32: PM2 log: ===============================================================================
+2026-03-10T21:43:32: PM2 log: --- New PM2 Daemon started ----------------------------------------------------
+2026-03-10T21:43:32: PM2 log: Time                 : Tue Mar 10 2026 21:43:32 GMT+0000 (Coordinated Universal Time)
+2026-03-10T21:43:32: PM2 log: PM2 version          : 6.0.14
+2026-03-10T21:43:32: PM2 log: Node.js version      : 20.20.0
+2026-03-10T21:43:32: PM2 log: Current arch         : x64
+2026-03-10T21:43:32: PM2 log: PM2 home             : /root/.pm2
+2026-03-10T21:43:32: PM2 log: PM2 PID file         : /root/.pm2/pm2.pid
+2026-03-10T21:43:32: PM2 log: RPC socket file      : /root/.pm2/rpc.sock
+2026-03-10T21:43:32: PM2 log: BUS socket file      : /root/.pm2/pub.sock
+2026-03-10T21:43:32: PM2 log: Application log path : /root/.pm2/logs
+2026-03-10T21:43:32: PM2 log: Worker Interval      : 30000
+2026-03-10T21:43:32: PM2 log: Process dump file    : /root/.pm2/dump.pm2
+2026-03-10T21:43:32: PM2 log: Concurrent actions   : 2
+2026-03-10T21:43:32: PM2 log: SIGTERM timeout      : 1600
+2026-03-10T21:43:32: PM2 log: Runtime Binary       : /usr/bin/node
+2026-03-10T21:43:32: PM2 log: ===============================================================================
+2026-03-10T21:43:32: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-10T21:43:32: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-10T21:43:32: PM2 log: App [randoli:0] online
+2026-03-10T21:43:32: PM2 log: App [randoli-crm:1] online
+2026-03-10T21:44:19: PM2 log: Stopping app:randoli id:0
+2026-03-10T21:44:19: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-10T21:44:19: PM2 log: pid=968 msg=process killed
+2026-03-10T21:44:19: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-10T21:44:19: PM2 log: App [randoli:0] online
+2026-03-10T21:44:19: PM2 log: Stopping app:randoli-crm id:1
+2026-03-10T21:44:19: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-10T21:44:19: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-10T21:44:19: PM2 log: pid=967 msg=process killed
+2026-03-10T21:44:19: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-10T21:44:19: PM2 log: App [randoli-crm:1] online
+2026-03-10T21:45:04: PM2 log: Stopping app:randoli id:0
+2026-03-10T21:45:05: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-10T21:45:05: PM2 log: pid=1298 msg=process killed
+2026-03-10T21:45:05: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-10T21:45:05: PM2 log: App [randoli:0] online
+2026-03-10T21:45:05: PM2 log: Stopping app:randoli-crm id:1
+2026-03-10T21:45:05: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-10T21:45:05: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-10T21:45:05: PM2 log: pid=1310 msg=process killed
+2026-03-10T21:45:05: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-10T21:45:05: PM2 log: App [randoli-crm:1] online
+2026-03-10T21:46:43: PM2 log: Stopping app:randoli id:0
+2026-03-10T21:46:43: PM2 log: Stopping app:randoli-crm id:1
+2026-03-10T21:46:43: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-10T21:46:43: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-10T21:46:43: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-10T21:46:43: PM2 log: pid=1410 msg=process killed
+2026-03-10T21:46:43: PM2 log: pid=1418 msg=process killed
+2026-03-10T21:46:43: PM2 log: PM2 successfully stopped
+2026-03-10T21:46:44: PM2 log: ===============================================================================
+2026-03-10T21:46:44: PM2 log: --- New PM2 Daemon started ----------------------------------------------------
+2026-03-10T21:46:44: PM2 log: Time                 : Tue Mar 10 2026 21:46:44 GMT+0000 (Coordinated Universal Time)
+2026-03-10T21:46:44: PM2 log: PM2 version          : 6.0.14
+2026-03-10T21:46:44: PM2 log: Node.js version      : 20.20.1
+2026-03-10T21:46:44: PM2 log: Current arch         : x64
+2026-03-10T21:46:44: PM2 log: PM2 home             : /root/.pm2
+2026-03-10T21:46:44: PM2 log: PM2 PID file         : /root/.pm2/pm2.pid
+2026-03-10T21:46:44: PM2 log: RPC socket file      : /root/.pm2/rpc.sock
+2026-03-10T21:46:44: PM2 log: BUS socket file      : /root/.pm2/pub.sock
+2026-03-10T21:46:44: PM2 log: Application log path : /root/.pm2/logs
+2026-03-10T21:46:44: PM2 log: Worker Interval      : 30000
+2026-03-10T21:46:44: PM2 log: Process dump file    : /root/.pm2/dump.pm2
+2026-03-10T21:46:44: PM2 log: Concurrent actions   : 2
+2026-03-10T21:46:44: PM2 log: SIGTERM timeout      : 1600
+2026-03-10T21:46:44: PM2 log: Runtime Binary       : /usr/bin/node
+2026-03-10T21:46:44: PM2 log: ===============================================================================
+2026-03-10T21:46:44: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-10T21:46:44: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-10T21:46:44: PM2 log: App [randoli:0] online
+2026-03-10T21:46:44: PM2 log: App [randoli-crm:1] online
+2026-03-10T22:06:16: PM2 log: ===============================================================================
+2026-03-10T22:06:16: PM2 log: --- New PM2 Daemon started ----------------------------------------------------
+2026-03-10T22:06:16: PM2 log: Time                 : Tue Mar 10 2026 22:06:16 GMT+0000 (Coordinated Universal Time)
+2026-03-10T22:06:16: PM2 log: PM2 version          : 6.0.14
+2026-03-10T22:06:16: PM2 log: Node.js version      : 20.20.1
+2026-03-10T22:06:16: PM2 log: Current arch         : x64
+2026-03-10T22:06:16: PM2 log: PM2 home             : /root/.pm2
+2026-03-10T22:06:16: PM2 log: PM2 PID file         : /root/.pm2/pm2.pid
+2026-03-10T22:06:16: PM2 log: RPC socket file      : /root/.pm2/rpc.sock
+2026-03-10T22:06:16: PM2 log: BUS socket file      : /root/.pm2/pub.sock
+2026-03-10T22:06:16: PM2 log: Application log path : /root/.pm2/logs
+2026-03-10T22:06:16: PM2 log: Worker Interval      : 30000
+2026-03-10T22:06:16: PM2 log: Process dump file    : /root/.pm2/dump.pm2
+2026-03-10T22:06:16: PM2 log: Concurrent actions   : 2
+2026-03-10T22:06:16: PM2 log: SIGTERM timeout      : 1600
+2026-03-10T22:06:16: PM2 log: Runtime Binary       : /usr/bin/node
+2026-03-10T22:06:16: PM2 log: ===============================================================================
+2026-03-10T22:06:16: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-10T22:06:16: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-10T22:06:16: PM2 log: App [randoli:0] online
+2026-03-10T22:06:16: PM2 log: App [randoli-crm:1] online
+2026-03-10T22:30:24: PM2 log: Stopping app:randoli id:0
+2026-03-10T22:30:24: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-10T22:30:24: PM2 log: pid=973 msg=process killed
+2026-03-10T22:30:24: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-10T22:30:24: PM2 log: App [randoli:0] online
+2026-03-10T22:30:24: PM2 log: Stopping app:randoli-crm id:1
+2026-03-10T22:30:24: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-10T22:30:24: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-10T22:30:24: PM2 log: pid=972 msg=process killed
+2026-03-10T22:30:24: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-10T22:30:24: PM2 log: App [randoli-crm:1] online
+2026-03-10T22:35:35: PM2 log: Stopping app:randoli id:0
+2026-03-10T22:35:35: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-10T22:35:35: PM2 log: pid=6710 msg=process killed
+2026-03-10T22:35:35: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-10T22:35:35: PM2 log: App [randoli:0] online
+2026-03-10T22:35:35: PM2 log: Stopping app:randoli-crm id:1
+2026-03-10T22:35:35: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-10T22:35:35: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-10T22:35:35: PM2 log: pid=6722 msg=process killed
+2026-03-10T22:35:35: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-10T22:35:35: PM2 log: App [randoli-crm:1] online
+2026-03-10T22:36:49: PM2 log: Stopping app:randoli id:0
+2026-03-10T22:36:49: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-10T22:36:49: PM2 log: pid=6854 msg=process killed
+2026-03-10T22:36:49: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-10T22:36:49: PM2 log: App [randoli:0] online
+2026-03-10T22:36:49: PM2 log: Stopping app:randoli-crm id:1
+2026-03-10T22:36:49: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-10T22:36:49: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-10T22:36:49: PM2 log: pid=6866 msg=process killed
+2026-03-10T22:36:49: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-10T22:36:49: PM2 log: App [randoli-crm:1] online
+2026-03-10T22:38:46: PM2 log: Stopping app:randoli id:0
+2026-03-10T22:38:46: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-10T22:38:46: PM2 log: pid=6964 msg=process killed
+2026-03-10T22:38:46: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-10T22:38:46: PM2 log: App [randoli:0] online
+2026-03-10T22:38:46: PM2 log: Stopping app:randoli-crm id:1
+2026-03-10T22:38:46: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-10T22:38:46: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-10T22:38:46: PM2 log: pid=6976 msg=process killed
+2026-03-10T22:38:46: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-10T22:38:46: PM2 log: App [randoli-crm:1] online
+2026-03-10T22:59:52: PM2 log: Stopping app:randoli id:0
+2026-03-10T22:59:52: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-10T22:59:52: PM2 log: pid=7073 msg=process killed
+2026-03-10T22:59:52: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-10T22:59:52: PM2 log: App [randoli:0] online
+2026-03-10T22:59:52: PM2 log: Stopping app:randoli-crm id:1
+2026-03-10T22:59:52: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-10T22:59:52: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-10T22:59:52: PM2 log: pid=7085 msg=process killed
+2026-03-10T22:59:52: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-10T22:59:52: PM2 log: App [randoli-crm:1] online
+2026-03-10T23:01:51: PM2 log: Stopping app:randoli id:0
+2026-03-10T23:01:51: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-10T23:01:51: PM2 log: pid=7308 msg=process killed
+2026-03-10T23:01:51: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-10T23:01:51: PM2 log: App [randoli:0] online
+2026-03-10T23:01:51: PM2 log: Stopping app:randoli-crm id:1
+2026-03-10T23:01:51: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-10T23:01:51: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-10T23:01:52: PM2 log: pid=7320 msg=process killed
+2026-03-10T23:01:52: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-10T23:01:52: PM2 log: App [randoli-crm:1] online
+2026-03-10T23:36:22: PM2 log: Stopping app:randoli id:0
+2026-03-10T23:36:22: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-10T23:36:22: PM2 log: pid=7408 msg=process killed
+2026-03-10T23:36:22: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-10T23:36:22: PM2 log: App [randoli:0] online
+2026-03-10T23:36:22: PM2 log: Stopping app:randoli-crm id:1
+2026-03-10T23:36:22: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-10T23:36:22: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-10T23:36:22: PM2 log: pid=7420 msg=process killed
+2026-03-10T23:36:22: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-10T23:36:22: PM2 log: App [randoli-crm:1] online
+2026-03-10T23:38:29: PM2 log: Stopping app:randoli id:0
+2026-03-10T23:38:29: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-10T23:38:29: PM2 log: pid=7866 msg=process killed
+2026-03-10T23:38:29: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-10T23:38:29: PM2 log: App [randoli:0] online
+2026-03-10T23:38:29: PM2 log: Stopping app:randoli-crm id:1
+2026-03-10T23:38:29: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-10T23:38:29: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-10T23:38:30: PM2 log: pid=7878 msg=process killed
+2026-03-10T23:38:30: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-10T23:38:30: PM2 log: App [randoli-crm:1] online
+2026-03-11T15:00:48: PM2 log: Stopping app:randoli id:0
+2026-03-11T15:00:48: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-11T15:00:48: PM2 log: pid=7971 msg=process killed
+2026-03-11T15:00:48: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-11T15:00:48: PM2 log: App [randoli:0] online
+2026-03-11T15:00:48: PM2 log: Stopping app:randoli-crm id:1
+2026-03-11T15:00:48: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-11T15:00:48: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-11T15:00:48: PM2 log: pid=7983 msg=process killed
+2026-03-11T15:00:48: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-11T15:00:48: PM2 log: App [randoli-crm:1] online
+2026-03-11T15:03:01: PM2 log: Stopping app:randoli id:0
+2026-03-11T15:03:01: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-11T15:03:01: PM2 log: pid=13075 msg=process killed
+2026-03-11T15:03:01: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-11T15:03:01: PM2 log: App [randoli:0] online
+2026-03-11T15:03:01: PM2 log: Stopping app:randoli-crm id:1
+2026-03-11T15:03:01: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-11T15:03:01: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-11T15:03:02: PM2 log: pid=13083 msg=process killed
+2026-03-11T15:03:02: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-11T15:03:02: PM2 log: App [randoli-crm:1] online
+2026-03-11T15:04:25: PM2 log: Stopping app:randoli id:0
+2026-03-11T15:04:26: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-11T15:04:26: PM2 log: pid=13246 msg=process killed
+2026-03-11T15:04:26: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-11T15:04:26: PM2 log: App [randoli:0] online
+2026-03-11T15:04:26: PM2 log: Stopping app:randoli-crm id:1
+2026-03-11T15:04:26: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-11T15:04:26: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-11T15:04:26: PM2 log: pid=13254 msg=process killed
+2026-03-11T15:04:26: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-11T15:04:26: PM2 log: App [randoli-crm:1] online
+2026-03-11T23:16:15: PM2 log: Stopping app:randoli id:0
+2026-03-11T23:16:15: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-11T23:16:16: PM2 log: pid=13379 msg=process killed
+2026-03-11T23:16:16: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-11T23:16:16: PM2 log: App [randoli:0] online
+2026-03-11T23:16:16: PM2 log: Stopping app:randoli-crm id:1
+2026-03-11T23:16:16: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-11T23:16:16: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-11T23:16:16: PM2 log: pid=13391 msg=process killed
+2026-03-11T23:16:16: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-11T23:16:16: PM2 log: App [randoli-crm:1] online
+2026-03-11T23:32:18: PM2 log: Stopping app:randoli id:0
+2026-03-11T23:32:18: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-11T23:32:18: PM2 log: pid=29545 msg=process killed
+2026-03-11T23:32:18: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-11T23:32:18: PM2 log: App [randoli:0] online
+2026-03-11T23:32:18: PM2 log: Stopping app:randoli-crm id:1
+2026-03-11T23:32:18: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-11T23:32:18: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-11T23:32:18: PM2 log: pid=29553 msg=process killed
+2026-03-11T23:32:18: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-11T23:32:18: PM2 log: App [randoli-crm:1] online
+2026-03-11T23:45:16: PM2 log: Stopping app:randoli id:0
+2026-03-11T23:45:16: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-11T23:45:16: PM2 log: pid=29998 msg=process killed
+2026-03-11T23:45:16: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-11T23:45:16: PM2 log: App [randoli:0] online
+2026-03-11T23:45:16: PM2 log: Stopping app:randoli-crm id:1
+2026-03-11T23:45:16: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-11T23:45:16: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-11T23:45:16: PM2 log: pid=30010 msg=process killed
+2026-03-11T23:45:16: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-11T23:45:16: PM2 log: App [randoli-crm:1] online
+2026-03-12T00:01:32: PM2 log: Stopping app:randoli id:0
+2026-03-12T00:01:32: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-12T00:01:32: PM2 log: pid=30230 msg=process killed
+2026-03-12T00:01:32: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-12T00:01:32: PM2 log: App [randoli:0] online
+2026-03-12T00:01:32: PM2 log: Stopping app:randoli-crm id:1
+2026-03-12T00:01:32: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-12T00:01:32: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-12T00:01:32: PM2 log: pid=30242 msg=process killed
+2026-03-12T00:01:32: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-12T00:01:32: PM2 log: App [randoli-crm:1] online
+2026-03-12T00:31:55: PM2 log: Stopping app:randoli id:0
+2026-03-12T00:31:55: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-12T00:31:55: PM2 log: pid=30525 msg=process killed
+2026-03-12T00:31:55: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-12T00:31:55: PM2 log: App [randoli:0] online
+2026-03-12T00:31:55: PM2 log: Stopping app:randoli-crm id:1
+2026-03-12T00:31:55: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-12T00:31:55: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-12T00:31:55: PM2 log: pid=30537 msg=process killed
+2026-03-12T00:31:55: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-12T00:31:55: PM2 log: App [randoli-crm:1] online
+2026-03-12T00:38:49: PM2 log: Stopping app:randoli id:0
+2026-03-12T00:38:49: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-12T00:38:49: PM2 log: pid=31253 msg=process killed
+2026-03-12T00:38:49: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-12T00:38:49: PM2 log: App [randoli:0] online
+2026-03-12T00:38:49: PM2 log: Stopping app:randoli-crm id:1
+2026-03-12T00:38:49: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-12T00:38:49: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-12T00:38:50: PM2 log: pid=31265 msg=process killed
+2026-03-12T00:38:50: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-12T00:38:50: PM2 log: App [randoli-crm:1] online
+2026-03-12T00:40:52: PM2 log: Stopping app:randoli id:0
+2026-03-12T00:40:52: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-12T00:40:52: PM2 log: pid=31711 msg=process killed
+2026-03-12T00:40:52: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-12T00:40:52: PM2 log: App [randoli:0] online
+2026-03-12T00:40:52: PM2 log: Stopping app:randoli-crm id:1
+2026-03-12T00:40:52: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-12T00:40:52: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-12T00:40:52: PM2 log: pid=31723 msg=process killed
+2026-03-12T00:40:52: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-12T00:40:52: PM2 log: App [randoli-crm:1] online
+2026-03-12T00:41:22: PM2 log: Stopping app:randoli id:0
+2026-03-12T00:41:22: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-12T00:41:22: PM2 log: pid=31919 msg=process killed
+2026-03-12T00:41:22: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-12T00:41:22: PM2 log: App [randoli:0] online
+2026-03-12T00:41:22: PM2 log: Stopping app:randoli-crm id:1
+2026-03-12T00:41:22: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-12T00:41:22: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-12T00:41:22: PM2 log: pid=31931 msg=process killed
+2026-03-12T00:41:22: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-12T00:41:22: PM2 log: App [randoli-crm:1] online
+2026-03-12T00:44:53: PM2 log: Stopping app:randoli id:0
+2026-03-12T00:44:53: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-12T00:44:54: PM2 log: pid=32039 msg=process killed
+2026-03-12T00:44:54: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-12T00:44:54: PM2 log: App [randoli:0] online
+2026-03-12T00:44:54: PM2 log: Stopping app:randoli-crm id:1
+2026-03-12T00:44:54: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-12T00:44:54: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-12T00:44:54: PM2 log: pid=32051 msg=process killed
+2026-03-12T00:44:54: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-12T00:44:54: PM2 log: App [randoli-crm:1] online
+2026-03-12T14:26:08: PM2 log: ===============================================================================
+2026-03-12T14:26:08: PM2 log: --- New PM2 Daemon started ----------------------------------------------------
+2026-03-12T14:26:08: PM2 log: Time                 : Thu Mar 12 2026 14:26:08 GMT+0000 (Coordinated Universal Time)
+2026-03-12T14:26:08: PM2 log: PM2 version          : 6.0.14
+2026-03-12T14:26:08: PM2 log: Node.js version      : 20.20.1
+2026-03-12T14:26:08: PM2 log: Current arch         : x64
+2026-03-12T14:26:08: PM2 log: PM2 home             : /root/.pm2
+2026-03-12T14:26:08: PM2 log: PM2 PID file         : /root/.pm2/pm2.pid
+2026-03-12T14:26:08: PM2 log: RPC socket file      : /root/.pm2/rpc.sock
+2026-03-12T14:26:08: PM2 log: BUS socket file      : /root/.pm2/pub.sock
+2026-03-12T14:26:08: PM2 log: Application log path : /root/.pm2/logs
+2026-03-12T14:26:08: PM2 log: Worker Interval      : 30000
+2026-03-12T14:26:08: PM2 log: Process dump file    : /root/.pm2/dump.pm2
+2026-03-12T14:26:08: PM2 log: Concurrent actions   : 2
+2026-03-12T14:26:08: PM2 log: SIGTERM timeout      : 1600
+2026-03-12T14:26:08: PM2 log: Runtime Binary       : /usr/bin/node
+2026-03-12T14:26:08: PM2 log: ===============================================================================
+2026-03-12T14:26:08: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-12T14:26:08: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-12T14:26:08: PM2 log: App [randoli:0] online
+2026-03-12T14:26:08: PM2 log: App [randoli-crm:1] online
+2026-03-12T16:37:43: PM2 log: Stopping app:randoli id:0
+2026-03-12T16:37:44: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-12T16:37:44: PM2 log: pid=1125 msg=process killed
+2026-03-12T16:37:44: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-12T16:37:44: PM2 log: App [randoli:0] online
+2026-03-12T16:37:44: PM2 log: Stopping app:randoli-crm id:1
+2026-03-12T16:37:44: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-12T16:37:44: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-12T16:37:44: PM2 log: pid=1123 msg=process killed
+2026-03-12T16:37:44: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-12T16:37:44: PM2 log: App [randoli-crm:1] online
+2026-03-12T16:55:49: PM2 log: Stopping app:randoli id:0
+2026-03-12T16:55:49: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-12T16:55:49: PM2 log: pid=3034 msg=process killed
+2026-03-12T16:55:49: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-12T16:55:49: PM2 log: App [randoli:0] online
+2026-03-12T16:55:49: PM2 log: Stopping app:randoli-crm id:1
+2026-03-12T16:55:49: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-12T16:55:49: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-12T16:55:49: PM2 log: pid=3042 msg=process killed
+2026-03-12T16:55:49: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-12T16:55:49: PM2 log: App [randoli-crm:1] online
+2026-03-12T18:19:23: PM2 log: Stopping app:randoli id:0
+2026-03-12T18:19:23: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-12T18:19:23: PM2 log: pid=3372 msg=process killed
+2026-03-12T18:19:23: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-12T18:19:23: PM2 log: App [randoli:0] online
+2026-03-12T18:19:23: PM2 log: Stopping app:randoli-crm id:1
+2026-03-12T18:19:23: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-12T18:19:23: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-12T18:19:23: PM2 log: pid=3384 msg=process killed
+2026-03-12T18:19:23: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-12T18:19:24: PM2 log: App [randoli-crm:1] online
+2026-03-12T18:21:14: PM2 log: Stopping app:randoli id:0
+2026-03-12T18:21:14: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-12T18:21:14: PM2 log: pid=4005 msg=process killed
+2026-03-12T18:21:14: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-12T18:21:14: PM2 log: App [randoli:0] online
+2026-03-12T18:21:14: PM2 log: Stopping app:randoli-crm id:1
+2026-03-12T18:21:14: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-12T18:21:14: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-12T18:21:14: PM2 log: pid=4013 msg=process killed
+2026-03-12T18:21:14: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-12T18:21:14: PM2 log: App [randoli-crm:1] online
+2026-03-12T18:24:29: PM2 log: Stopping app:randoli id:0
+2026-03-12T18:24:29: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-12T18:24:29: PM2 log: pid=4113 msg=process killed
+2026-03-12T18:24:29: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-12T18:24:29: PM2 log: App [randoli:0] online
+2026-03-12T18:24:29: PM2 log: Stopping app:randoli-crm id:1
+2026-03-12T18:24:29: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-12T18:24:29: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-12T18:24:29: PM2 log: pid=4125 msg=process killed
+2026-03-12T18:24:29: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-12T18:24:30: PM2 log: App [randoli-crm:1] online
+2026-03-12T18:29:36: PM2 log: Stopping app:randoli id:0
+2026-03-12T18:29:36: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-12T18:29:36: PM2 log: pid=4229 msg=process killed
+2026-03-12T18:29:36: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-12T18:29:36: PM2 log: App [randoli:0] online
+2026-03-12T18:29:36: PM2 log: Stopping app:randoli-crm id:1
+2026-03-12T18:29:36: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-12T18:29:36: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-12T18:29:36: PM2 log: pid=4241 msg=process killed
+2026-03-12T18:29:36: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-12T18:29:36: PM2 log: App [randoli-crm:1] online
+2026-03-12T18:35:38: PM2 log: Stopping app:randoli id:0
+2026-03-12T18:35:38: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-12T18:35:38: PM2 log: pid=4374 msg=process killed
+2026-03-12T18:35:38: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-12T18:35:38: PM2 log: App [randoli:0] online
+2026-03-12T18:35:38: PM2 log: Stopping app:randoli-crm id:1
+2026-03-12T18:35:38: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-12T18:35:38: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-12T18:35:38: PM2 log: pid=4386 msg=process killed
+2026-03-12T18:35:38: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-12T18:35:38: PM2 log: App [randoli-crm:1] online
+2026-03-12T18:38:33: PM2 log: Stopping app:randoli id:0
+2026-03-12T18:38:33: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-12T18:38:33: PM2 log: pid=4541 msg=process killed
+2026-03-12T18:38:33: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-12T18:38:33: PM2 log: App [randoli:0] online
+2026-03-12T18:38:33: PM2 log: Stopping app:randoli-crm id:1
+2026-03-12T18:38:33: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-12T18:38:33: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-12T18:38:33: PM2 log: pid=4553 msg=process killed
+2026-03-12T18:38:33: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-12T18:38:33: PM2 log: App [randoli-crm:1] online
+2026-03-12T18:42:14: PM2 log: Stopping app:randoli id:0
+2026-03-12T18:42:15: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-12T18:42:15: PM2 log: pid=4660 msg=process killed
+2026-03-12T18:42:15: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-12T18:42:15: PM2 log: App [randoli:0] online
+2026-03-12T18:42:15: PM2 log: Stopping app:randoli-crm id:1
+2026-03-12T18:42:15: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-12T18:42:15: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-12T18:42:15: PM2 log: pid=4672 msg=process killed
+2026-03-12T18:42:15: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-12T18:42:15: PM2 log: App [randoli-crm:1] online
+2026-03-12T18:48:50: PM2 log: Stopping app:randoli id:0
+2026-03-12T18:48:50: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-12T18:48:50: PM2 log: pid=4800 msg=process killed
+2026-03-12T18:48:50: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-12T18:48:50: PM2 log: App [randoli:0] online
+2026-03-12T18:48:50: PM2 log: Stopping app:randoli-crm id:1
+2026-03-12T18:48:50: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-12T18:48:50: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-12T18:48:50: PM2 log: pid=4812 msg=process killed
+2026-03-12T18:48:50: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-12T18:48:51: PM2 log: App [randoli-crm:1] online
+2026-03-12T18:51:11: PM2 log: Stopping app:randoli id:0
+2026-03-12T18:51:11: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-12T18:51:11: PM2 log: pid=4974 msg=process killed
+2026-03-12T18:51:11: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-12T18:51:11: PM2 log: App [randoli:0] online
+2026-03-12T18:51:12: PM2 log: Stopping app:randoli-crm id:1
+2026-03-12T18:51:12: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-12T18:51:12: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-12T18:51:12: PM2 log: pid=4986 msg=process killed
+2026-03-12T18:51:12: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-12T18:51:12: PM2 log: App [randoli-crm:1] online
+2026-03-12T18:53:47: PM2 log: Stopping app:randoli id:0
+2026-03-12T18:53:47: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-12T18:53:47: PM2 log: pid=5090 msg=process killed
+2026-03-12T18:53:47: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-12T18:53:47: PM2 log: App [randoli:0] online
+2026-03-12T18:53:47: PM2 log: Stopping app:randoli-crm id:1
+2026-03-12T18:53:47: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-12T18:53:47: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-12T18:53:47: PM2 log: pid=5102 msg=process killed
+2026-03-12T18:53:47: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-12T18:53:47: PM2 log: App [randoli-crm:1] online
+2026-03-12T18:57:13: PM2 log: Stopping app:randoli id:0
+2026-03-12T18:57:13: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-12T18:57:13: PM2 log: pid=5202 msg=process killed
+2026-03-12T18:57:13: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-12T18:57:13: PM2 log: App [randoli:0] online
+2026-03-12T18:57:13: PM2 log: Stopping app:randoli-crm id:1
+2026-03-12T18:57:13: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-12T18:57:13: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-12T18:57:13: PM2 log: pid=5214 msg=process killed
+2026-03-12T18:57:13: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-12T18:57:13: PM2 log: App [randoli-crm:1] online
+2026-03-12T19:08:31: PM2 log: Stopping app:randoli id:0
+2026-03-12T19:08:31: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-12T19:08:31: PM2 log: pid=5311 msg=process killed
+2026-03-12T19:08:31: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-12T19:08:31: PM2 log: App [randoli:0] online
+2026-03-12T19:08:31: PM2 log: Stopping app:randoli-crm id:1
+2026-03-12T19:08:31: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-12T19:08:31: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-12T19:08:31: PM2 log: pid=5323 msg=process killed
+2026-03-12T19:08:31: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-12T19:08:31: PM2 log: App [randoli-crm:1] online
+2026-03-12T21:37:43: PM2 log: Stopping app:randoli id:0
+2026-03-12T21:37:43: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-12T21:37:43: PM2 log: pid=5513 msg=process killed
+2026-03-12T21:37:43: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-12T21:37:43: PM2 log: App [randoli:0] online
+2026-03-12T21:37:43: PM2 log: Stopping app:randoli-crm id:1
+2026-03-12T21:37:43: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-12T21:37:43: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-12T21:37:43: PM2 log: pid=5525 msg=process killed
+2026-03-12T21:37:43: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-12T21:37:43: PM2 log: App [randoli-crm:1] online
+2026-03-12T21:40:15: PM2 log: Stopping app:randoli id:0
+2026-03-12T21:40:15: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-12T21:40:15: PM2 log: pid=7234 msg=process killed
+2026-03-12T21:40:15: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-12T21:40:15: PM2 log: App [randoli:0] online
+2026-03-12T21:40:15: PM2 log: Stopping app:randoli-crm id:1
+2026-03-12T21:40:15: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-12T21:40:15: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-12T21:40:15: PM2 log: pid=7242 msg=process killed
+2026-03-12T21:40:15: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-12T21:40:15: PM2 log: App [randoli-crm:1] online
+2026-03-12T21:45:54: PM2 log: Stopping app:randoli id:0
+2026-03-12T21:45:54: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-12T21:45:54: PM2 log: pid=7349 msg=process killed
+2026-03-12T21:45:54: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-12T21:45:54: PM2 log: App [randoli:0] online
+2026-03-12T21:45:54: PM2 log: Stopping app:randoli-crm id:1
+2026-03-12T21:45:54: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-12T21:45:54: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-12T21:45:54: PM2 log: pid=7361 msg=process killed
+2026-03-12T21:45:54: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-12T21:45:54: PM2 log: App [randoli-crm:1] online
+2026-03-12T21:47:46: PM2 log: Stopping app:randoli id:0
+2026-03-12T21:47:46: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-12T21:47:46: PM2 log: pid=7476 msg=process killed
+2026-03-12T21:47:46: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-12T21:47:46: PM2 log: App [randoli:0] online
+2026-03-12T21:47:46: PM2 log: Stopping app:randoli-crm id:1
+2026-03-12T21:47:46: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-12T21:47:46: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-12T21:47:46: PM2 log: pid=7488 msg=process killed
+2026-03-12T21:47:46: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-12T21:47:46: PM2 log: App [randoli-crm:1] online
+2026-03-12T21:55:23: PM2 log: Stopping app:randoli id:0
+2026-03-12T21:55:23: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-12T21:55:23: PM2 log: pid=7587 msg=process killed
+2026-03-12T21:55:23: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-12T21:55:23: PM2 log: App [randoli:0] online
+2026-03-12T21:55:23: PM2 log: Stopping app:randoli-crm id:1
+2026-03-12T21:55:23: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-12T21:55:23: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-12T21:55:23: PM2 log: pid=7599 msg=process killed
+2026-03-12T21:55:23: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-12T21:55:23: PM2 log: App [randoli-crm:1] online
+2026-03-12T22:03:36: PM2 log: Stopping app:randoli id:0
+2026-03-12T22:03:36: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-12T22:03:36: PM2 log: pid=7728 msg=process killed
+2026-03-12T22:03:36: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-12T22:03:36: PM2 log: App [randoli:0] online
+2026-03-12T22:03:36: PM2 log: Stopping app:randoli-crm id:1
+2026-03-12T22:03:36: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-12T22:03:36: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-12T22:03:36: PM2 log: pid=7740 msg=process killed
+2026-03-12T22:03:36: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-12T22:03:36: PM2 log: App [randoli-crm:1] online
+2026-03-12T22:06:46: PM2 log: Stopping app:randoli id:0
+2026-03-12T22:06:46: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-12T22:06:46: PM2 log: pid=7883 msg=process killed
+2026-03-12T22:06:46: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-12T22:06:46: PM2 log: App [randoli:0] online
+2026-03-12T22:06:46: PM2 log: Stopping app:randoli-crm id:1
+2026-03-12T22:06:46: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-12T22:06:46: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-12T22:06:46: PM2 log: pid=7895 msg=process killed
+2026-03-12T22:06:46: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-12T22:06:46: PM2 log: App [randoli-crm:1] online
+2026-03-12T22:12:29: PM2 log: Stopping app:randoli id:0
+2026-03-12T22:12:29: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-12T22:12:29: PM2 log: pid=7999 msg=process killed
+2026-03-12T22:12:29: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-12T22:12:29: PM2 log: App [randoli:0] online
+2026-03-12T22:12:29: PM2 log: Stopping app:randoli-crm id:1
+2026-03-12T22:12:29: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-12T22:12:29: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-12T22:12:29: PM2 log: pid=8011 msg=process killed
+2026-03-12T22:12:29: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-12T22:12:29: PM2 log: App [randoli-crm:1] online
+2026-03-12T22:16:33: PM2 log: Stopping app:randoli id:0
+2026-03-12T22:16:33: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-12T22:16:33: PM2 log: pid=8132 msg=process killed
+2026-03-12T22:16:33: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-12T22:16:33: PM2 log: App [randoli:0] online
+2026-03-12T22:16:33: PM2 log: Stopping app:randoli-crm id:1
+2026-03-12T22:16:33: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-12T22:16:33: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-12T22:16:33: PM2 log: pid=8144 msg=process killed
+2026-03-12T22:16:33: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-12T22:16:33: PM2 log: App [randoli-crm:1] online
+2026-03-12T22:20:27: PM2 log: Stopping app:randoli id:0
+2026-03-12T22:20:27: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-12T22:20:27: PM2 log: pid=8256 msg=process killed
+2026-03-12T22:20:27: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-12T22:20:27: PM2 log: App [randoli:0] online
+2026-03-12T22:20:27: PM2 log: Stopping app:randoli-crm id:1
+2026-03-12T22:20:27: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-12T22:20:27: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-12T22:20:27: PM2 log: pid=8268 msg=process killed
+2026-03-12T22:20:27: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-12T22:20:27: PM2 log: App [randoli-crm:1] online
+2026-03-12T22:28:25: PM2 log: Stopping app:randoli id:0
+2026-03-12T22:28:25: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-12T22:28:25: PM2 log: pid=8387 msg=process killed
+2026-03-12T22:28:25: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-12T22:28:25: PM2 log: App [randoli:0] online
+2026-03-12T22:28:25: PM2 log: Stopping app:randoli-crm id:1
+2026-03-12T22:28:25: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-12T22:28:25: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-12T22:28:25: PM2 log: pid=8399 msg=process killed
+2026-03-12T22:28:25: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-12T22:28:25: PM2 log: App [randoli-crm:1] online
+2026-03-12T22:35:53: PM2 log: Stopping app:randoli id:0
+2026-03-12T22:35:53: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-12T22:35:53: PM2 log: pid=8561 msg=process killed
+2026-03-12T22:35:53: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-12T22:35:53: PM2 log: App [randoli:0] online
+2026-03-12T22:35:53: PM2 log: Stopping app:randoli-crm id:1
+2026-03-12T22:35:53: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-12T22:35:53: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-12T22:35:53: PM2 log: pid=8573 msg=process killed
+2026-03-12T22:35:53: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-12T22:35:54: PM2 log: App [randoli-crm:1] online
+2026-03-12T22:41:13: PM2 log: Stopping app:randoli id:0
+2026-03-12T22:41:13: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-12T22:41:13: PM2 log: pid=8730 msg=process killed
+2026-03-12T22:41:13: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-12T22:41:13: PM2 log: App [randoli:0] online
+2026-03-12T22:41:13: PM2 log: Stopping app:randoli-crm id:1
+2026-03-12T22:41:13: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-12T22:41:13: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-12T22:41:13: PM2 log: pid=8742 msg=process killed
+2026-03-12T22:41:13: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-12T22:41:13: PM2 log: App [randoli-crm:1] online
+2026-03-12T22:47:53: PM2 log: Stopping app:randoli id:0
+2026-03-12T22:47:53: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-12T22:47:53: PM2 log: pid=8883 msg=process killed
+2026-03-12T22:47:53: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-12T22:47:53: PM2 log: App [randoli:0] online
+2026-03-12T22:47:53: PM2 log: Stopping app:randoli-crm id:1
+2026-03-12T22:47:53: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-12T22:47:53: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-12T22:47:53: PM2 log: pid=8895 msg=process killed
+2026-03-12T22:47:53: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-12T22:47:53: PM2 log: App [randoli-crm:1] online
+2026-03-12T22:49:05: PM2 log: Stopping app:randoli id:0
+2026-03-12T22:49:05: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-12T22:49:05: PM2 log: pid=9064 msg=process killed
+2026-03-12T22:49:05: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-12T22:49:05: PM2 log: App [randoli:0] online
+2026-03-12T22:49:05: PM2 log: Stopping app:randoli-crm id:1
+2026-03-12T22:49:05: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-12T22:49:05: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-12T22:49:05: PM2 log: pid=9076 msg=process killed
+2026-03-12T22:49:05: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-12T22:49:05: PM2 log: App [randoli-crm:1] online
+2026-03-12T22:52:13: PM2 log: Stopping app:randoli id:0
+2026-03-12T22:52:13: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-12T22:52:13: PM2 log: pid=9173 msg=process killed
+2026-03-12T22:52:13: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-12T22:52:13: PM2 log: App [randoli:0] online
+2026-03-12T22:52:13: PM2 log: Stopping app:randoli-crm id:1
+2026-03-12T22:52:13: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-12T22:52:13: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-12T22:52:13: PM2 log: pid=9185 msg=process killed
+2026-03-12T22:52:13: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-12T22:52:13: PM2 log: App [randoli-crm:1] online
+2026-03-12T22:55:40: PM2 log: Stopping app:randoli id:0
+2026-03-12T22:55:40: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-12T22:55:40: PM2 log: pid=9302 msg=process killed
+2026-03-12T22:55:40: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-12T22:55:40: PM2 log: App [randoli:0] online
+2026-03-12T22:55:40: PM2 log: Stopping app:randoli-crm id:1
+2026-03-12T22:55:40: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-12T22:55:40: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-12T22:55:40: PM2 log: pid=9314 msg=process killed
+2026-03-12T22:55:40: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-12T22:55:40: PM2 log: App [randoli-crm:1] online
+2026-03-12T22:56:24: PM2 log: Stopping app:randoli id:0
+2026-03-12T22:56:24: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-12T22:56:24: PM2 log: pid=9432 msg=process killed
+2026-03-12T22:56:24: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-12T22:56:24: PM2 log: App [randoli:0] online
+2026-03-12T22:56:24: PM2 log: Stopping app:randoli-crm id:1
+2026-03-12T22:56:24: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-12T22:56:24: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-12T22:56:24: PM2 log: pid=9444 msg=process killed
+2026-03-12T22:56:24: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-12T22:56:24: PM2 log: App [randoli-crm:1] online
+2026-03-12T23:17:01: PM2 log: Stopping app:randoli id:0
+2026-03-12T23:17:01: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-12T23:17:01: PM2 log: pid=9526 msg=process killed
+2026-03-12T23:17:01: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-12T23:17:01: PM2 log: App [randoli:0] online
+2026-03-12T23:17:01: PM2 log: Stopping app:randoli-crm id:1
+2026-03-12T23:17:01: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-12T23:17:01: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-12T23:17:01: PM2 log: pid=9538 msg=process killed
+2026-03-12T23:17:01: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-12T23:17:01: PM2 log: App [randoli-crm:1] online
+2026-03-12T23:17:45: PM2 log: Stopping app:randoli id:0
+2026-03-12T23:17:45: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-12T23:17:45: PM2 log: pid=9864 msg=process killed
+2026-03-12T23:17:45: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-12T23:17:45: PM2 log: App [randoli:0] online
+2026-03-12T23:17:45: PM2 log: Stopping app:randoli-crm id:1
+2026-03-12T23:17:45: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-12T23:17:45: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-12T23:17:45: PM2 log: pid=9876 msg=process killed
+2026-03-12T23:17:45: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-12T23:17:45: PM2 log: App [randoli-crm:1] online
+2026-03-13T03:22:36: PM2 log: Stopping app:randoli id:0
+2026-03-13T03:22:36: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-13T03:22:36: PM2 log: pid=9967 msg=process killed
+2026-03-13T03:22:36: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-13T03:22:36: PM2 log: App [randoli:0] online
+2026-03-13T03:22:36: PM2 log: Stopping app:randoli-crm id:1
+2026-03-13T03:22:36: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-13T03:22:36: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-13T03:22:37: PM2 log: pid=9979 msg=process killed
+2026-03-13T03:22:37: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-13T03:22:37: PM2 log: App [randoli-crm:1] online
+2026-03-13T03:23:02: PM2 log: Stopping app:randoli id:0
+2026-03-13T03:23:02: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-13T03:23:02: PM2 log: pid=12224 msg=process killed
+2026-03-13T03:23:02: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-13T03:23:02: PM2 log: App [randoli:0] online
+2026-03-13T03:23:02: PM2 log: Stopping app:randoli-crm id:1
+2026-03-13T03:23:02: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-13T03:23:02: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-13T03:23:02: PM2 log: pid=12232 msg=process killed
+2026-03-13T03:23:02: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-13T03:23:02: PM2 log: App [randoli-crm:1] online
+2026-03-13T03:26:42: PM2 log: Stopping app:randoli id:0
+2026-03-13T03:26:42: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-13T03:26:42: PM2 log: pid=12257 msg=process killed
+2026-03-13T03:26:42: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-13T03:26:42: PM2 log: App [randoli:0] online
+2026-03-13T03:26:42: PM2 log: Stopping app:randoli-crm id:1
+2026-03-13T03:26:42: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-13T03:26:42: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-13T03:26:42: PM2 log: pid=12269 msg=process killed
+2026-03-13T03:26:42: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-13T03:26:42: PM2 log: App [randoli-crm:1] online
+2026-03-13T03:31:18: PM2 log: Stopping app:randoli id:0
+2026-03-13T03:31:18: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-13T03:31:18: PM2 log: pid=12385 msg=process killed
+2026-03-13T03:31:18: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-13T03:31:18: PM2 log: App [randoli:0] online
+2026-03-13T03:31:18: PM2 log: Stopping app:randoli-crm id:1
+2026-03-13T03:31:18: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-13T03:31:18: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-13T03:31:18: PM2 log: pid=12397 msg=process killed
+2026-03-13T03:31:18: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-13T03:31:18: PM2 log: App [randoli-crm:1] online
+2026-03-13T03:41:26: PM2 log: Stopping app:randoli id:0
+2026-03-13T03:41:26: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-13T03:41:26: PM2 log: pid=12507 msg=process killed
+2026-03-13T03:41:26: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-13T03:41:26: PM2 log: App [randoli:0] online
+2026-03-13T03:41:26: PM2 log: Stopping app:randoli-crm id:1
+2026-03-13T03:41:26: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-13T03:41:26: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-13T03:41:26: PM2 log: pid=12519 msg=process killed
+2026-03-13T03:41:26: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-13T03:41:26: PM2 log: App [randoli-crm:1] online
+2026-03-13T03:45:07: PM2 log: Stopping app:randoli id:0
+2026-03-13T03:45:07: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-13T03:45:07: PM2 log: pid=12667 msg=process killed
+2026-03-13T03:45:07: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-13T03:45:07: PM2 log: App [randoli:0] online
+2026-03-13T03:45:07: PM2 log: Stopping app:randoli-crm id:1
+2026-03-13T03:45:07: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-13T03:45:07: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-13T03:45:07: PM2 log: pid=12680 msg=process killed
+2026-03-13T03:45:07: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-13T03:45:07: PM2 log: App [randoli-crm:1] online
+2026-03-13T03:46:55: PM2 log: Stopping app:randoli id:0
+2026-03-13T03:46:55: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-13T03:46:55: PM2 log: pid=12811 msg=process killed
+2026-03-13T03:46:55: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-13T03:46:55: PM2 log: App [randoli:0] online
+2026-03-13T03:46:55: PM2 log: Stopping app:randoli-crm id:1
+2026-03-13T03:46:55: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-13T03:46:55: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-13T03:46:55: PM2 log: pid=12823 msg=process killed
+2026-03-13T03:46:55: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-13T03:46:55: PM2 log: App [randoli-crm:1] online
+2026-03-13T03:51:52: PM2 log: Stopping app:randoli id:0
+2026-03-13T03:51:52: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-13T03:51:52: PM2 log: pid=12931 msg=process killed
+2026-03-13T03:51:52: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-13T03:51:52: PM2 log: App [randoli:0] online
+2026-03-13T03:51:52: PM2 log: Stopping app:randoli-crm id:1
+2026-03-13T03:51:52: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-13T03:51:52: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-13T03:51:52: PM2 log: pid=12943 msg=process killed
+2026-03-13T03:51:52: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-13T03:51:52: PM2 log: App [randoli-crm:1] online
+2026-03-13T03:57:44: PM2 log: Stopping app:randoli id:0
+2026-03-13T03:57:44: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-13T03:57:44: PM2 log: pid=13068 msg=process killed
+2026-03-13T03:57:44: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-13T03:57:44: PM2 log: App [randoli:0] online
+2026-03-13T04:06:12: PM2 log: Stopping app:randoli id:0
+2026-03-13T04:06:12: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-13T04:06:13: PM2 log: pid=13195 msg=process killed
+2026-03-13T04:06:13: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-13T04:06:13: PM2 log: App [randoli:0] online
+2026-03-13T04:08:15: PM2 log: Stopping app:randoli id:0
+2026-03-13T04:08:15: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-13T04:08:15: PM2 log: pid=13336 msg=process killed
+2026-03-13T04:08:15: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-13T04:08:15: PM2 log: App [randoli:0] online
+2026-03-13T04:09:35: PM2 log: Stopping app:randoli id:0
+2026-03-13T04:09:35: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-13T04:09:35: PM2 log: pid=13478 msg=process killed
+2026-03-13T04:09:35: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-13T04:09:35: PM2 log: App [randoli:0] online
+2026-03-13T04:10:21: PM2 log: Stopping app:randoli id:0
+2026-03-13T04:10:22: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-13T04:10:22: PM2 log: pid=13515 msg=process killed
+2026-03-13T04:10:22: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-13T04:10:22: PM2 log: App [randoli:0] online
+2026-03-13T04:13:37: PM2 log: Stopping app:randoli id:0
+2026-03-13T04:13:37: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-13T04:13:37: PM2 log: pid=13602 msg=process killed
+2026-03-13T04:13:37: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-13T04:13:37: PM2 log: App [randoli:0] online
+2026-03-13T04:14:13: PM2 log: Stopping app:randoli id:0
+2026-03-13T04:14:13: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-13T04:14:13: PM2 log: pid=13706 msg=process killed
+2026-03-13T04:14:13: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-13T04:14:13: PM2 log: App [randoli:0] online
+2026-03-13T04:29:15: PM2 log: Stopping app:randoli id:0
+2026-03-13T04:29:15: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-13T04:29:15: PM2 log: pid=13777 msg=process killed
+2026-03-13T04:29:15: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-13T04:29:15: PM2 log: App [randoli:0] online
+2026-03-13T04:47:20: PM2 log: Stopping app:randoli id:0
+2026-03-13T04:47:20: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-13T04:47:20: PM2 log: pid=13932 msg=process killed
+2026-03-13T04:47:20: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-13T04:47:20: PM2 log: App [randoli:0] online
+2026-03-13T04:47:20: PM2 log: Stopping app:randoli-crm id:1
+2026-03-13T04:47:20: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-13T04:47:20: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-13T04:47:20: PM2 log: pid=13080 msg=process killed
+2026-03-13T04:47:20: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-13T04:47:20: PM2 log: App [randoli-crm:1] online
+2026-03-13T04:52:00: PM2 log: Stopping app:randoli id:0
+2026-03-13T04:52:00: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-13T04:52:00: PM2 log: pid=14150 msg=process killed
+2026-03-13T04:52:00: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-13T04:52:00: PM2 log: App [randoli:0] online
+2026-03-13T04:52:00: PM2 log: Stopping app:randoli-crm id:1
+2026-03-13T04:52:00: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-13T04:52:00: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-13T04:52:01: PM2 log: pid=14162 msg=process killed
+2026-03-13T04:52:01: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-13T04:52:01: PM2 log: App [randoli-crm:1] online
+2026-03-13T04:56:40: PM2 log: Stopping app:randoli id:0
+2026-03-13T04:56:40: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-13T04:56:40: PM2 log: pid=14273 msg=process killed
+2026-03-13T04:56:40: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-13T04:56:40: PM2 log: App [randoli:0] online
+2026-03-13T04:56:40: PM2 log: Stopping app:randoli-crm id:1
+2026-03-13T04:56:40: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-13T04:56:40: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-13T04:56:40: PM2 log: pid=14281 msg=process killed
+2026-03-13T04:56:40: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-13T04:56:40: PM2 log: App [randoli-crm:1] online
+2026-03-13T05:08:18: PM2 log: Stopping app:randoli id:0
+2026-03-13T05:08:18: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-13T05:08:18: PM2 log: pid=14395 msg=process killed
+2026-03-13T05:08:18: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-13T05:08:18: PM2 log: App [randoli:0] online
+2026-03-13T05:08:18: PM2 log: Stopping app:randoli-crm id:1
+2026-03-13T05:08:18: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-13T05:08:18: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-13T05:08:18: PM2 log: pid=14407 msg=process killed
+2026-03-13T05:08:18: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-13T05:08:18: PM2 log: App [randoli-crm:1] online
+2026-03-13T05:20:32: PM2 log: Stopping app:randoli id:0
+2026-03-13T05:20:32: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-13T05:20:32: PM2 log: pid=14581 msg=process killed
+2026-03-13T05:20:32: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-13T05:20:32: PM2 log: App [randoli:0] online
+2026-03-13T05:20:32: PM2 log: Stopping app:randoli-crm id:1
+2026-03-13T05:20:32: PM2 log: App name:randoli-crm id:1 disconnected
+2026-03-13T05:20:32: PM2 log: App [randoli-crm:1] exited with code [0] via signal [SIGINT]
+2026-03-13T05:20:32: PM2 log: pid=14593 msg=process killed
+2026-03-13T05:20:32: PM2 log: App [randoli-crm:1] starting in -cluster mode-
+2026-03-13T05:20:32: PM2 log: App [randoli-crm:1] online
+2026-03-13T13:16:03: PM2 log: Stopping app:randoli id:0
+2026-03-13T13:16:03: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-13T13:16:03: PM2 log: pid=14760 msg=process killed
+2026-03-13T13:16:03: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-13T13:16:03: PM2 log: App [randoli:0] online
+2026-03-13T13:22:08: PM2 log: Stopping app:randoli id:0
+2026-03-13T13:22:08: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-13T13:22:08: PM2 log: pid=19640 msg=process killed
+2026-03-13T13:22:08: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-13T13:22:08: PM2 log: App [randoli:0] online
+2026-03-13T13:49:48: PM2 log: Stopping app:randoli id:0
+2026-03-13T13:49:48: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-13T13:49:48: PM2 log: pid=19825 msg=process killed
+2026-03-13T13:49:48: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-13T13:49:48: PM2 log: App [randoli:0] online
+2026-03-13T13:51:13: PM2 log: Stopping app:randoli id:0
+2026-03-13T13:51:13: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-13T13:51:13: PM2 log: pid=20189 msg=process killed
+2026-03-13T13:51:13: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-13T13:51:13: PM2 log: App [randoli:0] online
+2026-03-13T13:51:51: PM2 log: Stopping app:randoli id:0
+2026-03-13T13:51:51: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-13T13:51:51: PM2 log: pid=20266 msg=process killed
+2026-03-13T13:51:51: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-13T13:51:51: PM2 log: App [randoli:0] online
+2026-03-13T13:54:07: PM2 log: Stopping app:randoli id:0
+2026-03-13T13:54:07: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-13T13:54:07: PM2 log: pid=20289 msg=process killed
+2026-03-13T13:54:07: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-13T13:54:07: PM2 log: App [randoli:0] online
+2026-03-13T13:59:16: PM2 log: Stopping app:randoli id:0
+2026-03-13T13:59:16: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-13T13:59:16: PM2 log: pid=20365 msg=process killed
+2026-03-13T13:59:16: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-13T13:59:16: PM2 log: App [randoli:0] online
+2026-03-13T14:04:10: PM2 log: Stopping app:randoli id:0
+2026-03-13T14:04:10: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-13T14:04:10: PM2 log: pid=20483 msg=process killed
+2026-03-13T14:04:10: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-13T14:04:10: PM2 log: App [randoli:0] online
+2026-03-13T14:07:03: PM2 log: Stopping app:randoli id:0
+2026-03-13T14:07:03: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-13T14:07:03: PM2 log: pid=20579 msg=process killed
+2026-03-13T14:07:03: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-13T14:07:03: PM2 log: App [randoli:0] online
+2026-03-13T14:12:37: PM2 log: Stopping app:randoli id:0
+2026-03-13T14:12:37: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-13T14:12:37: PM2 log: pid=20674 msg=process killed
+2026-03-13T14:12:37: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-13T14:12:37: PM2 log: App [randoli:0] online
+2026-03-13T14:14:14: PM2 log: Stopping app:randoli id:0
+2026-03-13T14:14:14: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-13T14:14:14: PM2 log: pid=20737 msg=process killed
+2026-03-13T14:14:14: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-13T14:14:14: PM2 log: App [randoli:0] online
+2026-03-13T14:15:24: PM2 log: Stopping app:randoli id:0
+2026-03-13T14:15:24: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-13T14:15:24: PM2 log: pid=20763 msg=process killed
+2026-03-13T14:15:24: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-13T14:15:24: PM2 log: App [randoli:0] online
+2026-03-13T20:16:02: PM2 log: Stopping app:randoli id:0
+2026-03-13T20:16:02: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-13T20:16:02: PM2 log: pid=20793 msg=process killed
+2026-03-13T20:16:02: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-13T20:16:02: PM2 log: App [randoli:0] online
+2026-03-13T20:20:49: PM2 log: Stopping app:randoli id:0
+2026-03-13T20:20:49: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-13T20:20:49: PM2 log: pid=23402 msg=process killed
+2026-03-13T20:20:49: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-13T20:20:49: PM2 log: App [randoli:0] online
+2026-03-13T20:23:08: PM2 log: Stopping app:randoli id:0
+2026-03-13T20:23:08: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-13T20:23:08: PM2 log: pid=23512 msg=process killed
+2026-03-13T20:23:08: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-13T20:23:08: PM2 log: App [randoli:0] online
+2026-03-13T20:28:33: PM2 log: Stopping app:randoli id:0
+2026-03-13T20:28:33: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-13T20:28:33: PM2 log: pid=23609 msg=process killed
+2026-03-13T20:28:33: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-13T20:28:33: PM2 log: App [randoli:0] online
+2026-03-13T20:37:46: PM2 log: Stopping app:randoli id:0
+2026-03-13T20:37:46: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-13T20:37:46: PM2 log: pid=23731 msg=process killed
+2026-03-13T20:37:46: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-13T20:37:46: PM2 log: App [randoli:0] online
+2026-03-13T20:41:09: PM2 log: Stopping app:randoli id:0
+2026-03-13T20:41:09: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-13T20:41:09: PM2 log: pid=23906 msg=process killed
+2026-03-13T20:41:09: PM2 log: App [randoli:0] starting in -fork mode-
+2026-03-13T20:41:09: PM2 log: App [randoli:0] online
+2026-03-13T20:42:49: PM2 log: Stopping app:randoli id:0
+2026-03-13T20:42:49: PM2 log: App [randoli:0] exited with code [0] via signal [SIGINT]
+2026-03-13T20:42:49: PM2 log: pid=24035 msg=process killed
+2026-03-13T20:42:49: PM2 log: App [randoli:2] starting in -fork mode-
+2026-03-13T20:42:49: PM2 log: App [randoli:2] online
+2026-03-13T20:46:53: PM2 log: Stopping app:randoli id:2
+2026-03-13T20:46:53: PM2 log: App [randoli:2] exited with code [0] via signal [SIGINT]
+2026-03-13T20:46:53: PM2 log: pid=24079 msg=process killed
+2026-03-13T20:46:53: PM2 log: App [randoli:2] starting in -fork mode-
+2026-03-13T20:46:53: PM2 log: App [randoli:2] online
+2026-03-13T21:03:45: PM2 log: Stopping app:randoli id:2
+2026-03-13T21:03:45: PM2 log: App [randoli:2] exited with code [0] via signal [SIGINT]
+2026-03-13T21:03:46: PM2 log: pid=24217 msg=process killed
+2026-03-13T21:03:46: PM2 log: App [randoli:2] starting in -fork mode-
+2026-03-13T21:03:46: PM2 log: App [randoli:2] online
+2026-03-14T00:05:05: PM2 log: Stopping app:randoli id:2
+2026-03-14T00:05:05: PM2 log: pid=24665 msg=failed to kill - retrying in 100ms
+2026-03-14T00:05:05: PM2 log: App [randoli:2] exited with code [0] via signal [SIGINT]
+2026-03-14T00:05:05: PM2 log: pid=24665 msg=process killed
+2026-03-14T00:05:05: PM2 log: App [randoli:2] starting in -fork mode-
+2026-03-14T00:05:05: PM2 log: App [randoli:2] online
+2026-03-14T00:05:59: PM2 log: Stopping app:randoli id:2
+2026-03-14T00:05:59: PM2 log: App [randoli:2] exited with code [0] via signal [SIGINT]
+2026-03-14T00:05:59: PM2 log: pid=25892 msg=process killed
+2026-03-14T00:05:59: PM2 log: App [randoli:2] starting in -fork mode-
+2026-03-14T00:05:59: PM2 log: App [randoli:2] online
+2026-03-14T00:06:51: PM2 log: Stopping app:randoli id:2
+2026-03-14T00:06:51: PM2 log: App [randoli:2] exited with code [0] via signal [SIGINT]
+2026-03-14T00:06:51: PM2 log: pid=25926 msg=process killed
+2026-03-14T00:06:51: PM2 log: App [randoli:2] starting in -fork mode-
+2026-03-14T00:06:51: PM2 log: App [randoli:2] online
+2026-03-14T00:14:21: PM2 log: Stopping app:randoli id:2
+2026-03-14T00:14:21: PM2 log: App [randoli:2] exited with code [0] via signal [SIGINT]
+2026-03-14T00:14:21: PM2 log: pid=26024 msg=process killed
+2026-03-14T00:14:21: PM2 log: App [randoli:2] starting in -fork mode-
+2026-03-14T00:14:21: PM2 log: App [randoli:2] online
+2026-03-14T00:14:56: PM2 log: Stopping app:randoli id:2
+2026-03-14T00:14:56: PM2 log: App [randoli:2] exited with code [0] via signal [SIGINT]
+2026-03-14T00:14:56: PM2 log: pid=26102 msg=process killed
+2026-03-14T00:14:56: PM2 log: App [randoli:2] starting in -fork mode-
+2026-03-14T00:14:56: PM2 log: App [randoli:2] online
+2026-03-14T00:32:07: PM2 log: Stopping app:randoli id:2
+2026-03-14T00:32:07: PM2 log: App [randoli:2] exited with code [0] via signal [SIGINT]
+2026-03-14T00:32:07: PM2 log: pid=26136 msg=process killed
+2026-03-14T00:32:07: PM2 log: App [randoli:2] starting in -fork mode-
+2026-03-14T00:32:07: PM2 log: App [randoli:2] online
+2026-03-14T00:38:11: PM2 log: Stopping app:randoli id:2
+2026-03-14T00:38:11: PM2 log: App [randoli:2] exited with code [0] via signal [SIGINT]
+2026-03-14T00:38:12: PM2 log: pid=26244 msg=process killed
+2026-03-14T00:38:12: PM2 log: App [randoli:2] starting in -fork mode-
+2026-03-14T00:38:12: PM2 log: App [randoli:2] online
+2026-03-14T00:46:00: PM2 log: Stopping app:randoli id:2
+2026-03-14T00:46:00: PM2 log: App [randoli:2] exited with code [0] via signal [SIGINT]
+2026-03-14T00:46:00: PM2 log: pid=26300 msg=process killed
+2026-03-14T00:46:00: PM2 log: App [randoli:2] starting in -fork mode-
+2026-03-14T00:46:00: PM2 log: App [randoli:2] online
+2026-03-14T00:51:19: PM2 log: Stopping app:randoli id:2
+2026-03-14T00:51:19: PM2 log: App [randoli:2] exited with code [0] via signal [SIGINT]
+2026-03-14T00:51:19: PM2 log: pid=26369 msg=process killed
+2026-03-14T00:51:19: PM2 log: App [randoli:2] starting in -fork mode-
+2026-03-14T00:51:19: PM2 log: App [randoli:2] online
+2026-03-14T00:53:01: PM2 log: Stopping app:randoli id:2
+2026-03-14T00:53:01: PM2 log: App [randoli:2] exited with code [0] via signal [SIGINT]
+2026-03-14T00:53:01: PM2 log: pid=26526 msg=process killed
+2026-03-14T00:53:01: PM2 log: App [randoli:2] starting in -fork mode-
+2026-03-14T00:53:01: PM2 log: App [randoli:2] online
+2026-03-14T00:58:01: PM2 log: Stopping app:randoli id:2
+2026-03-14T00:58:01: PM2 log: App [randoli:2] exited with code [0] via signal [SIGINT]
+2026-03-14T00:58:01: PM2 log: pid=26558 msg=process killed
+2026-03-14T00:58:01: PM2 log: App [randoli:2] starting in -fork mode-
+2026-03-14T00:58:02: PM2 log: App [randoli:2] online
+2026-03-14T01:00:10: PM2 log: Stopping app:randoli id:2
+2026-03-14T01:00:10: PM2 log: App [randoli:2] exited with code [0] via signal [SIGINT]
+2026-03-14T01:00:10: PM2 log: pid=26608 msg=process killed
+2026-03-14T01:00:10: PM2 log: App [randoli:2] starting in -fork mode-
+2026-03-14T01:00:10: PM2 log: App [randoli:2] online
+2026-03-14T01:06:48: PM2 log: Stopping app:randoli id:2
+2026-03-14T01:06:48: PM2 log: App [randoli:2] exited with code [0] via signal [SIGINT]
+2026-03-14T01:06:48: PM2 log: pid=26646 msg=process killed
+2026-03-14T01:06:48: PM2 log: App [randoli:2] starting in -fork mode-
+2026-03-14T01:06:48: PM2 log: App [randoli:2] online
+2026-03-14T01:06:54: PM2 log: Stopping app:randoli id:2
+2026-03-14T01:06:54: PM2 log: App [randoli:2] exited with code [0] via signal [SIGINT]
+2026-03-14T01:06:54: PM2 log: pid=26710 msg=process killed
+2026-03-14T01:06:54: PM2 log: App [randoli:2] starting in -fork mode-
+2026-03-14T01:06:54: PM2 log: App [randoli:2] online
+2026-03-14T01:18:35: PM2 log: Stopping app:randoli id:2
+2026-03-14T01:18:35: PM2 log: App [randoli:2] exited with code [0] via signal [SIGINT]
+2026-03-14T01:18:35: PM2 log: pid=26738 msg=process killed
+2026-03-14T01:18:35: PM2 log: App [randoli:2] starting in -fork mode-
+2026-03-14T01:18:35: PM2 log: App [randoli:2] online

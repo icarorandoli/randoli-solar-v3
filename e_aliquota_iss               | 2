@@ -1,0 +1,38 @@
+               key               |                                    value                                    
+---------------------------------+-----------------------------------------------------------------------------
+ nfse_aliquota_iss               | 2
+ nfse_ambiente                   | producao
+ nfse_auto_emit                  | true
+ nfse_auto_emit_gateways         | mp
+ nfse_bairro                     | jardim acacias
+ nfse_cep                        | 78553285
+ nfse_certificado_senha          | Icba281287@
+ nfse_cnbs                       | 114061900
+ nfse_cnpj_prestador             | 43.201.226/0001-63
+ nfse_codigo_servico             | 
+ nfse_ctrib_mun                  | 17.06
+ nfse_ctrib_nac                  | 140601
+ nfse_descricao_servico          | Prestação de serviços de engenharia e homologação de sistemas fotovoltaicos
+ nfse_email_prestador            | icaro@randolisolar.com.br
+ nfse_enabled                    | true
+ nfse_informacoes_complementares | EMITIDO POR ME OU EPP OPTANTE PELO Simples Nacional; e II NAO GERA DIREITO
+ nfse_inscricao_municipal        | 40690
+ nfse_logradouro                 | rua hatsue sakaguschi
+ nfse_municipio_codigo           | 5107909
+ nfse_municipio_nome             | sinop
+ nfse_natureza_operacao          | 1
+ nfse_nome_fantasia              | RANDOLI SOLAR
+ nfse_numero                     | 599
+ nfse_op_simples_nac             | 3
+ nfse_proximo_dps                | 8
+ nfse_proximo_rps                | 1
+ nfse_razao_social               | ICARO RANDOLI E SILVA LTDA
+ nfse_reg_ap_trib_sn             | 1
+ nfse_reg_esp_trib               | 0
+ nfse_regime_tributacao          | 6
+ nfse_serie_dps                  | 1
+ nfse_serie_rps                  | 1
+ nfse_uf                         | mt
+ nfse_webservice_url             | 
+(34 rows)
+

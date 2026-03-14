@@ -1,0 +1,5 @@
+if (!isAdmin && project.userId !== user.id) {
+
+if (!isAdmin && project.userId !== user.id) {
+
+

@@ -1021,7 +1021,6 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
   const [opSimpNac, setOpSimpNac] = useState("3");
   const [regApTribSN, setRegApTribSN] = useState("1");
   const [regEspTrib, setRegEspTrib] = useState("0");
-  const [tpRetIssqn, setTpRetIssqn] = useState("2");
   const [serieDps, setSerieDps] = useState("1");
   const [proximoDps, setProximoDps] = useState("1");
   const [descricaoServico, setDescricaoServico] = useState("");
@@ -1056,7 +1055,6 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
     setOpSimpNac(settingsRaw.nfse_op_simples_nac || "3");
     setRegApTribSN(settingsRaw.nfse_reg_ap_trib_sn || "1");
     setRegEspTrib(settingsRaw.nfse_reg_esp_trib || "0");
-    setTpRetIssqn(settingsRaw.nfse_tp_ret_issqn || "2");
     setSerieDps(settingsRaw.nfse_serie_dps || settingsRaw.nfse_serie_rps || "1");
     setProximoDps(settingsRaw.nfse_proximo_dps || settingsRaw.nfse_proximo_rps || "1");
     setDescricaoServico(settingsRaw.nfse_descricao_servico || "Prestação de serviços de engenharia e homologação de sistemas fotovoltaicos");
@@ -1090,7 +1088,6 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
         { key: "nfse_op_simples_nac", value: opSimpNac },
         { key: "nfse_reg_ap_trib_sn", value: regApTribSN },
         { key: "nfse_reg_esp_trib", value: regEspTrib },
-        { key: "nfse_tp_ret_issqn", value: tpRetIssqn },
         { key: "nfse_serie_dps", value: serieDps },
         { key: "nfse_proximo_dps", value: proximoDps },
         { key: "nfse_descricao_servico", value: descricaoServico },
@@ -1330,18 +1327,6 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
                   <SelectItem value="6">6 — Sociedade de Profissionais</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Retenção ISSQN (tpRetISSQN)</Label>
-              <Select value={tpRetIssqn} onValueChange={setTpRetIssqn}>
-                <SelectTrigger data-testid="select-nfse-tp-ret-issqn"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="2">2 — Sem retenção (prestador paga) ✓ Recomendado</SelectItem>
-                  <SelectItem value="1">1 — ISS retido pelo tomador</SelectItem>
-                  <SelectItem value="3">3 — ISS retido por intermediário</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">Use "2 — Sem retenção" para a maioria dos clientes. Erro E39 ocorre quando o tomador não está cadastrado na Prefeitura para retenção.</p>
             </div>
             <div className="space-y-2">
               <Label>Série do DPS</Label>

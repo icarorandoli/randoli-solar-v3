@@ -131,8 +131,8 @@ function buildGerarNfseEnvioXml(params: EmitirNfseParams): string {
   const aliquotaIss = cfg.aliquotaIss || "2.00";
   const opSimpNac = cfg.opSimpNac || "1";
   const isSimplesNacional = opSimpNac === "2" || opSimpNac === "3";
-  const tomadorMunicipio = params.tomadorCodigoMunicipio || cLocEmi;
-  const isTomaLocalSinop = tomadorMunicipio === cLocEmi;
+  const tomadorMunicipio = params.tomadorCodigoMunicipio;
+  const isTomaLocalSinop = !!tomadorMunicipio && tomadorMunicipio === cLocEmi;
   const tpRetISSQN = isTomaLocalSinop ? "1" : "2";
   const pAliqTag = (isTomaLocalSinop && isSimplesNacional) ? `<pAliq>${aliquotaIss}</pAliq>` : "";
   const regApTribSN = cfg.regApTribSN || "1";

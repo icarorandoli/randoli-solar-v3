@@ -92,6 +92,7 @@ export async function lookupCep(cep: string): Promise<{
   bairro?: string;
   localidade?: string;
   uf?: string;
+  ibge?: string;
 } | null> {
   const digits = cep.replace(/\D/g, "");
   if (digits.length !== 8) return null;

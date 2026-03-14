@@ -174,6 +174,7 @@ function ClientDialog({
                       if (data.bairro) setValue("bairro", data.bairro);
                       if (data.localidade) setValue("cidade", data.localidade);
                       if (data.uf) setValue("estado", data.uf);
+                      if (data.ibge) setValue("codigoMunicipio", data.ibge);
                     }
                   }} />
               </div>

@@ -50,6 +50,7 @@ export const clients = pgTable("clients", {
   cep: text("cep"),
   cidade: text("cidade"),
   estado: text("estado"),
+  codigoMunicipio: text("codigo_municipio"),
   userId: varchar("user_id").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
 });

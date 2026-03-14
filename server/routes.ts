@@ -216,7 +216,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   // ── AUTH ───────────────────────────────────────────────────────────
   app.post("/api/auth/register", async (req, res) => {
     try {
-      const { username, password, name, email, phone, cpfCnpj, clientType, company, address, rua, numero, bairro, cep, cidade, estado, role: reqRole } = req.body;
+      const { username, password, name, email, phone, cpfCnpj, clientType, company, address, rua, numero, bairro, cep, cidade, estado, codigoMunicipio: bodyCodigoMunicipio, role: reqRole } = req.body;
       if (!username || !password || !name || !email) {
         return res.status(400).json({ error: "Campos obrigatórios: username, password, name, email" });
       }
@@ -248,6 +248,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         estado,
       });
 
+      const regCodigoMunicipio = bodyCodigoMunicipio || await lookupMunicipioIbge(cep, cidade, estado) || undefined;
       await storage.createClient({
         name,
         email,
@@ -256,6 +257,13 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         type: clientType || "PF",
         company,
         address: composedAddress,
+        rua,
+        numero,
+        bairro,
+        cep,
+        cidade,
+        estado,
+        codigoMunicipio: regCodigoMunicipio,
         userId: user.id,
       });
 
@@ -969,7 +977,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
               const autoFinCep = client?.cep || proj.cep || undefined;
               const autoFinCidade = client?.cidade || proj.cidade || undefined;
               const autoFinUf = client?.estado || proj.estado || undefined;
-              const autoFinIbge = await lookupMunicipioIbge(autoFinCep, autoFinCidade, autoFinUf) || undefined;
+              const autoFinIbge = client?.codigoMunicipio || await lookupMunicipioIbge(autoFinCep, autoFinCidade, autoFinUf) || undefined;
               const result = await emitirNfse({
                 config: nfseConfig,
                 numeroDps: String(proximoDps),
@@ -1560,7 +1568,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           const payWbkCep = client?.cep || project.cep || undefined;
           const payWbkCidade = client?.cidade || project.cidade || undefined;
           const payWbkUf = client?.estado || project.estado || undefined;
-          const payWbkIbge = await lookupMunicipioIbge(payWbkCep, payWbkCidade, payWbkUf) || undefined;
+          const payWbkIbge = client?.codigoMunicipio || await lookupMunicipioIbge(payWbkCep, payWbkCidade, payWbkUf) || undefined;
           const result = await emitirNfse({
             config: nfseConfig,
             numeroDps: String(proximoDps),
@@ -2596,7 +2604,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const tomadorCep = client?.cep || project.cep || undefined;
       const tomadorCidade = client?.cidade || project.cidade || undefined;
       const tomadorUf = client?.estado || project.estado || undefined;
-      const tomadorCodigoMunicipio = await lookupMunicipioIbge(tomadorCep, tomadorCidade, tomadorUf) || undefined;
+      const tomadorCodigoMunicipio = client?.codigoMunicipio || await lookupMunicipioIbge(tomadorCep, tomadorCidade, tomadorUf) || undefined;
 
       const result = await emitirNfse({
         config,
@@ -2664,7 +2672,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const reemitCep = client?.cep || project.cep || undefined;
       const reemitCidade = client?.cidade || project.cidade || undefined;
       const reemitUf = client?.estado || project.estado || undefined;
-      const reemitIbge = await lookupMunicipioIbge(reemitCep, reemitCidade, reemitUf) || undefined;
+      const reemitIbge = client?.codigoMunicipio || await lookupMunicipioIbge(reemitCep, reemitCidade, reemitUf) || undefined;
       const result = await emitirNfse({
         config,
         numeroDps: nota.numeroRps,

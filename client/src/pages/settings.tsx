@@ -342,6 +342,7 @@ export default function SettingsPage() {
   const [whatsappApiKey, setWhatsappApiKey] = useState("");
   const [whatsappInstanceName, setWhatsappInstanceName] = useState("");
   const [whatsappAdminPhone, setWhatsappAdminPhone] = useState("");
+  const [whatsappEngineerPhone, setWhatsappEngineerPhone] = useState("");
   const [showWhatsappKey, setShowWhatsappKey] = useState(false);
   const [waNotifyNovoProjeto, setWaNotifyNovoProjeto] = useState(true);
   const [waNotifyStatus, setWaNotifyStatus] = useState(true);
@@ -396,6 +397,7 @@ export default function SettingsPage() {
     setWhatsappApiKey(settings.whatsapp_api_key || "");
     setWhatsappInstanceName(settings.whatsapp_instance_name || "");
     setWhatsappAdminPhone(settings.whatsapp_admin_phone || "");
+    setWhatsappEngineerPhone(settings.whatsapp_engineer_phone || "");
     setWaNotifyNovoProjeto(settings.whatsapp_notify_novo_projeto !== "false");
     setWaNotifyStatus(settings.whatsapp_notify_status !== "false");
     setWaNotifyDocumento(settings.whatsapp_notify_documento === "true");
@@ -458,6 +460,7 @@ export default function SettingsPage() {
         { key: "whatsapp_api_url", value: whatsappApiUrl },
         { key: "whatsapp_instance_name", value: whatsappInstanceName },
         { key: "whatsapp_admin_phone", value: whatsappAdminPhone },
+        { key: "whatsapp_engineer_phone", value: whatsappEngineerPhone },
         { key: "whatsapp_notify_novo_projeto", value: waNotifyNovoProjeto ? "true" : "false" },
         { key: "whatsapp_notify_status", value: waNotifyStatus ? "true" : "false" },
         { key: "whatsapp_notify_documento", value: waNotifyDocumento ? "true" : "false" },
@@ -769,6 +772,11 @@ export default function SettingsPage() {
                         <Input value={whatsappAdminPhone} onChange={e => setWhatsappAdminPhone(e.target.value)} placeholder="(62) 99999-9999" data-testid="input-whatsapp-admin-phone" />
                         <p className="text-[10px] text-muted-foreground">Número que receberá notificações de novos projetos.</p>
                       </div>
+                      <div className="space-y-2">
+                        <Label>Telefone do Engenheiro (notificações)</Label>
+                        <Input value={whatsappEngineerPhone} onChange={e => setWhatsappEngineerPhone(e.target.value)} placeholder="(62) 99999-9999" data-testid="input-whatsapp-engineer-phone" />
+                        <p className="text-[10px] text-muted-foreground">Engenheiro responsável que também receberá notificações de novos projetos e pagamentos.</p>
+                      </div>
                     </div>
                     <div className="pt-4 border-t border-muted/40">
                       <Button
@@ -1018,6 +1026,7 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
   const [cTribMun, setCTribMun] = useState("");
   const [cNBS, setCNBS] = useState("114061100");
   const [aliquotaIss, setAliquotaIss] = useState("2.00");
+  const [aliquotaSimplesNac, setAliquotaSimplesNac] = useState("6.00");
   const [opSimpNac, setOpSimpNac] = useState("3");
   const [regApTribSN, setRegApTribSN] = useState("1");
   const [regEspTrib, setRegEspTrib] = useState("0");
@@ -1052,6 +1061,7 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
     setCTribMun(settingsRaw.nfse_ctrib_mun || "");
     setCNBS(settingsRaw.nfse_cnbs || "101061900");
     setAliquotaIss(settingsRaw.nfse_aliquota_iss || "2.00");
+    setAliquotaSimplesNac(settingsRaw.nfse_aliquota_simples_nac || "6.00");
     setOpSimpNac(settingsRaw.nfse_op_simples_nac || "3");
     setRegApTribSN(settingsRaw.nfse_reg_ap_trib_sn || "1");
     setRegEspTrib(settingsRaw.nfse_reg_esp_trib || "0");
@@ -1085,6 +1095,7 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
         { key: "nfse_ctrib_mun", value: cTribMun },
         { key: "nfse_cnbs", value: cNBS },
         { key: "nfse_aliquota_iss", value: aliquotaIss },
+        { key: "nfse_aliquota_simples_nac", value: aliquotaSimplesNac },
         { key: "nfse_op_simples_nac", value: opSimpNac },
         { key: "nfse_reg_ap_trib_sn", value: regApTribSN },
         { key: "nfse_reg_esp_trib", value: regEspTrib },
@@ -1289,6 +1300,11 @@ function NfseSettingsTab({ settingsRaw }: { settingsRaw: any }) {
               <Label>% Alíquota ISS</Label>
               <Input value={aliquotaIss} onChange={e => setAliquotaIss(e.target.value)} placeholder="2.00" data-testid="input-nfse-iss" />
               <p className="text-xs text-muted-foreground">Mesmo campo "% Alíquota" do site da prefeitura. Para Simples Nacional: alíquota da sua faixa no DAS.</p>
+            </div>
+            <div className="space-y-2">
+              <Label>% Alíquota Efetiva Simples Nacional (pTotTribSN)</Label>
+              <Input value={aliquotaSimplesNac} onChange={e => setAliquotaSimplesNac(e.target.value)} placeholder="6.00" data-testid="input-nfse-simples-nac" />
+              <p className="text-xs text-muted-foreground">Percentual total aproximado dos tributos do Simples Nacional (exigido pela prefeitura). Consulte a alíquota efetiva no seu PGDAS-D. Exemplo: 6.00</p>
             </div>
             <div className="space-y-2">
               <Label>Simples Nacional (opSimpNac)</Label>

@@ -20,7 +20,7 @@ import {
   Plus, Search, Pencil, Trash2, FolderOpen, Zap, Eye,
   MapPin, Cpu, Sun, User, FileText, Activity, Building,
   ExternalLink, Upload, Hash, CheckCircle2, Archive, RotateCcw, CreditCard, RefreshCw,
-  LayoutGrid, List, XCircle, ArrowLeftRight
+  LayoutGrid, List, XCircle, ArrowLeftRight, BadgeCheck
 } from "lucide-react";
 import { useForm, Controller } from "react-hook-form";
 import type { Project, Client, Document, Timeline, StatusConfig } from "@shared/schema";
@@ -451,6 +451,18 @@ function ProjectDetailSheet({
                                 </Button>
                               </div>
                             )}
+                            {project.status === "aprovado_pagamento_pendente" && project.paymentStatus !== "approved" && ["admin", "financeiro"].includes(user?.role || "") && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="w-full text-[10px] font-bold uppercase tracking-wider h-10 border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 no-default-hover-elevate"
+                                onClick={() => setManualPaymentModal({ open: true, projectId: project.id, valor: project.valor || "", observacao: "" })}
+                                data-testid="button-confirm-manual-payment"
+                              >
+                                <BadgeCheck className="h-3.5 w-3.5 mr-2" />
+                                Confirmar Pagamento Manual
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -839,6 +851,7 @@ interface AdminProjectForm {
   modeloPainel: string;
   potenciaPainel: string;
   quantidadePaineis: string;
+  potencia: string;
 }
 
 function AdminNewProjectDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -849,7 +862,7 @@ function AdminNewProjectDialog({ open, onClose }: { open: boolean; onClose: () =
       concessionaria: "", numeroInstalacao: "", tipoConexao: "monofasico", amperagemDisjuntor: "",
       cep: "", rua: "", numero: "", bairro: "", cidade: "", estado: "", localizacao: "",
       marcaInversor: "", modeloInversor: "", potenciaInversor: "", quantidadeInversor: "",
-      marcaPainel: "", modeloPainel: "", potenciaPainel: "", quantidadePaineis: "",
+      marcaPainel: "", modeloPainel: "", potenciaPainel: "", quantidadePaineis: "", potencia: "",
     }
   });
 
@@ -874,6 +887,17 @@ function AdminNewProjectDialog({ open, onClose }: { open: boolean; onClose: () =
         }).catch(() => {});
     }
   }, [cep, setValue]);
+
+  // Calcula potencia total automaticamente (potenciaPainel * quantidadePaineis / 1000)
+  const watchPotenciaPainel = watch("potenciaPainel");
+  const watchQuantidadePaineis = watch("quantidadePaineis");
+  useEffect(() => {
+    const unit = parseFloat(watchPotenciaPainel || "0");
+    const qty = parseFloat(watchQuantidadePaineis || "0");
+    if (unit > 0 && qty > 0) {
+      setValue("potencia", ((unit * qty) / 1000).toFixed(2).replace(".", ","));
+    }
+  }, [watchPotenciaPainel, watchQuantidadePaineis, setValue]);
 
   const createMut = useMutation({
     mutationFn: (data: AdminProjectForm) => apiRequest("POST", "/api/projects", {
@@ -901,6 +925,7 @@ function AdminNewProjectDialog({ open, onClose }: { open: boolean; onClose: () =
       modeloPainel: data.modeloPainel || undefined,
       potenciaPainel: data.potenciaPainel || undefined,
       quantidadePaineis: data.quantidadePaineis || undefined,
+      potencia: data.potencia || undefined,
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
@@ -1175,6 +1200,14 @@ function AdminNewProjectDialog({ open, onClose }: { open: boolean; onClose: () =
             </div>
           </div>
 
+          <div className="grid grid-cols-1 gap-4 p-3 rounded-xl bg-primary/5 border border-primary/10">
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Potência Total do Sistema (kWp)</Label>
+              <Input {...register("potencia")} placeholder="Calculado automaticamente" className="mt-1.5 rounded-xl border-border/40 font-bold" data-testid="input-new-project-potencia-total" />
+              <p className="text-[10px] text-muted-foreground mt-1">Calculado automaticamente a partir da potência e quantidade de painéis. Pode editar manualmente.</p>
+            </div>
+          </div>
+
           <DialogFooter className="pt-4 gap-2">
             <Button type="button" variant="outline" onClick={() => { reset(); onClose(); }} className="rounded-xl">
               Cancelar
@@ -1230,6 +1263,20 @@ export default function ProjectsPage() {
     }
   }, [allProjects.length]);
 
+  const [manualPaymentModal, setManualPaymentModal] = useState<{ open: boolean; projectId: string; valor: string; observacao: string } | null>(null);
+
+  const confirmManualPaymentMut = useMutation({
+    mutationFn: ({ projectId, valor, observacao }: { projectId: string; valor: string; observacao: string }) =>
+      apiRequest("POST", `/api/projects/${projectId}/confirm-payment-manual`, { valor, observacao }),
+    onSuccess: async () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", "archived"] });
+      toast({ title: "✅ Pagamento confirmado manualmente!" });
+      setManualPaymentModal(null);
+    },
+    onError: (err: any) => toast({ title: err?.message || "Erro ao confirmar pagamento", variant: "destructive" }),
+  });
+
   const deleteMut = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/projects/${id}`),
     onSuccess: () => {
@@ -1254,9 +1301,18 @@ export default function ProjectsPage() {
 
   const [clientFilter, setClientFilter] = useState("todos");
   const [concessionariaFilter, setConcessionariaFilter] = useState("todos");
+  const [estadoFilter, setEstadoFilter] = useState("todos");
+  const [collapsedStates, setCollapsedStates] = useState<Record<string, boolean>>({});
+
+  const toggleStateCollapse = (estado: string) => {
+    setCollapsedStates(prev => ({ ...prev, [estado]: !prev[estado] }));
+  };
 
   const uniqueClients = Array.from(new Set(currentList.map(p => p.client?.name || p.nomeCliente).filter(Boolean))) as string[];
   const uniqueConcessionarias = Array.from(new Set(currentList.map(p => p.concessionaria).filter(Boolean))) as string[];
+  const uniqueEstados = Array.from(new Set(currentList.map(p => p.estado?.toUpperCase()).filter(Boolean))).sort() as string[];
+
+  const canGroupByState = ["admin", "engenharia"].includes(user?.role || "");
 
   const filtered = currentList.filter(p => {
     const s = search.toLowerCase();
@@ -1271,8 +1327,25 @@ export default function ProjectsPage() {
     const matchesStatus = statusFilter === "todos" || p.status === statusFilter;
     const matchesClient = clientFilter === "todos" || (p.client?.name || p.nomeCliente) === clientFilter;
     const matchesConcessionaria = concessionariaFilter === "todos" || p.concessionaria === concessionariaFilter;
-    return matchesSearch && matchesStatus && matchesClient && matchesConcessionaria;
+    const matchesEstado = estadoFilter === "todos" || (estadoFilter === "__sem_estado__" ? !p.estado : (p.estado?.toUpperCase() === estadoFilter));
+    return matchesSearch && matchesStatus && matchesClient && matchesConcessionaria && matchesEstado;
   });
+
+  // Agrupamento por estado (apenas para admin e engenharia)
+  const groupedByEstado = canGroupByState ? (() => {
+    const groups: Record<string, typeof filtered> = {};
+    for (const p of filtered) {
+      const key = p.estado?.toUpperCase() || "__sem_estado__";
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(p);
+    }
+    const sorted = Object.keys(groups).sort((a, b) => {
+      if (a === "__sem_estado__") return 1;
+      if (b === "__sem_estado__") return -1;
+      return a.localeCompare(b);
+    });
+    return sorted.map(key => ({ key, label: key === "__sem_estado__" ? "Sem Estado" : key, projects: groups[key] }));
+  })() : [{ key: "all", label: "", projects: filtered }];
 
   const exportCSV = () => {
     const headers = ["Ticket", "Título", "Cliente", "Status", "Potência (kWp)", "Concessionária", "Valor", "Endereço"];
@@ -1323,7 +1396,7 @@ export default function ProjectsPage() {
           </p>
         </div>
         
-        <Tabs value={tab} onValueChange={v => { setTab(v); setStatusFilter("todos"); setClientFilter("todos"); setConcessionariaFilter("todos"); setSearch(""); }} className="bg-muted/30 p-1 rounded-xl border border-border/40 w-full md:w-auto">
+        <Tabs value={tab} onValueChange={v => { setTab(v); setStatusFilter("todos"); setClientFilter("todos"); setConcessionariaFilter("todos"); setEstadoFilter("todos"); setSearch(""); }} className="bg-muted/30 p-1 rounded-xl border border-border/40 w-full md:w-auto">
           <TabsList className="bg-transparent h-10 gap-1">
             <TabsTrigger value="ativos" data-testid="tab-ativos" className="rounded-lg px-4 font-bold text-[10px] uppercase tracking-wider data-[state=active]:bg-background data-[state=active]:shadow-sm">
               <FolderOpen className="h-3.5 w-3.5 mr-2" /> Ativos
@@ -1405,6 +1478,26 @@ export default function ProjectsPage() {
                     {uniqueConcessionarias.sort().map(c => (
                       <SelectItem key={c} value={c} className="text-xs">{c}</SelectItem>
                     ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {canGroupByState && uniqueEstados.length > 1 && (
+              <div className="min-w-[150px]">
+                <Select value={estadoFilter} onValueChange={setEstadoFilter}>
+                  <SelectTrigger className="h-11 bg-background border-border/40 rounded-xl px-4 text-xs font-bold uppercase tracking-wider" data-testid="select-filter-estado">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-3.5 w-3.5 text-primary" />
+                      <SelectValue />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl max-h-60">
+                    <SelectItem value="todos" className="text-[10px] font-bold uppercase tracking-widest">Todos os Estados</SelectItem>
+                    {uniqueEstados.map(e => (
+                      <SelectItem key={e} value={e} className="text-xs font-bold">{e}</SelectItem>
+                    ))}
+                    <SelectItem value="__sem_estado__" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Sem Estado</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1501,6 +1594,23 @@ export default function ProjectsPage() {
           )}
         </div>
       ) : viewMode === "list" ? (
+        <div className="space-y-6">
+          {groupedByEstado.map(group => (
+            <div key={group.key}>
+              {canGroupByState && groupedByEstado.length > 1 && (
+                <button
+                  onClick={() => toggleStateCollapse(group.key)}
+                  className="flex items-center gap-3 mb-3 w-full group/section"
+                >
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/5 border border-primary/10 hover:bg-primary/10 transition-colors">
+                    <MapPin className="h-3.5 w-3.5 text-primary" />
+                    <span className="text-[11px] font-black uppercase tracking-widest text-primary">{group.label}</span>
+                    <span className="text-[10px] font-bold text-muted-foreground bg-muted rounded-full px-2 py-0.5">{group.projects.length}</span>
+                    <span className="text-[10px] text-muted-foreground ml-1">{collapsedStates[group.key] ? "▶" : "▼"}</span>
+                  </div>
+                </button>
+              )}
+              {!collapsedStates[group.key] && (
         <Card className="border-border/40 shadow-sm overflow-hidden bg-background rounded-2xl">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
@@ -1515,7 +1625,7 @@ export default function ProjectsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/30">
-                {filtered.map(project => (
+                {group.projects.map(project => (
                   <tr
                     key={project.id}
                     className="hover:bg-primary/[0.02] transition-colors cursor-pointer group"
@@ -1592,9 +1702,30 @@ export default function ProjectsPage() {
             </table>
           </div>
         </Card>
+              )}
+            </div>
+          ))}
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map(project => (
+        <div className="space-y-8">
+          {groupedByEstado.map(group => (
+            <div key={group.key}>
+              {canGroupByState && groupedByEstado.length > 1 && (
+                <button
+                  onClick={() => toggleStateCollapse(group.key)}
+                  className="flex items-center gap-3 mb-4 w-full"
+                >
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/5 border border-primary/10 hover:bg-primary/10 transition-colors">
+                    <MapPin className="h-3.5 w-3.5 text-primary" />
+                    <span className="text-[11px] font-black uppercase tracking-widest text-primary">{group.label}</span>
+                    <span className="text-[10px] font-bold text-muted-foreground bg-muted rounded-full px-2 py-0.5">{group.projects.length}</span>
+                    <span className="text-[10px] text-muted-foreground ml-1">{collapsedStates[group.key] ? "▶" : "▼"}</span>
+                  </div>
+                </button>
+              )}
+              {!collapsedStates[group.key] && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {group.projects.map(project => (
             <Card
               key={project.id}
               className="group relative border-border/40 hover:border-primary/40 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden bg-background rounded-2xl"
@@ -1673,6 +1804,10 @@ export default function ProjectsPage() {
               </CardContent>
             </Card>
           ))}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
 
@@ -1703,6 +1838,65 @@ export default function ProjectsPage() {
               data-testid="button-confirm-delete"
             >
               {deleteMut.isPending ? "Excluindo..." : "Sim, excluir"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal confirmação manual de pagamento */}
+      <Dialog open={!!manualPaymentModal?.open} onOpenChange={(open) => !open && setManualPaymentModal(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-emerald-700">
+              <BadgeCheck className="h-5 w-5" />
+              Confirmar Pagamento Manual
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-muted-foreground">
+              Esta ação marcará o pagamento como <strong>aprovado</strong> e avançará o status do projeto automaticamente.
+            </p>
+            <div className="space-y-1">
+              <Label htmlFor="manual-valor">Valor pago (R$)</Label>
+              <Input
+                id="manual-valor"
+                type="number"
+                step="0.01"
+                placeholder="0,00"
+                value={manualPaymentModal?.valor || ""}
+                onChange={(e) => setManualPaymentModal(prev => prev ? { ...prev, valor: e.target.value } : null)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="manual-obs">Observação <span className="text-muted-foreground font-normal">(opcional)</span></Label>
+              <Textarea
+                id="manual-obs"
+                placeholder="Ex: PIX recebido via banco X, comprovante verificado..."
+                rows={3}
+                value={manualPaymentModal?.observacao || ""}
+                onChange={(e) => setManualPaymentModal(prev => prev ? { ...prev, observacao: e.target.value } : null)}
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setManualPaymentModal(null)} disabled={confirmManualPaymentMut.isPending}>
+              Cancelar
+            </Button>
+            <Button
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              disabled={confirmManualPaymentMut.isPending}
+              onClick={() => {
+                if (manualPaymentModal) {
+                  confirmManualPaymentMut.mutate({
+                    projectId: manualPaymentModal.projectId,
+                    valor: manualPaymentModal.valor,
+                    observacao: manualPaymentModal.observacao,
+                  });
+                }
+              }}
+            >
+              <BadgeCheck className="h-4 w-4 mr-2" />
+              {confirmManualPaymentMut.isPending ? "Confirmando..." : "Confirmar Pagamento"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -108,6 +108,11 @@ async function getWhatsAppAdminPhone(): Promise<string> {
   return map["whatsapp_admin_phone"] || "";
 }
 
+async function getWhatsAppEngineerPhone(): Promise<string> {
+  const map = await getSettingsMap();
+  return map["whatsapp_engineer_phone"] || "";
+}
+
 async function getEmailConfig(): Promise<EmailConfig> {
   const map = await getSettingsMap();
   return {
@@ -726,17 +731,30 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           } else {
             // Integrador created the project: notify admin
             const adminPhone = await getWhatsAppAdminPhone();
-            if (!adminPhone) return;
+            const engineerPhone = await getWhatsAppEngineerPhone();
             const integradorName = client?.name || user?.name || "Integrador";
-            await sendWhatsAppNewProjectNotification({
-              config: waConfig,
-              phone: adminPhone,
-              adminName: "Admin",
-              integradorName,
-              projectTitle: project.title,
-              ticketNumber: project.ticketNumber || "",
-              potencia: project.potpicoKwp || undefined,
-            });
+            if (adminPhone) {
+              await sendWhatsAppNewProjectNotification({
+                config: waConfig,
+                phone: adminPhone,
+                adminName: "Admin",
+                integradorName,
+                projectTitle: project.title,
+                ticketNumber: project.ticketNumber || "",
+                potencia: project.potpicoKwp || undefined,
+              });
+            }
+            if (engineerPhone && engineerPhone !== adminPhone) {
+              await sendWhatsAppNewProjectNotification({
+                config: waConfig,
+                phone: engineerPhone,
+                adminName: "Engenheiro",
+                integradorName,
+                projectTitle: project.title,
+                ticketNumber: project.ticketNumber || "",
+                potencia: project.potpicoKwp || undefined,
+              });
+            }
           }
         } catch (err) { console.error("[whatsapp] Erro ao notificar novo projeto:", err); }
       })();
@@ -1055,6 +1073,46 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
+
+  // ── CONFIRM PAYMENT MANUALLY ──────────────────────────────────────────────
+  app.post("/api/projects/:id/confirm-payment-manual", requireAuth, async (req, res) => {
+    try {
+      const user = await getCurrentUser(req);
+      if (!user || !["admin", "financeiro"].includes(user.role)) return res.status(403).json({ error: "Sem permissão. Apenas administradores e financeiro podem confirmar pagamentos manualmente." });
+
+      const project = await storage.getProject((req.params.id as string));
+      if (!project) return res.status(404).json({ error: "Projeto não encontrado" });
+
+      if (project.paymentStatus === "approved") {
+        return res.status(400).json({ error: "Pagamento já está aprovado" });
+      }
+
+      if (project.status !== "aprovado_pagamento_pendente") {
+        return res.status(400).json({ error: "Projeto não está com pagamento pendente" });
+      }
+
+      const { valor, observacao } = req.body;
+      const paidValue = parseFloat(valor) || parseFloat(project.valor || "0") || 0;
+      const adminName = user?.name || user?.email || "Admin";
+      const obs = observacao ? ` Observação: ${observacao}.` : "";
+
+      await advanceProjectAfterPayment(project, (req.params.id as string), "manual", paidValue, `Confirmação manual (${adminName})`);
+
+      // Update timeline with manual confirmation details
+      await storage.addTimelineEntry({
+        projectId: (req.params.id as string),
+        event: "Pagamento confirmado manualmente",
+        details: `Pagamento confirmado manualmente pelo administrador ${adminName}. Valor: R$ ${paidValue.toFixed(2).replace(".", ",")}.${obs}`,
+        createdByRole: "admin",
+      });
+
+      const updated = await storage.getProject((req.params.id as string));
+      res.json({ success: true, project: updated });
+    } catch (err: any) {
+      console.error("[manual-payment] Erro:", err);
+      res.status(500).json({ error: err.message || "Erro ao confirmar pagamento" });
+    }
+  });
 
   app.post("/api/projects/:id/generate-payment", requireAuth, async (req, res) => {
     try {
@@ -1530,9 +1588,16 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           });
         }
         const adminPhone = await getWhatsAppAdminPhone();
+        const engineerPhone = await getWhatsAppEngineerPhone();
         if (adminPhone) {
           await sendWhatsAppPaymentNotification({
             config: waConfig, phone: adminPhone, recipientName: "Admin",
+            projectTitle: project.title, ticketNumber: project.ticketNumber || "", valor,
+          });
+        }
+        if (engineerPhone && engineerPhone !== adminPhone) {
+          await sendWhatsAppPaymentNotification({
+            config: waConfig, phone: engineerPhone, recipientName: "Engenheiro",
             projectTitle: project.title, ticketNumber: project.ticketNumber || "", valor,
           });
         }

@@ -308,10 +308,19 @@ export default function SettingsPage() {
   const [mpPublicKey, setMpPublicKey] = useState("");
   const [mpWebhookSecret, setMpWebhookSecret] = useState("");
 
+  const [mp2Enabled, setMp2Enabled] = useState(false);
+  const [mp2AccessToken, setMp2AccessToken] = useState("");
+  const [mp2PublicKey, setMp2PublicKey] = useState("");
+  const [showMp2Token, setShowMp2Token] = useState(false);
+
   const [psEnabled, setPsEnabled] = useState(false);
   const [psToken, setPsToken] = useState("");
   const [psEmail, setPsEmail] = useState("");
   const [showPsToken, setShowPsToken] = useState(false);
+  const [asaasEnabled, setAsaasEnabled] = useState(false);
+  const [asaasApiKey, setAsaasApiKey] = useState("");
+  const [asaasSandbox, setAsaasSandbox] = useState(false);
+  const [showAsaasKey, setShowAsaasKey] = useState(false);
 
   const [nfseAutoEmit, setNfseAutoEmit] = useState(false);
   const [nfseGateways, setNfseGateways] = useState<string[]>([]);
@@ -371,9 +380,15 @@ export default function SettingsPage() {
     setMpAccessToken(settings.mp_access_token || "");
     setMpPublicKey(settings.mp_public_key || "");
     setMpWebhookSecret(settings.mp_webhook_secret || "");
+    setMp2Enabled(settings.mp2_enabled === "true");
+    setMp2AccessToken(settings.mp2_access_token ? "••••••••" : "");
+    setMp2PublicKey(settings.mp2_public_key || "");
     setPsEnabled(settings.pagseguro_enabled === "true");
     setPsToken(settings.pagseguro_token || "");
     setPsEmail(settings.pagseguro_email || "");
+    setAsaasEnabled(settings.asaas_enabled === "true");
+    setAsaasApiKey(settings.asaas_api_key ? "••••••••" : "");
+    setAsaasSandbox(settings.asaas_sandbox === "true");
     setNfseAutoEmit(settings.nfse_auto_emit === "true");
     setNfseGateways(settings.nfse_auto_emit_gateways ? settings.nfse_auto_emit_gateways.split(",").filter(Boolean) : []);
     setPaymentNextStatus(settings.payment_next_status || "projeto_tecnico");
@@ -431,10 +446,20 @@ export default function SettingsPage() {
       if (mpWebhookSecret && mpWebhookSecret !== "••••••••") {
         pairs.push({ key: "mp_webhook_secret", value: mpWebhookSecret });
       }
+      pairs.push({ key: "mp2_enabled", value: mp2Enabled ? "true" : "false" });
+      pairs.push({ key: "mp2_public_key", value: mp2PublicKey });
+      if (mp2AccessToken && mp2AccessToken !== "••••••••") {
+        pairs.push({ key: "mp2_access_token", value: mp2AccessToken });
+      }
       pairs.push({ key: "pagseguro_enabled", value: psEnabled ? "true" : "false" });
       pairs.push({ key: "pagseguro_email", value: psEmail });
       if (psToken && psToken !== "••••••••") {
         pairs.push({ key: "pagseguro_token", value: psToken });
+      }
+      pairs.push({ key: "asaas_enabled", value: asaasEnabled ? "true" : "false" });
+      pairs.push({ key: "asaas_sandbox", value: asaasSandbox ? "true" : "false" });
+      if (asaasApiKey && asaasApiKey !== "••••••••") {
+        pairs.push({ key: "asaas_api_key", value: asaasApiKey });
       }
       pairs.push({ key: "nfse_auto_emit", value: nfseAutoEmit ? "true" : "false" });
       pairs.push({ key: "nfse_auto_emit_gateways", value: nfseGateways.join(",") });
@@ -831,9 +856,9 @@ export default function SettingsPage() {
                   <CardHeader>
                     <div className="flex items-center gap-2">
                       <CreditCard className="h-4 w-4 text-primary" />
-                      <CardTitle className="text-lg">Mercado Pago</CardTitle>
+                      <CardTitle className="text-lg">Mercado Pago — CPF</CardTitle>
                     </div>
-                    <CardDescription>Receba pagamentos via Cartão e PIX através do Mercado Pago.</CardDescription>
+                    <CardDescription>Receba pagamentos via Cartão e PIX através do Mercado Pago (conta CPF).</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-muted/40 mb-2">
@@ -876,6 +901,47 @@ export default function SettingsPage() {
                   <CardHeader>
                     <div className="flex items-center gap-2">
                       <CreditCard className="h-4 w-4 text-primary" />
+                      <CardTitle className="text-lg">Mercado Pago — CNPJ</CardTitle>
+                    </div>
+                    <CardDescription>Segunda conta do Mercado Pago (conta CNPJ).</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-muted/40 mb-2">
+                      <div className="space-y-0.5">
+                        <Label className="text-base font-semibold">Mercado Pago CNPJ Ativo</Label>
+                        <p className="text-xs text-muted-foreground">Utilizar conta CNPJ do Mercado Pago.</p>
+                      </div>
+                      <Switch checked={mp2Enabled} onCheckedChange={setMp2Enabled} data-testid="switch-mp2-enabled" />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Public Key</Label>
+                        <Input value={mp2PublicKey} onChange={e => setMp2PublicKey(e.target.value)} placeholder="APP_USR-..." data-testid="input-mp2-public-key" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Access Token</Label>
+                        <div className="relative">
+                          <Input
+                            type={showMp2Token ? "text" : "password"}
+                            value={mp2AccessToken}
+                            onChange={e => setMp2AccessToken(e.target.value)}
+                            placeholder="APP_USR-..."
+                            className="pr-10"
+                            data-testid="input-mp2-access-token"
+                          />
+                          <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" onClick={() => setShowMp2Token(!showMp2Token)}>
+                            {showMp2Token ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-muted/40 shadow-md">
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <CreditCard className="h-4 w-4 text-primary" />
                       <CardTitle className="text-lg">PagSeguro</CardTitle>
                     </div>
                     <CardDescription>Receba pagamentos via PIX através do PagSeguro (PagBank).</CardDescription>
@@ -907,6 +973,51 @@ export default function SettingsPage() {
                           <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" onClick={() => setShowPsToken(!showPsToken)}>
                             {showPsToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </button>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-muted/40 shadow-md">
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <CreditCard className="h-4 w-4 text-primary" />
+                      <CardTitle className="text-lg">Asaas</CardTitle>
+                    </div>
+                    <CardDescription>Receba pagamentos via PIX através da Asaas.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-muted/40 mb-2">
+                      <div className="space-y-0.5">
+                        <Label className="text-base font-semibold">Asaas Ativo</Label>
+                        <p className="text-xs text-muted-foreground">Utilizar Asaas para gerar cobranças PIX.</p>
+                      </div>
+                      <Switch checked={asaasEnabled} onCheckedChange={setAsaasEnabled} data-testid="switch-asaas-enabled" />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>API Key</Label>
+                        <div className="relative">
+                          <Input
+                            type={showAsaasKey ? "text" : "password"}
+                            value={asaasApiKey}
+                            onChange={e => setAsaasApiKey(e.target.value)}
+                            placeholder="$aact_..."
+                            className="pr-10"
+                            data-testid="input-asaas-api-key"
+                          />
+                          <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" onClick={() => setShowAsaasKey(!showAsaasKey)}>
+                            {showAsaasKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
+                        <p className="text-xs text-muted-foreground">Chave de API da sua conta Asaas.</p>
+                      </div>
+                      <div className="flex items-center gap-3 pt-6">
+                        <Switch checked={asaasSandbox} onCheckedChange={setAsaasSandbox} data-testid="switch-asaas-sandbox" />
+                        <div>
+                          <Label>Ambiente Sandbox</Label>
+                          <p className="text-xs text-muted-foreground">Ative para testes. Desative para produção.</p>
                         </div>
                       </div>
                     </div>
@@ -968,6 +1079,8 @@ export default function SettingsPage() {
                           {[
                             { key: "mp", label: "Mercado Pago" },
                             { key: "pagseguro", label: "PagSeguro" },
+                            { key: "mp2", label: "Mercado Pago 2" },
+                            { key: "asaas", label: "Asaas" },
                             { key: "manual", label: "Pagamento Manual" },
                           ].map(gw => (
                             <label key={gw.key} className="flex items-center gap-2 p-2 rounded border border-muted/40 bg-background cursor-pointer hover:bg-muted/20 transition-colors">

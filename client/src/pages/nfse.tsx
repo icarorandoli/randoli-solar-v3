@@ -209,6 +209,11 @@ export default function NfsePage() {
                             ? new Date(nota.emitidoEm).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })
                             : new Date(nota.createdAt!).toLocaleDateString("pt-BR")}
                         </p>
+                        <a href={`/api/nfse/notas/${nota.id}/pdf`} target="_blank" rel="noopener noreferrer">
+                          <Button size="sm" variant="outline" className="h-7 text-[11px] rounded-lg border-emerald-200 text-emerald-700 hover:bg-emerald-50">
+                            <ExternalLink className="h-3 w-3 mr-1" /> PDF
+                          </Button>
+                        </a>
                         {nota.linkNota && (
                           <a href={nota.linkNota} target="_blank" rel="noopener noreferrer">
                             <Button size="sm" variant="outline" className="h-7 text-[11px] rounded-lg">

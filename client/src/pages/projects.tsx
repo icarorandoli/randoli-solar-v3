@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
@@ -62,15 +62,18 @@ function ProjectDetailSheet({
   project,
   open,
   onClose,
+  onEdit,
 }: {
   project: ProjectWithClient | null;
   open: boolean;
   onClose: () => void;
+  onEdit?: (id: string) => void;
 }) {
   const { toast } = useToast();
   const { user } = useAuth();
   const canDeleteDocs = ["admin", "engenharia"].includes(user?.role || "");
   const canEditValor = ["admin", "financeiro"].includes(user?.role || "");
+  const isAdmin = user?.role === "admin";
   const [timelineNote, setTimelineNote] = useState("");
   const [newStatus, setNewStatus] = useState("");
   const [newProtocolo, setNewProtocolo] = useState("");
@@ -85,6 +88,8 @@ function ProjectDetailSheet({
   const { data: siteSettings } = useQuery<Record<string, string>>({ queryKey: ["/api/settings"] });
   const hasMp = siteSettings?.mp_enabled !== "false" && !!siteSettings?.mp_access_token;
   const hasPs = siteSettings?.pagseguro_enabled === "true" && !!siteSettings?.pagseguro_token;
+  const hasAsaas = siteSettings?.asaas_enabled === "true" && !!siteSettings?.asaas_api_key;
+  const hasMp2 = siteSettings?.mp2_enabled === "true" && !!siteSettings?.mp2_access_token;
   const { data: internalUsers = [] } = useQuery<{ id: string; name: string; role: string }[]>({
     queryKey: ["/api/users"],
     select: (users: any[]) => users.filter((u: any) => ["admin", "engenharia", "financeiro", "tecnico"].includes(u.role)),
@@ -284,9 +289,21 @@ function ProjectDetailSheet({
                 )}
               </div>
             </div>
-            <Badge className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider shadow-sm border-0 ${getStatusBadge(project.status)}`}>
-              {getStatusLabel(project.status)}
-            </Badge>
+            <div className="flex flex-col items-end gap-2 shrink-0">
+              <Badge className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider shadow-sm border-0 ${getStatusBadge(project.status)}`}>
+                {getStatusLabel(project.status)}
+              </Badge>
+              {isAdmin && onEdit && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-[11px] rounded-lg border-blue-200 text-blue-700 hover:bg-blue-50 gap-1.5"
+                  onClick={() => onEdit(project.id)}
+                >
+                  <Pencil className="h-3 w-3" /> Editar Projeto
+                </Button>
+              )}
+            </div>
           </div>
         </SheetHeader>
 
@@ -395,7 +412,7 @@ function ProjectDetailSheet({
                                     data-testid="button-generate-payment-mp"
                                   >
                                     <CreditCard className="h-3.5 w-3.5 mr-1" />
-                                    {generatePaymentMut.isPending ? "Gerando..." : "Mercado Pago"}
+                                    {generatePaymentMut.isPending ? "Gerando..." : "MP CPF"}
                                   </Button>
                                 )}
                                 {hasPs && (
@@ -411,7 +428,33 @@ function ProjectDetailSheet({
                                     {generatePaymentMut.isPending ? "Gerando..." : "PagSeguro"}
                                   </Button>
                                 )}
-                                {!hasMp && !hasPs && (
+                                {hasAsaas && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="flex-1 text-[10px] font-bold uppercase tracking-wider h-10 border-orange-200 text-orange-700 bg-orange-50 hover:bg-orange-100 no-default-hover-elevate"
+                                    disabled={generatePaymentMut.isPending}
+                                    onClick={() => handleGeneratePayment(project.id, "asaas")}
+                                    data-testid="button-generate-payment-asaas"
+                                  >
+                                    <CreditCard className="h-3.5 w-3.5 mr-1" />
+                                    {generatePaymentMut.isPending ? "Gerando..." : "Asaas PIX"}
+                                  </Button>
+                                )}
+                                {hasMp2 && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="flex-1 text-[10px] font-bold uppercase tracking-wider h-10 border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 no-default-hover-elevate"
+                                    disabled={generatePaymentMut.isPending}
+                                    onClick={() => handleGeneratePayment(project.id, "mp2")}
+                                    data-testid="button-generate-payment-mp2"
+                                  >
+                                    <CreditCard className="h-3.5 w-3.5 mr-1" />
+                                    {generatePaymentMut.isPending ? "Gerando..." : "MP CNPJ"}
+                                  </Button>
+                                )}
+                                {!hasMp && !hasPs && !hasAsaas && !hasMp2 && (
                                   <Button
                                     size="sm"
                                     variant="outline"
@@ -1172,7 +1215,7 @@ function AdminNewProjectDialog({ open, onClose }: { open: boolean; onClose: () =
             </div>
             <div>
               <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Potência (W)</Label>
-              <Input {...register("potenciaInversor")} placeholder="Ex: 5000" type="number" className="mt-1.5 rounded-xl border-border/40" data-testid="input-new-project-pot-inv" />
+              <Input {...register("potenciaInversor")} type="text" inputMode="decimal" placeholder="Ex: 5000" className="mt-1.5 rounded-xl border-border/40" data-testid="input-new-project-pot-inv" />
             </div>
             <div>
               <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Quantidade</Label>
@@ -1192,7 +1235,7 @@ function AdminNewProjectDialog({ open, onClose }: { open: boolean; onClose: () =
             </div>
             <div>
               <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Potência Unit. (W)</Label>
-              <Input {...register("potenciaPainel")} placeholder="Ex: 550" type="number" className="mt-1.5 rounded-xl border-border/40" data-testid="input-new-project-pot-painel" />
+              <Input {...register("potenciaPainel")} type="text" inputMode="decimal" placeholder="Ex: 550" className="mt-1.5 rounded-xl border-border/40" data-testid="input-new-project-pot-painel" />
             </div>
             <div>
               <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Qtd. Painéis</Label>
@@ -1222,6 +1265,312 @@ function AdminNewProjectDialog({ open, onClose }: { open: boolean; onClose: () =
   );
 }
 
+function AdminEditProjectDialog({ projectId, open, onClose }: { projectId: string | null; open: boolean; onClose: () => void }) {
+  const { toast } = useToast();
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<AdminProjectForm>();
+
+  const { data: clients = [] } = useQuery<Client[]>({ queryKey: ["/api/clients"] });
+  const integradores = clients.filter((c: any) => c.tipo === "integrador" || !c.tipo);
+  const todosClientes = clients;
+
+  const { data: project } = useQuery<ProjectWithClient>({
+    queryKey: ["/api/projects", projectId],
+    enabled: !!projectId && open,
+  });
+
+  // Preencher o formulário com dados do projeto ao abrir
+  useEffect(() => {
+    if (project && open) {
+      reset({
+        clientId: project.clientId || "",
+        title: project.title || "",
+        nomeCliente: project.nomeCliente || "",
+        cpfCnpjCliente: project.cpfCnpjCliente || "",
+        telefoneCliente: project.telefoneCliente || "",
+        concessionaria: project.concessionaria || "",
+        numeroInstalacao: project.numeroInstalacao || "",
+        tipoConexao: (project as any).tipoConexao || "monofasico",
+        amperagemDisjuntor: (project as any).amperagemDisjuntor || "",
+        cep: (project as any).cep || "",
+        rua: (project as any).rua || "",
+        numero: (project as any).numero || "",
+        bairro: (project as any).bairro || "",
+        cidade: (project as any).cidade || "",
+        estado: (project as any).estado || "",
+        localizacao: project.localizacao || "",
+        marcaInversor: (project as any).marcaInversor || "",
+        modeloInversor: (project as any).modeloInversor || "",
+        potenciaInversor: (project as any).potenciaInversor || "",
+        quantidadeInversor: (project as any).quantidadeInversor || "",
+        marcaPainel: (project as any).marcaPainel || "",
+        modeloPainel: (project as any).modeloPainel || "",
+        potenciaPainel: (project as any).potenciaPainel || "",
+        quantidadePaineis: (project as any).quantidadePaineis || "",
+        potencia: project.potencia || "",
+      });
+    }
+  }, [project, open, reset]);
+
+  // CEP auto-complete
+  const cep = watch("cep");
+  useEffect(() => {
+    const digits = cep?.replace(/\D/g, "");
+    if (digits?.length === 8) {
+      fetch(`https://viacep.com.br/ws/${digits}/json/`)
+        .then(r => r.json())
+        .then(d => {
+          if (!d.erro) {
+            setValue("rua", d.logradouro || "");
+            setValue("bairro", d.bairro || "");
+            setValue("cidade", d.localidade || "");
+            setValue("estado", d.uf || "");
+          }
+        }).catch(() => {});
+    }
+  }, [cep, setValue]);
+
+  // Calcula potencia total automaticamente
+  const watchPotenciaPainel = watch("potenciaPainel");
+  const watchQuantidadePaineis = watch("quantidadePaineis");
+  useEffect(() => {
+    const unit = parseFloat(watchPotenciaPainel || "0");
+    const qty = parseFloat(watchQuantidadePaineis || "0");
+    if (unit > 0 && qty > 0) {
+      setValue("potencia", ((unit * qty) / 1000).toFixed(2).replace(".", ","));
+    }
+  }, [watchPotenciaPainel, watchQuantidadePaineis, setValue]);
+
+  const updateMut = useMutation({
+    mutationFn: (data: AdminProjectForm) => apiRequest("PATCH", `/api/projects/${projectId}`, {
+      clientId: data.clientId || undefined,
+      title: data.title,
+      nomeCliente: data.nomeCliente,
+      cpfCnpjCliente: data.cpfCnpjCliente,
+      telefoneCliente: data.telefoneCliente || undefined,
+      concessionaria: data.concessionaria || undefined,
+      numeroInstalacao: data.numeroInstalacao || undefined,
+      tipoConexao: data.tipoConexao || undefined,
+      amperagemDisjuntor: data.amperagemDisjuntor || undefined,
+      cep: data.cep || undefined,
+      rua: data.rua || undefined,
+      numero: data.numero || undefined,
+      bairro: data.bairro || undefined,
+      cidade: data.cidade || undefined,
+      estado: data.estado || undefined,
+      localizacao: data.localizacao || undefined,
+      marcaInversor: data.marcaInversor || undefined,
+      modeloInversor: data.modeloInversor || undefined,
+      potenciaInversor: data.potenciaInversor || undefined,
+      quantidadeInversor: data.quantidadeInversor || undefined,
+      marcaPainel: data.marcaPainel || undefined,
+      modeloPainel: data.modeloPainel || undefined,
+      potenciaPainel: data.potenciaPainel || undefined,
+      quantidadePaineis: data.quantidadePaineis || undefined,
+      potencia: data.potencia || undefined,
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId] });
+      toast({ title: "✅ Projeto atualizado com sucesso!" });
+      onClose();
+    },
+    onError: (err: any) => toast({ title: "Erro ao atualizar projeto", description: err.message, variant: "destructive" }),
+  });
+
+  const onSubmit = (data: AdminProjectForm) => updateMut.mutate(data);
+
+  const SectionTitle = ({ children }: { children: React.ReactNode }) => (
+    <div className="flex items-center gap-2 pt-4 pb-1">
+      <div className="h-px flex-1 bg-border/40" />
+      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">{children}</span>
+      <div className="h-px flex-1 bg-border/40" />
+    </div>
+  );
+
+  return (
+    <Dialog open={open} onOpenChange={v => { if (!v) { reset(); onClose(); } }}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-lg font-black tracking-tight flex items-center gap-2">
+            <Pencil className="h-5 w-5 text-primary" />
+            Editar Projeto — {project?.ticketNumber || ""}
+          </DialogTitle>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-2">
+          <SectionTitle>Vínculo</SectionTitle>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Integrador responsável</Label>
+              <select
+                {...register("clientId")}
+                className="mt-1.5 w-full h-10 rounded-xl border border-border/40 bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              >
+                <option value="">— Sem integrador —</option>
+                {integradores.map((c: any) => (
+                  <option key={c.id} value={c.id}>{c.name}{c.email ? ` — ${c.email}` : ""}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Ou selecione um cliente</Label>
+              <select
+                className="mt-1.5 w-full h-10 rounded-xl border border-border/40 bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                onChange={e => setValue("clientId", e.target.value)}
+              >
+                <option value="">— Selecione um cliente —</option>
+                {todosClientes.map((c: any) => (
+                  <option key={c.id} value={c.id}>{c.name}{c.email ? ` — ${c.email}` : ""}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <SectionTitle>Identificação</SectionTitle>
+          <div>
+            <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Título do Projeto *</Label>
+            <Input {...register("title", { required: "Obrigatório" })} className="mt-1.5 rounded-xl border-border/40" />
+            {errors.title && <p className="text-xs text-destructive mt-1">{errors.title.message}</p>}
+          </div>
+
+          <SectionTitle>Dados do Titular</SectionTitle>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Nome Completo *</Label>
+              <Input {...register("nomeCliente", { required: "Obrigatório" })} className="mt-1.5 rounded-xl border-border/40" />
+              {errors.nomeCliente && <p className="text-xs text-destructive mt-1">{errors.nomeCliente.message}</p>}
+            </div>
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">CPF / CNPJ *</Label>
+              <Input {...register("cpfCnpjCliente", { required: "Obrigatório" })} className="mt-1.5 rounded-xl border-border/40" />
+              {errors.cpfCnpjCliente && <p className="text-xs text-destructive mt-1">{errors.cpfCnpjCliente.message}</p>}
+            </div>
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Telefone</Label>
+              <Input {...register("telefoneCliente")} className="mt-1.5 rounded-xl border-border/40" />
+            </div>
+          </div>
+
+          <SectionTitle>Concessionária</SectionTitle>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Concessionária</Label>
+              <select {...register("concessionaria")} className="mt-1.5 w-full h-10 rounded-xl border border-border/40 bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+                <option value="">Selecione...</option>
+                {CONCESSIONARIAS_ADMIN.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Nº Instalação</Label>
+              <Input {...register("numeroInstalacao")} className="mt-1.5 rounded-xl border-border/40" />
+            </div>
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Tipo de Conexão</Label>
+              <select {...register("tipoConexao")} className="mt-1.5 w-full h-10 rounded-xl border border-border/40 bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+                <option value="monofasico">Monofásico</option>
+                <option value="bifasico">Bifásico</option>
+                <option value="trifasico">Trifásico</option>
+              </select>
+            </div>
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Disjuntor</Label>
+              <select {...register("amperagemDisjuntor")} className="mt-1.5 w-full h-10 rounded-xl border border-border/40 bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+                <option value="">Selecione...</option>
+                {AMPERAGENS_ADMIN.map(a => <option key={a} value={a}>{a}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <SectionTitle>Endereço</SectionTitle>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">CEP</Label>
+              <Input {...register("cep")} placeholder="00000-000" className="mt-1.5 rounded-xl border-border/40" />
+            </div>
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Rua / Logradouro</Label>
+              <Input {...register("rua")} className="mt-1.5 rounded-xl border-border/40" />
+            </div>
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Número</Label>
+              <Input {...register("numero")} className="mt-1.5 rounded-xl border-border/40" />
+            </div>
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Bairro</Label>
+              <Input {...register("bairro")} className="mt-1.5 rounded-xl border-border/40" />
+            </div>
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Cidade</Label>
+              <Input {...register("cidade")} className="mt-1.5 rounded-xl border-border/40" />
+            </div>
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Estado (UF)</Label>
+              <Input {...register("estado")} placeholder="MT" maxLength={2} className="mt-1.5 rounded-xl border-border/40" />
+            </div>
+            <div className="col-span-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Link Google Maps</Label>
+              <Input {...register("localizacao")} placeholder="https://maps.google.com/..." className="mt-1.5 rounded-xl border-border/40" />
+            </div>
+          </div>
+
+          <SectionTitle>Inversor</SectionTitle>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Marca</Label>
+              <Input {...register("marcaInversor")} className="mt-1.5 rounded-xl border-border/40" />
+            </div>
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Modelo</Label>
+              <Input {...register("modeloInversor")} className="mt-1.5 rounded-xl border-border/40" />
+            </div>
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Potência (kW)</Label>
+              <Input {...register("potenciaInversor")} type="text" inputMode="decimal" placeholder="Ex: 7.5" className="mt-1.5 rounded-xl border-border/40" />
+            </div>
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Quantidade</Label>
+              <Input {...register("quantidadeInversor")} type="text" inputMode="numeric" className="mt-1.5 rounded-xl border-border/40" />
+            </div>
+          </div>
+
+          <SectionTitle>Módulos Fotovoltaicos</SectionTitle>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Marca</Label>
+              <Input {...register("marcaPainel")} className="mt-1.5 rounded-xl border-border/40" />
+            </div>
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Modelo</Label>
+              <Input {...register("modeloPainel")} className="mt-1.5 rounded-xl border-border/40" />
+            </div>
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Potência Unit. (Wp)</Label>
+              <Input {...register("potenciaPainel")} type="text" inputMode="decimal" placeholder="Ex: 610" className="mt-1.5 rounded-xl border-border/40" />
+            </div>
+            <div>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Qtd. Painéis</Label>
+              <Input {...register("quantidadePaineis")} type="text" inputMode="numeric" className="mt-1.5 rounded-xl border-border/40" />
+            </div>
+          </div>
+
+          <div className="rounded-xl bg-primary/5 border border-primary/10 p-4">
+            <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Potência Total do Sistema (kWp)</Label>
+            <Input {...register("potencia")} className="mt-1.5 rounded-xl border-border/40 font-bold text-lg" />
+            <p className="text-[10px] text-muted-foreground/60 mt-1">Calculado automaticamente. Pode editar manualmente.</p>
+          </div>
+
+          <DialogFooter className="pt-4">
+            <Button type="button" variant="outline" onClick={() => { reset(); onClose(); }}>Cancelar</Button>
+            <Button type="submit" disabled={updateMut.isPending} className="gap-2">
+              {updateMut.isPending ? "Salvando..." : "Salvar Alterações"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function ProjectsPage() {
   const [search, setSearch] = useState("");
   const [detailProjectId, setDetailProjectId] = useState<string | null>(null);
@@ -1230,6 +1579,7 @@ export default function ProjectsPage() {
   const [tab, setTab] = useState("ativos");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [showNewProject, setShowNewProject] = useState(false);
+  const [editProjectId, setEditProjectId] = useState<string | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
   const canDelete = user?.role === "admin";
@@ -1331,10 +1681,17 @@ export default function ProjectsPage() {
     return matchesSearch && matchesStatus && matchesClient && matchesConcessionaria && matchesEstado;
   });
 
-  // Agrupamento por estado (apenas para admin e engenharia)
+  // Separar projetos próprios (sem integrador portal) dos de integradores
+  // Projeto próprio = não tem usuário integrador vinculado (integrador é null)
+  const isOwnProject = (p: any) => !(p as any).integrador;
+  const filteredOwn = filtered.filter(isOwnProject);
+  const filteredIntegradores = filtered.filter(p => !isOwnProject(p));
+  const [ownCollapsed, setOwnCollapsed] = useState(false);
+
+  // Agrupamento por estado (apenas para admin e engenharia) - só projetos de integradores
   const groupedByEstado = canGroupByState ? (() => {
-    const groups: Record<string, typeof filtered> = {};
-    for (const p of filtered) {
+    const groups: Record<string, typeof filteredIntegradores> = {};
+    for (const p of filteredIntegradores) {
       const key = p.estado?.toUpperCase() || "__sem_estado__";
       if (!groups[key]) groups[key] = [];
       groups[key].push(p);
@@ -1345,7 +1702,7 @@ export default function ProjectsPage() {
       return a.localeCompare(b);
     });
     return sorted.map(key => ({ key, label: key === "__sem_estado__" ? "Sem Estado" : key, projects: groups[key] }));
-  })() : [{ key: "all", label: "", projects: filtered }];
+  })() : [{ key: "all", label: "", projects: filteredIntegradores }];
 
   const exportCSV = () => {
     const headers = ["Ticket", "Título", "Cliente", "Status", "Potência (kWp)", "Concessionária", "Valor", "Endereço"];
@@ -1595,6 +1952,92 @@ export default function ProjectsPage() {
         </div>
       ) : viewMode === "list" ? (
         <div className="space-y-6">
+          {/* Seção: Projetos Próprios da Randoli Solar */}
+          {filteredOwn.length > 0 && (
+            <div>
+              <button
+                onClick={() => setOwnCollapsed(v => !v)}
+                className="flex items-center gap-3 mb-3 w-full group/section"
+              >
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 transition-colors">
+                  <span className="text-base">⭐</span>
+                  <span className="text-[11px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-400">Projetos Randoli Solar</span>
+                  <span className="text-[10px] font-bold text-muted-foreground bg-muted rounded-full px-2 py-0.5">{filteredOwn.length}</span>
+                  <span className="text-[10px] text-muted-foreground ml-1">{ownCollapsed ? "▶" : "▼"}</span>
+                </div>
+              </button>
+              {!ownCollapsed && (
+                <Card className="border-amber-200/40 shadow-sm overflow-hidden bg-background rounded-2xl">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-amber-50/50 dark:bg-amber-900/10 border-b border-border/40">
+                          <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Projeto / ID</th>
+                          <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground hidden md:table-cell">Potência</th>
+                          <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground hidden lg:table-cell">Concessionária</th>
+                          <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Status</th>
+                          <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground text-right">Ações</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border/30">
+                        {filteredOwn.map(project => (
+                          <tr
+                            key={project.id}
+                            className="hover:bg-amber-50/30 transition-colors cursor-pointer group"
+                            onClick={() => setDetailProjectId(project.id)}
+                          >
+                            <td className="px-6 py-5">
+                              <div className="flex flex-col gap-1 min-w-0">
+                                {project.ticketNumber && (
+                                  <div className="flex items-center gap-1.5">
+                                    <Hash className="h-3 w-3 text-amber-600/60" />
+                                    <span className="text-[10px] font-mono font-bold text-amber-600/70 tracking-tighter uppercase">{project.ticketNumber}</span>
+                                  </div>
+                                )}
+                                <span className="text-sm font-bold text-foreground group-hover:text-amber-600 transition-colors truncate max-w-[250px]">{project.title}</span>
+                                <span className="text-[10px] text-muted-foreground">{project.nomeCliente || "—"}</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-5 hidden md:table-cell">
+                              <span className="text-xs font-mono">{project.potencia ? `${project.potencia} kWp` : "—"}</span>
+                            </td>
+                            <td className="px-6 py-5 hidden lg:table-cell">
+                              <span className="text-xs text-muted-foreground">{project.concessionaria || "—"}</span>
+                            </td>
+                            <td className="px-6 py-5">
+                              <Badge className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 border-0 shadow-sm ${getStatusBadge(project.status)}`}>
+                                {configMap[project.status]?.label || project.status}
+                              </Badge>
+                            </td>
+                            <td className="px-6 py-5 text-right">
+                              <div className="flex gap-1">
+                                <Button size="sm" variant="outline" className="rounded-lg text-[11px] h-8" onClick={e => { e.stopPropagation(); setDetailProjectId(project.id); }}>
+                                  Gerenciar
+                                </Button>
+                                {user?.role === "admin" && (
+                                  <Button size="sm" variant="outline" className="rounded-lg text-[11px] h-8 border-blue-200 text-blue-700 hover:bg-blue-50" onClick={e => { e.stopPropagation(); setEditProjectId(project.id); }}>
+                                    <Pencil className="h-3 w-3" />
+                                  </Button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
+              )}
+            </div>
+          )}
+          {/* Seção: Projetos de Integradores */}
+          {filteredIntegradores.length > 0 && filteredOwn.length > 0 && (
+            <div className="flex items-center gap-2 mt-2">
+              <div className="flex-1 h-px bg-border/40" />
+              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground px-2">Projetos de Integradores</span>
+              <div className="flex-1 h-px bg-border/40" />
+            </div>
+          )}
           {groupedByEstado.map(group => (
             <div key={group.key}>
               {canGroupByState && groupedByEstado.length > 1 && (
@@ -1708,6 +2151,72 @@ export default function ProjectsPage() {
         </div>
       ) : (
         <div className="space-y-8">
+          {/* Seção: Projetos Próprios da Randoli Solar - Grid */}
+          {filteredOwn.length > 0 && (
+            <div>
+              <button
+                onClick={() => setOwnCollapsed(v => !v)}
+                className="flex items-center gap-3 mb-4 w-full"
+              >
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 transition-colors">
+                  <span className="text-base">⭐</span>
+                  <span className="text-[11px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-400">Projetos Randoli Solar</span>
+                  <span className="text-[10px] font-bold text-muted-foreground bg-muted rounded-full px-2 py-0.5">{filteredOwn.length}</span>
+                  <span className="text-[10px] text-muted-foreground ml-1">{ownCollapsed ? "▶" : "▼"}</span>
+                </div>
+              </button>
+              {!ownCollapsed && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {filteredOwn.map(project => (
+                    <div
+                      key={project.id}
+                      className="group relative bg-background rounded-3xl border border-amber-200/40 shadow-md hover:shadow-lg transition-all duration-300 hover:border-amber-400/40 cursor-pointer overflow-hidden flex flex-col"
+                      onClick={() => setDetailProjectId(project.id)}
+                    >
+                      <div className={`h-1.5 w-full ${getStatusBadge(project.status).split(" ")[1]}`} />
+                      <div className="p-5 flex-1 flex flex-col gap-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex flex-col gap-1 min-w-0">
+                            {project.ticketNumber && (
+                              <span className="text-[10px] font-mono font-bold text-amber-600/70 uppercase"># {project.ticketNumber}</span>
+                            )}
+                            <h3 className="text-sm font-bold leading-tight text-foreground group-hover:text-amber-600 transition-colors line-clamp-2">{project.title}</h3>
+                          </div>
+                          <Badge className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 border-0 shadow-sm shrink-0 ${getStatusBadge(project.status)}`}>
+                            {configMap[project.status]?.label || project.status}
+                          </Badge>
+                        </div>
+                        <div className="space-y-1 text-xs text-muted-foreground">
+                          {project.nomeCliente && <div><span className="font-medium">Cliente:</span> {project.nomeCliente}</div>}
+                          {project.potencia && <div><span className="font-medium">Potência:</span> ⚡ {project.potencia} kWp</div>}
+                          {project.concessionaria && <div><span className="font-medium">Conc.:</span> {project.concessionaria}</div>}
+                          {project.valor && <div className="font-bold text-amber-600">R$ {project.valor}</div>}
+                        </div>
+                      </div>
+                      <div className="px-5 pb-4 flex items-center justify-between border-t border-border/20 pt-3">
+                        <span className="text-[10px] text-muted-foreground">{project.createdAt ? new Date(project.createdAt).toLocaleDateString("pt-BR") : ""}</span>
+                        <div className="flex gap-2" onClick={e => e.stopPropagation()}>
+                          <Button size="icon" variant="ghost" className="h-7 w-7 rounded-lg hover:bg-red-50 hover:text-red-500" onClick={() => { setProjectToDelete(project); setDeleteDialogOpen(true); }}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button size="sm" variant="outline" className="rounded-lg text-[11px] h-7" onClick={() => setDetailProjectId(project.id)}>
+                            Gerenciar
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          {filteredIntegradores.length > 0 && filteredOwn.length > 0 && (
+            <div className="flex items-center gap-2">
+              <div className="flex-1 h-px bg-border/40" />
+              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground px-2">Projetos de Integradores</span>
+              <div className="flex-1 h-px bg-border/40" />
+            </div>
+          )}
           {groupedByEstado.map(group => (
             <div key={group.key}>
               {canGroupByState && groupedByEstado.length > 1 && (
@@ -1796,6 +2305,11 @@ export default function ProjectsPage() {
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     )}
+                    {user?.role === "admin" && (
+                      <Button size="icon" variant="outline" className="h-8 w-8 rounded-lg border-blue-200 text-blue-700 hover:bg-blue-50" onClick={e => { e.stopPropagation(); setEditProjectId(project.id); }}>
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                     <Button size="sm" variant="outline" className="text-[10px] font-bold uppercase tracking-widest px-4 h-8 rounded-lg border-border/60 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all">
                       Gerenciar
                     </Button>
@@ -1815,6 +2329,7 @@ export default function ProjectsPage() {
         project={detailProject}
         open={!!detailProjectId}
         onClose={() => setDetailProjectId(null)}
+        onEdit={user?.role === "admin" ? (id: string) => { setDetailProjectId(null); setEditProjectId(id); } : undefined}
       />
 
       <Dialog open={!!deleteProjectId} onOpenChange={(open) => { if (!open) setDeleteProjectId(null); }}>
@@ -1903,6 +2418,7 @@ export default function ProjectsPage() {
       </Dialog>
 
       <AdminNewProjectDialog open={showNewProject} onClose={() => setShowNewProject(false)} />
+      <AdminEditProjectDialog projectId={editProjectId} open={!!editProjectId} onClose={() => setEditProjectId(null)} />
     </div>
   );
 }

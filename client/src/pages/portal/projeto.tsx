@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  ArrowLeft, Upload, FileText, Trash2, Activity,
+  ArrowLeft, Upload, FileText, Trash2, Activity, Receipt, Download,
   MapPin, Hash, Zap, Cpu, Sun, User, ExternalLink, Building, DollarSign, AlertCircle, CreditCard, Loader2,
   Copy, Check, Lock, CheckCircle2
 } from "lucide-react";
@@ -80,6 +80,7 @@ const DOC_TYPE_LABELS: Record<string, string> = {
 
 function PixQrCodeSection({ pixQrCode, pixQrCodeBase64, gateway }: { pixQrCode: string; pixQrCodeBase64?: string | null; gateway: string }) {
   const [copied, setCopied] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const handleCopy = async () => {
     try {
@@ -89,14 +90,34 @@ function PixQrCodeSection({ pixQrCode, pixQrCodeBase64, gateway }: { pixQrCode: 
     } catch {}
   };
 
-  const gatewayLabel = gateway === "pagseguro" ? "PagSeguro" : "Mercado Pago";
+  const gatewayLabel = gateway === "pagseguro" ? "PagSeguro" : gateway === "asaas" ? "Asaas" : "Mercado Pago";
+
+  // Gera QR Code via canvas quando base64 não está disponível
+  useEffect(() => {
+    if (!pixQrCodeBase64 && pixQrCode && canvasRef.current) {
+      import("https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js" as any).catch(() => {});
+      const script = document.createElement("script");
+      script.src = "https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js";
+      script.onload = () => {
+        const QRCode = (window as any).QRCode;
+        if (QRCode && canvasRef.current) {
+          QRCode.toCanvas(canvasRef.current, pixQrCode, { width: 192, margin: 1 }, () => {});
+        }
+      };
+      if (!(window as any).QRCode) document.head.appendChild(script);
+      else {
+        const QRCode = (window as any).QRCode;
+        if (canvasRef.current) QRCode.toCanvas(canvasRef.current, pixQrCode, { width: 192, margin: 1 }, () => {});
+      }
+    }
+  }, [pixQrCode, pixQrCodeBase64]);
 
   return (
     <div className="flex flex-col items-center gap-4 p-6 rounded-2xl bg-white dark:bg-black/20 border border-emerald-500/20">
       <div className="flex items-center gap-2 text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-widest">
         <Zap className="h-3.5 w-3.5" /> PIX via {gatewayLabel}
       </div>
-      {pixQrCodeBase64 && (
+      {pixQrCodeBase64 ? (
         <div className="p-3 bg-white rounded-xl border border-border/40 shadow-sm">
           <img
             src={pixQrCodeBase64.startsWith("data:") ? pixQrCodeBase64 : pixQrCodeBase64.startsWith("http") ? pixQrCodeBase64 : `data:image/png;base64,${pixQrCodeBase64}`}
@@ -105,7 +126,11 @@ function PixQrCodeSection({ pixQrCode, pixQrCodeBase64, gateway }: { pixQrCode: 
             data-testid="img-pix-qrcode"
           />
         </div>
-      )}
+      ) : pixQrCode ? (
+        <div className="p-3 bg-white rounded-xl border border-border/40 shadow-sm">
+          <canvas ref={canvasRef} className="w-48 h-48" />
+        </div>
+      ) : null}
       <div className="w-full space-y-2">
         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest text-center">Copie o código PIX</p>
         <div className="relative">
@@ -418,6 +443,7 @@ function TimelineItem({ entry, isLast }: { entry: Timeline; isLast: boolean }) {
             {entry.createdAt ? new Date(entry.createdAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : ""}
           </span>
         </div>
+
       </div>
     </div>
   );
@@ -432,6 +458,19 @@ export default function PortalProjetoPage() {
 
   const { data: project, isLoading } = useQuery<ProjectDetail>({
     queryKey: ["/api/projects", id],
+  });
+
+  const { data: notasFiscais = [] } = useQuery<any[]>({
+    queryKey: ["/api/nfse/notas/projeto", id],
+    queryFn: async () => {
+      try {
+        const res = await fetch(`/api/nfse/notas/projeto/${id}`, { credentials: "include" });
+        if (!res.ok) return [];
+        const data = await res.json();
+        return Array.isArray(data) ? data : [];
+      } catch { return []; }
+    },
+    enabled: !!id,
   });
 
   const { data: docs = [], isLoading: docsLoading } = useQuery<Document[]>({
@@ -777,6 +816,47 @@ export default function PortalProjetoPage() {
               )}
             </CardContent>
           </Card>
+
+          {/* Notas Fiscais */}
+          {notasFiscais.filter((n: any) => n.status === "emitida").length > 0 && (
+            <Card className="border-border/40 shadow-xl shadow-black/5 overflow-hidden rounded-3xl">
+              <CardHeader className="bg-muted/30 border-b border-border/40 px-8 py-6">
+                <CardTitle className="text-lg font-bold flex items-center gap-2">
+                  <Receipt className="h-5 w-5 text-primary" />
+                  Notas Fiscais ({notasFiscais.filter((n: any) => n.status === "emitida").length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="divide-y divide-border/40">
+                  {notasFiscais.filter((n: any) => n.status === "emitida").map((nota: any) => (
+                    <div key={nota.id} className="group p-6 hover:bg-muted/30 transition-all">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-4 min-w-0">
+                          <div className="h-12 w-12 rounded-2xl bg-background border border-border/40 flex items-center justify-center shrink-0 shadow-sm">
+                            <Receipt className="h-6 w-6 text-emerald-600" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-bold">NFS-e {nota.numeroNota ? `nº ${nota.numeroNota}` : "Emitida"}</p>
+                            {nota.valor && (
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                R$ {parseFloat(nota.valor).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <Button variant="outline" size="sm" className="border-emerald-200 text-emerald-700 hover:bg-emerald-50 gap-1.5 text-xs" onClick={() => window.open(`/api/portal/nfse/${nota.id}/pdf`, "_blank")}>
+                            <Download className="h-3.5 w-3.5" /> PDF
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
         </div>
       </div>
     </div>

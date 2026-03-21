@@ -589,7 +589,9 @@ export default function NovoProjetoPage() {
                 <Label>Potência (kW)</Label>
                 <Input
                   {...register("potenciaInversor")}
-                  placeholder="Ex: 5.0"
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="Ex: 7.5"
                   data-testid="input-potencia-inversor"
                 />
               </div>
@@ -637,6 +639,8 @@ export default function NovoProjetoPage() {
                 <Label>Potência Unit. (Wp)</Label>
                 <Input
                   {...register("potenciaPainel")}
+                  type="text"
+                  inputMode="decimal"
                   placeholder="Ex: 420"
                   data-testid="input-potencia-painel"
                 />

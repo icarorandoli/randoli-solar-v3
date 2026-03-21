@@ -358,7 +358,21 @@ function parseSoapResponse(responseBody: string): NfseResult {
     extractFromXml(responseBody, "cVerifNFSe");
 
   const linkNota = extractFromXml(returnContent, "linkNFSe") ||
-    extractFromXml(responseBody, "linkNFSe");
+    extractFromXml(responseBody, "linkNFSe") ||
+    extractFromXml(returnContent, "UrlVisualizacaoNfse") ||
+    extractFromXml(responseBody, "UrlVisualizacaoNfse") ||
+    // Construir link do portal COPLAN de Sinop usando nDFSe
+    (() => {
+      const nDFSe = extractFromXml(returnContent, "nDFSe") || extractFromXml(responseBody, "nDFSe");
+      const nNFSe = extractFromXml(returnContent, "nNFSe") || extractFromXml(responseBody, "nNFSe");
+      if (nDFSe) {
+        return `https://gp.srv.br/tributario/sinop/anfse.dll/nfse?nDFSe=${nDFSe}&cMun=5107909`;
+      }
+      if (nNFSe) {
+        return `https://gp.srv.br/tributario/sinop/anfse.dll/nfse?nNFSe=${nNFSe}&cMun=5107909`;
+      }
+      return undefined;
+    })();
 
   if (numeroNota) {
     return {

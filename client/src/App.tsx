@@ -35,6 +35,7 @@ import PortalProjetosPage from "@/pages/portal/projetos";
 import NovoProjetoPage from "@/pages/portal/novo-projeto";
 import ContaPage from "@/pages/portal/conta";
 import PortalInformativosPage from "@/pages/portal/informativos";
+import NotasFiscaisPage from "@/pages/portal/notas-fiscais";
 import ClienteHomePage from "@/pages/cliente/home";
 import ClienteProjetoPage from "@/pages/cliente/projeto";
 import ClienteContaPage from "@/pages/cliente/conta";
@@ -186,12 +187,13 @@ function PortalLayout() {
           </header>
           <main className="flex-1 overflow-auto">
             <Switch>
-              <Route path="/portal" component={PortalHomePage} />
               <Route path="/portal/novo-projeto" component={NovoProjetoPage} />
-              <Route path="/portal/projetos" component={PortalProjetosPage} />
               <Route path="/portal/projetos/:id" component={PortalProjetoPage} />
+              <Route path="/portal/projetos" component={PortalProjetosPage} />
               <Route path="/portal/conta" component={ContaPage} />
               <Route path="/portal/informativos" component={PortalInformativosPage} />
+              <Route path="/portal/notas-fiscais" component={NotasFiscaisPage} />
+              <Route path="/portal" component={PortalHomePage} />
               <Route><Redirect to="/portal" /></Route>
             </Switch>
           </main>

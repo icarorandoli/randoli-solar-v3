@@ -20,8 +20,7 @@ import {
   Plus, Search, Pencil, Trash2, FolderOpen, Zap, Eye,
   MapPin, Cpu, Sun, User, FileText, Activity, Building,
   ExternalLink, Upload, Hash, CheckCircle2, Archive, RotateCcw, CreditCard, RefreshCw,
-  LayoutGrid, List, XCircle, ArrowLeftRight, BadgeCheck
-} from "lucide-react";
+  LayoutGrid, List, XCircle, ArrowLeftRight, BadgeCheck, ShieldCheck, FileText} from "lucide-react";
 import { useForm, Controller } from "react-hook-form";
 import type { Project, Client, Document, Timeline, StatusConfig } from "@shared/schema";
 import ChatPanel from "@/components/chat-panel";
@@ -111,6 +110,16 @@ function ProjectDetailSheet({
     queryKey: ["/api/projects", project?.id, "timeline"],
     queryFn: async () => {
       const res = await fetch(`/api/projects/${project?.id}/timeline`, { credentials: "include" });
+      return res.json();
+    },
+    enabled: !!project?.id,
+  });
+
+  const { data: termAcceptance } = useQuery<any>({
+    queryKey: ["/api/projects", project?.id, "term/acceptance"],
+    queryFn: async () => {
+      const res = await fetch(`/api/projects/${project?.id}/term/acceptance`, { credentials: "include" });
+      if (!res.ok) return null;
       return res.json();
     },
     enabled: !!project?.id,
@@ -851,7 +860,43 @@ function ProjectDetailSheet({
               <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Comunicação Direta</h3>
             </div>
             <div className="rounded-2xl border border-border/40 shadow-xl overflow-hidden bg-background">
-              <ChatPanel projectId={project.id} currentUserId={user?.id || ""} currentUserRole={user?.role || "integrador"} />
+              {/* Termo de Aceite */}
+      {isAdmin && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="h-px flex-1 bg-border/40" />
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Termo de Aceite</span>
+            <div className="h-px flex-1 bg-border/40" />
+          </div>
+          {termAcceptance ? (
+            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400">Termo aceito</span>
+                <span className="ml-auto text-[10px] text-muted-foreground">{termAcceptance.term_version && `v${termAcceptance.term_version}`}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div><span className="text-muted-foreground">Integrador:</span> <span className="font-medium">{termAcceptance.integrator_name}</span></div>
+                <div><span className="text-muted-foreground">Documento:</span> <span className="font-medium">{termAcceptance.integrator_document || "—"}</span></div>
+                <div><span className="text-muted-foreground">Aceito em:</span> <span className="font-medium">{termAcceptance.accepted_at ? new Date(termAcceptance.accepted_at).toLocaleString("pt-BR") : "—"}</span></div>
+                <div><span className="text-muted-foreground">IP:</span> <span className="font-mono text-[10px]">{termAcceptance.accepted_ip || "—"}</span></div>
+                <div className="col-span-2"><span className="text-muted-foreground">Hash SHA-256:</span> <span className="font-mono text-[10px] break-all">{termAcceptance.term_hash?.slice(0, 32)}...</span></div>
+              </div>
+              <details className="text-xs">
+                <summary className="cursor-pointer text-muted-foreground hover:text-foreground font-medium">Ver conteúdo do termo aceito</summary>
+                <div className="mt-2 p-3 bg-muted/30 rounded-lg font-mono text-[10px] whitespace-pre-wrap max-h-48 overflow-y-auto">{termAcceptance.term_content}</div>
+              </details>
+            </div>
+          ) : (
+            <div className="rounded-xl border border-muted/40 bg-muted/10 p-4 flex items-center gap-3">
+              <FileText className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Termo ainda não aceito pelo integrador</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      <ChatPanel projectId={project.id} currentUserId={user?.id || ""} currentUserRole={user?.role || "integrador"} />
             </div>
           </section>
         </div>
@@ -1598,6 +1643,13 @@ export default function ProjectsPage() {
   const getStatusLabel = (key: string) => configMap[key]?.label ?? key;
   const getStatusBadge = (key: string) => getBadgeClass(configMap[key]?.color ?? "slate");
 
+  const getStatusProgress = (key: string): number => {
+    const active = statusConfigs.filter(s => s.key !== "cancelado").sort((a, b) => a.sortOrder - b.sortOrder);
+    const idx = active.findIndex(s => s.key === key);
+    if (idx < 0 || key === "cancelado") return 0;
+    return Math.round(((idx + 1) / active.length) * 100);
+  };
+
   const [, navigate] = useLocation();
 
   const allProjects = [...projects, ...archived];
@@ -1974,7 +2026,8 @@ export default function ProjectsPage() {
                         <tr className="bg-amber-50/50 dark:bg-amber-900/10 border-b border-border/40">
                           <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Projeto / ID</th>
                           <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground hidden md:table-cell">Potência</th>
-                          <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground hidden lg:table-cell">Concessionária</th>
+                          <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground hidden lg:table-cell">Progresso</th>
+                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground hidden lg:table-cell">Concessionária</th>
                           <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Status</th>
                           <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground text-right">Ações</th>
                         </tr>
@@ -2092,6 +2145,16 @@ export default function ProjectsPage() {
                           {((project as any).integrador?.name || project.client?.name || "U")[0]}
                         </div>
                         <span className="text-xs font-medium text-foreground/80">{(project as any).integrador?.name || project.client?.name || "—"}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-5 hidden lg:table-cell" style={{minWidth: 120}}>
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-[10px] text-muted-foreground">
+                          <span>{getStatusProgress(project.status)}%</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-muted/50 rounded-full overflow-hidden">
+                          <div className={`h-1.5 rounded-full ${getStatusBadge(project.status).split(" ")[1]}`} style={{ width: `${getStatusProgress(project.status)}%` }} />
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-5 hidden md:table-cell">
@@ -2278,7 +2341,21 @@ export default function ProjectsPage() {
                   )}
                 </div>
 
-                <div className="mt-6 flex items-center justify-between pt-4 border-t border-border/30">
+                {/* Barra de progresso */}
+                <div className="mt-4 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-muted-foreground font-medium">Progresso</span>
+                    <span className="text-[10px] font-bold text-muted-foreground">{getStatusProgress(project.status)}%</span>
+                  </div>
+                  <div className="h-1.5 w-full bg-muted/50 rounded-full overflow-hidden">
+                    <div
+                      className={`h-1.5 rounded-full transition-all duration-500 ${getStatusBadge(project.status).split(" ")[1]}`}
+                      style={{ width: `${getStatusProgress(project.status)}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-4 flex items-center justify-between pt-4 border-t border-border/30">
                   <span className="text-[10px] text-muted-foreground font-mono">
                     {project.createdAt ? new Date(project.createdAt).toLocaleDateString("pt-BR") : "—"}
                   </span>

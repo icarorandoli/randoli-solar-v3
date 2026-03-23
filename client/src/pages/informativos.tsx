@@ -10,7 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Pencil, Trash2, Megaphone, Eye, EyeOff } from "lucide-react";
+import { Plus, Pencil, Trash2, Megaphone, Eye, EyeOff, Users, X } from "lucide-react";
+import { useQuery as useQueryHook } from "@tanstack/react-query";
 import type { Announcement } from "@shared/schema";
 
 function AnnouncementFormDialog({
@@ -26,6 +27,19 @@ function AnnouncementFormDialog({
   const [title, setTitle] = useState(editing?.title || "");
   const [content, setContent] = useState(editing?.content || "");
   const [active, setActive] = useState(editing?.active ?? true);
+  const [targetAll, setTargetAll] = useState(() => {
+    if (!editing?.targetUserIds) return true;
+    try { return JSON.parse(editing.targetUserIds).length === 0; } catch { return true; }
+  });
+  const [selectedUsers, setSelectedUsers] = useState<string[]>(() => {
+    if (!editing?.targetUserIds) return [];
+    try { return JSON.parse(editing.targetUserIds); } catch { return []; }
+  });
+
+  const { data: integradores = [] } = useQueryHook<any[]>({
+    queryKey: ["/api/users"],
+    select: (u: any[]) => u.filter(x => x.role === "integrador"),
+  });
 
   useState(() => {
     setTitle(editing?.title || "");
@@ -33,10 +47,17 @@ function AnnouncementFormDialog({
     setActive(editing?.active ?? true);
   });
 
+  const toggleUser = (id: string) => {
+    setSelectedUsers(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
   const saveMut = useMutation({
-    mutationFn: () => editing
-      ? apiRequest("PATCH", `/api/announcements/${editing.id}`, { title, content, active })
-      : apiRequest("POST", "/api/announcements", { title, content, active }),
+    mutationFn: () => {
+      const targetUserIds = targetAll ? [] : selectedUsers;
+      return editing
+        ? apiRequest("PATCH", `/api/announcements/${editing.id}`, { title, content, active, targetUserIds })
+        : apiRequest("POST", "/api/announcements", { title, content, active, targetUserIds });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/announcements"] });
       toast({ title: editing ? "Informativo atualizado!" : "Informativo criado!" });
@@ -76,6 +97,55 @@ function AnnouncementFormDialog({
               data-testid="input-announcement-content"
             />
           </div>
+          {/* Destinatários */}
+          <div className="space-y-2">
+            <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Destinatários</Label>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setTargetAll(true)}
+                className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold border transition-colors ${targetAll ? "bg-primary text-primary-foreground border-primary" : "bg-muted/30 border-border/40 text-muted-foreground hover:bg-muted/50"}`}
+              >
+                <Users className="h-3.5 w-3.5 inline mr-1.5" />Todos os integradores
+              </button>
+              <button
+                type="button"
+                onClick={() => setTargetAll(false)}
+                className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold border transition-colors ${!targetAll ? "bg-primary text-primary-foreground border-primary" : "bg-muted/30 border-border/40 text-muted-foreground hover:bg-muted/50"}`}
+              >
+                Integradores específicos
+              </button>
+            </div>
+            {!targetAll && (
+              <div className="border border-border/40 rounded-xl overflow-hidden max-h-44 overflow-y-auto">
+                {integradores.length === 0 ? (
+                  <p className="text-xs text-muted-foreground p-3 text-center">Nenhum integrador cadastrado</p>
+                ) : (
+                  <div className="divide-y divide-border/30">
+                    {integradores.map((u: any) => (
+                      <label key={u.id} className="flex items-center gap-3 px-3 py-2.5 hover:bg-muted/20 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedUsers.includes(u.id)}
+                          onChange={() => toggleUser(u.id)}
+                          className="rounded"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-bold truncate">{u.name}</p>
+                          <p className="text-[10px] text-muted-foreground truncate">{u.email || u.username}</p>
+                        </div>
+                        {selectedUsers.includes(u.id) && <X className="h-3 w-3 text-muted-foreground shrink-0" />}
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            {!targetAll && selectedUsers.length > 0 && (
+              <p className="text-[10px] text-muted-foreground">{selectedUsers.length} integrador{selectedUsers.length !== 1 ? "es" : ""} selecionado{selectedUsers.length !== 1 ? "s" : ""}</p>
+            )}
+          </div>
+
           <div className="flex items-center justify-between p-3 rounded-xl bg-muted/30 border border-border/40">
             <div>
               <p className="text-sm font-semibold">Ativo</p>
@@ -188,6 +258,16 @@ export default function InformativosPage() {
                       >
                         {item.active ? "Ativo" : "Inativo"}
                       </Badge>
+                      {(item as any).targetUserIds ? (
+                        <Badge className="text-[9px] font-black uppercase tracking-widest border-0 bg-blue-500/10 text-blue-600">
+                          <Users className="h-2.5 w-2.5 mr-1" />
+                          {(() => { try { const t = JSON.parse((item as any).targetUserIds); return `${t.length} integrador${t.length !== 1 ? "es" : ""}`; } catch { return "Específicos"; } })()}
+                        </Badge>
+                      ) : (
+                        <Badge className="text-[9px] font-black uppercase tracking-widest border-0 bg-muted text-muted-foreground">
+                          <Users className="h-2.5 w-2.5 mr-1" />Todos
+                        </Badge>
+                      )}
                     </div>
                     <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap line-clamp-3">{item.content}</p>
                     <p className="text-[11px] text-muted-foreground/50 mt-3">

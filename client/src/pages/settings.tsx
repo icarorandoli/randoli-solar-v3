@@ -13,8 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Save, Upload, Zap, ImageOff, Mail, Send, Eye, EyeOff,
   CreditCard, MonitorPlay, Image, Settings2, Globe, ShieldCheck, Palette, ArrowRight,
-  CheckCircle2, XCircle, Loader2, FolderOpen, FileKey, FileBadge, FileText, Receipt
-} from "lucide-react";
+  CheckCircle2, XCircle, Loader2, FolderOpen, FileKey, FileBadge, FileText, Receipt, FileDown, Bot} from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useUpload } from "@/hooks/use-upload";
@@ -300,6 +299,8 @@ export default function SettingsPage() {
   const [smtpPass, setSmtpPass] = useState("");
   const [smtpFrom, setSmtpFrom] = useState("");
   const [portalUrl, setPortalUrl] = useState("https://projetos.randolisolar.com.br");
+  const [procuracaoUrl, setProcuracaoUrl] = useState("");
+  const [uploadingProcuracao, setUploadingProcuracao] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [testEmailTo, setTestEmailTo] = useState("");
 
@@ -318,6 +319,9 @@ export default function SettingsPage() {
   const [psEmail, setPsEmail] = useState("");
   const [showPsToken, setShowPsToken] = useState(false);
   const [asaasEnabled, setAsaasEnabled] = useState(false);
+  const [aiOpenaiKey, setAiOpenaiKey] = useState("");
+  const [aiKeyMasked, setAiKeyMasked] = useState(false);
+  const [showAiKey, setShowAiKey] = useState(false);
   const [asaasApiKey, setAsaasApiKey] = useState("");
   const [asaasSandbox, setAsaasSandbox] = useState(false);
   const [showAsaasKey, setShowAsaasKey] = useState(false);
@@ -375,6 +379,7 @@ export default function SettingsPage() {
     setSmtpPass(settings.email_smtp_pass || "");
     setSmtpFrom(settings.email_smtp_from || "");
     setPortalUrl(settings.email_portal_url || "https://projetos.randolisolar.com.br");
+    setProcuracaoUrl(settings.procuracao_url || "");
     setTestEmailTo(settings.email_smtp_user || "");
     setMpEnabled(settings.mp_enabled !== "false");
     setMpAccessToken(settings.mp_access_token || "");
@@ -387,6 +392,10 @@ export default function SettingsPage() {
     setPsToken(settings.pagseguro_token || "");
     setPsEmail(settings.pagseguro_email || "");
     setAsaasEnabled(settings.asaas_enabled === "true");
+    if (settings.ai_openai_key) {
+      setAiOpenaiKey("••••••••");
+      setAiKeyMasked(true);
+    }
     setAsaasApiKey(settings.asaas_api_key ? "••••••••" : "");
     setAsaasSandbox(settings.asaas_sandbox === "true");
     setNfseAutoEmit(settings.nfse_auto_emit === "true");
@@ -457,6 +466,9 @@ export default function SettingsPage() {
         pairs.push({ key: "pagseguro_token", value: psToken });
       }
       pairs.push({ key: "asaas_enabled", value: asaasEnabled ? "true" : "false" });
+      if (aiOpenaiKey && !aiKeyMasked) {
+        pairs.push({ key: "ai_openai_key", value: aiOpenaiKey });
+      }
       pairs.push({ key: "asaas_sandbox", value: asaasSandbox ? "true" : "false" });
       if (asaasApiKey && asaasApiKey !== "••••••••") {
         pairs.push({ key: "asaas_api_key", value: asaasApiKey });
@@ -583,6 +595,9 @@ export default function SettingsPage() {
                 <TabsTrigger value="nfse" className="w-full justify-start px-4 py-2 h-10 data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-lg transition-all border border-transparent data-[state=active]:border-primary/20">
                   <FileText className="h-4 w-4 mr-2" /> NFS-e
                 </TabsTrigger>
+                <TabsTrigger value="ia" className="w-full justify-start px-4 py-2 h-10 data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-lg transition-all border border-transparent data-[state=active]:border-primary/20">
+                  <Bot className="h-4 w-4 mr-2" /> Inteligência Artificial
+                </TabsTrigger>
               </TabsList>
             </aside>
 
@@ -624,6 +639,79 @@ export default function SettingsPage() {
                   bgImage={loginBgImage} setBgImage={setLoginBgImage}
                   uploadingBg={uploadingBg} setUploadingBg={setUploadingBg}
                 />
+
+                <Card className="border-muted/40 shadow-sm">
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <FileDown className="h-4 w-4 text-primary" />
+                      <CardTitle className="text-lg">Modelo de Procuração</CardTitle>
+                    </div>
+                    <CardDescription>Disponibilize um modelo de procuração para download no portal do integrador.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {procuracaoUrl ? (
+                      <div className="flex items-center gap-3 p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
+                        <FileDown className="h-5 w-5 text-emerald-600 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-emerald-700">Procuração cadastrada</p>
+                          <p className="text-xs text-muted-foreground truncate">{procuracaoUrl}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <a href={procuracaoUrl} target="_blank" rel="noreferrer">
+                            <Button type="button" variant="outline" size="sm" className="h-8 text-xs">Visualizar</Button>
+                          </a>
+                          <Button
+                            type="button" variant="outline" size="sm"
+                            className="h-8 text-xs border-red-200 text-red-600 hover:bg-red-50"
+                            onClick={async () => {
+                              await fetch("/api/settings/procuracao", { method: "DELETE", credentials: "include" });
+                              setProcuracaoUrl("");
+                            }}
+                          >
+                            Remover
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 border border-dashed border-muted-foreground/30">
+                        <FileDown className="h-5 w-5 text-muted-foreground shrink-0" />
+                        <p className="text-sm text-muted-foreground">Nenhum modelo cadastrado</p>
+                      </div>
+                    )}
+                    <div className="space-y-2">
+                      <Label>Upload do modelo (.docx)</Label>
+                      <div className="flex items-center gap-3">
+                        <label className="cursor-pointer flex-1">
+                          <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border/60 bg-background hover:bg-muted/30 transition-colors text-sm">
+                            <FileDown className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-muted-foreground">{uploadingProcuracao ? "Enviando..." : "Selecionar arquivo .docx"}</span>
+                          </div>
+                          <input
+                            type="file"
+                            accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                            className="hidden"
+                            disabled={uploadingProcuracao}
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              setUploadingProcuracao(true);
+                              try {
+                                const fd = new FormData();
+                                fd.append("file", file);
+                                const res = await fetch("/api/settings/upload-procuracao", { method: "POST", body: fd, credentials: "include" });
+                                const data = await res.json();
+                                if (data.url) { setProcuracaoUrl(data.url); }
+                              } catch {}
+                              setUploadingProcuracao(false);
+                              e.target.value = "";
+                            }}
+                          />
+                        </label>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground">Apenas arquivos .doc ou .docx • máx. 10MB</p>
+                    </div>
+                  </CardContent>
+                </Card>
 
                 <Card className="border-muted/40 shadow-sm">
                   <CardHeader>
@@ -1108,6 +1196,40 @@ export default function SettingsPage() {
 
               <TabsContent value="nfse" className="mt-0 space-y-6">
                 <NfseSettingsTab settingsRaw={settings} />
+              </TabsContent>
+
+              <TabsContent value="ia" className="mt-0 space-y-6">
+                <Card className="border-muted/40 shadow-md">
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <Bot className="h-4 w-4 text-primary" />
+                      <CardTitle className="text-lg">Assistente de IA (Lumi)</CardTitle>
+                    </div>
+                    <CardDescription>Configure a chave da OpenAI para habilitar o assistente inteligente.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Chave da API OpenAI</Label>
+                      <div className="relative">
+                        <Input
+                          type={showAiKey ? "text" : "password"}
+                          value={aiOpenaiKey}
+                          onChange={e => { setAiOpenaiKey(e.target.value); setAiKeyMasked(false); }}
+                          placeholder="sk-proj-..."
+                          className="pr-10"
+                        />
+                        <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" onClick={() => setShowAiKey(!showAiKey)}>
+                          {showAiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">Obtenha sua chave em <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer" className="text-primary underline">platform.openai.com</a></p>
+                    </div>
+                    <div className="p-3 rounded-xl bg-primary/5 border border-primary/10 text-xs text-muted-foreground space-y-1">
+                      <p className="font-bold text-foreground">Sobre a Lumi</p>
+                      <p>A Lumi é o assistente de IA integrado ao sistema que permite consultar projetos, status, pagamentos e muito mais usando linguagem natural.</p>
+                    </div>
+                  </CardContent>
+                </Card>
               </TabsContent>
             </div>
           </div>

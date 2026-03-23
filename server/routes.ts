@@ -16,7 +16,6 @@ import { registerObjectStorageRoutes } from "./replit_integrations/object_storag
 import { sendStatusEmail, sendTestEmail, sendPasswordResetEmail, sendDocumentEmail, sendTimelineEmail, type EmailConfig } from "./email";
 import { createPaymentPreference, createPixPayment, getPaymentInfo, getMerchantOrder, verifyWebhookSignature } from "./mercadopago";
 import { createPagSeguroPixCharge, getPagSeguroOrderInfo, verifyPagSeguroWebhookSignature, extractPagSeguroPaymentStatus } from "./pagseguro";
-import { createAsaasPixCharge, getAsaasPaymentStatus, extractAsaasPaymentStatus } from "./asaas";
 import { testWhatsAppConnection, type WhatsAppConfig, sendWhatsAppNewProjectNotification, sendWhatsAppAdminCreatedProjectNotification, sendWhatsAppStatusNotification, sendWhatsAppTimelineNotification, sendWhatsAppDocumentNotification, sendWhatsAppPaymentNotification } from "./whatsapp";
 import { emitirNfse, getNfseConfig, lookupMunicipioIbge } from "./nfse";
 import { registerUploadRoutes } from "./upload";
@@ -107,11 +106,6 @@ async function getWhatsAppConfig(): Promise<WhatsAppConfig> {
 async function getWhatsAppAdminPhone(): Promise<string> {
   const map = await getSettingsMap();
   return map["whatsapp_admin_phone"] || "";
-}
-
-async function getWhatsAppEngineerPhone(): Promise<string> {
-  const map = await getSettingsMap();
-  return map["whatsapp_engineer_phone"] || "";
 }
 
 async function getEmailConfig(): Promise<EmailConfig> {
@@ -222,7 +216,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   // ── AUTH ───────────────────────────────────────────────────────────
   app.post("/api/auth/register", async (req, res) => {
     try {
-      const { username, password, name, email, phone, cpfCnpj, clientType, company, address, rua, numero, bairro, cep, cidade, estado, codigoMunicipio: bodyCodigoMunicipio, role: reqRole } = req.body;
+      const { username, password, name, email, phone, cpfCnpj, clientType, company, address, rua, numero, bairro, cep, cidade, estado, role: reqRole } = req.body;
       if (!username || !password || !name || !email) {
         return res.status(400).json({ error: "Campos obrigatórios: username, password, name, email" });
       }
@@ -254,7 +248,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         estado,
       });
 
-      const regCodigoMunicipio = bodyCodigoMunicipio || await lookupMunicipioIbge(cep, cidade, estado) || undefined;
       await storage.createClient({
         name,
         email,
@@ -263,13 +256,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         type: clientType || "PF",
         company,
         address: composedAddress,
-        rua,
-        numero,
-        bairro,
-        cep,
-        cidade,
-        estado,
-        codigoMunicipio: regCodigoMunicipio,
         userId: user.id,
       });
 
@@ -732,30 +718,17 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           } else {
             // Integrador created the project: notify admin
             const adminPhone = await getWhatsAppAdminPhone();
-            const engineerPhone = await getWhatsAppEngineerPhone();
+            if (!adminPhone) return;
             const integradorName = client?.name || user?.name || "Integrador";
-            if (adminPhone) {
-              await sendWhatsAppNewProjectNotification({
-                config: waConfig,
-                phone: adminPhone,
-                adminName: "Admin",
-                integradorName,
-                projectTitle: project.title,
-                ticketNumber: project.ticketNumber || "",
-                potencia: project.potpicoKwp || undefined,
-              });
-            }
-            if (engineerPhone && engineerPhone !== adminPhone) {
-              await sendWhatsAppNewProjectNotification({
-                config: waConfig,
-                phone: engineerPhone,
-                adminName: "Engenheiro",
-                integradorName,
-                projectTitle: project.title,
-                ticketNumber: project.ticketNumber || "",
-                potencia: project.potpicoKwp || undefined,
-              });
-            }
+            await sendWhatsAppNewProjectNotification({
+              config: waConfig,
+              phone: adminPhone,
+              adminName: "Admin",
+              integradorName,
+              projectTitle: project.title,
+              ticketNumber: project.ticketNumber || "",
+              potencia: project.potpicoKwp || undefined,
+            });
           }
         } catch (err) { console.error("[whatsapp] Erro ao notificar novo projeto:", err); }
       })();
@@ -819,139 +792,64 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         }).catch(() => {});
 
         // Auto-create payments when status changes to aprovado_pagamento_pendente
-        // Só gera automaticamente se houver EXATAMENTE 1 gateway ativo
         let paymentLink: string | undefined;
         if (data.status === "aprovado_pagamento_pendente" && (updated?.valor || current.valor)) {
           const settingsMap = await getSettingsMap();
+          const intEmail = current.integrador?.email || current.client?.email;
+          const intName = current.integrador?.name || current.client?.name;
+          const intCpfCnpjAuto = current.integrador?.cpfCnpj || current.client?.cpfCnpj || (current as any).cpfCnpjCliente || undefined;
+          const valorStr = updated?.valor || current.valor || "0";
+
+          // ── Mercado Pago ──────────────────────────────────────────
           const mpToken = getMpAccessToken(settingsMap);
-          const psEnabled = settingsMap["pagseguro_enabled"] === "true" && !!settingsMap["pagseguro_token"];
-          const asaasEnabled = settingsMap["asaas_enabled"] === "true" && !!settingsMap["asaas_api_key"];
-          const mp2Enabled2 = settingsMap["mp2_enabled"] === "true" && !!settingsMap["mp2_access_token"];
-          const hasMp = !!mpToken;
-
-          // Conta quantos gateways estão ativos
-          const activeGateways = [hasMp, psEnabled, asaasEnabled, mp2Enabled2].filter(Boolean).length;
-
-          // Só gera automaticamente se tiver exatamente 1 gateway ativo
-          if (activeGateways === 1) {
-            const intEmail = current.integrador?.email || current.client?.email;
-            const intName = current.integrador?.name || current.client?.name;
-            const intCpfCnpjAuto = current.integrador?.cpfCnpj || current.client?.cpfCnpj || (current as any).cpfCnpjCliente || undefined;
-            const valorStr = updated?.valor || current.valor || "0";
-
-            // ── Mercado Pago ──────────────────────────────────────────
-            if (hasMp) {
+          if (mpToken) {
+            try {
+              const portalUrl = settingsMap["email_portal_url"] || "https://projetos.randolisolar.com.br";
+              const webhookUrl = `${portalUrl}/api/mercadopago/webhook`;
+              const paymentArgs = {
+                accessToken: mpToken,
+                projectId: (req.params.id as string),
+                projectTitle: current.title,
+                ticketNumber: current.ticketNumber,
+                valor: valorStr,
+                integradorEmail: intEmail || undefined,
+                integradorName: intName || undefined,
+                integradorCpfCnpj: intCpfCnpjAuto || undefined,
+                webhookUrl,
+              };
+              const pref = await createPaymentPreference(paymentArgs);
+              paymentLink = pref.initPoint;
+              const updatePayment: any = {
+                paymentLink: pref.initPoint,
+                paymentId: pref.id,
+                paymentStatus: "pending",
+                paymentGateway: "mp",
+              };
               try {
-                const portalUrl = settingsMap["email_portal_url"] || "https://projetos.randolisolar.com.br";
-                const webhookUrl = `${portalUrl}/api/mercadopago/webhook`;
-                const paymentArgs = {
-                  accessToken: mpToken!,
-                  projectId: (req.params.id as string),
-                  projectTitle: current.title,
-                  ticketNumber: current.ticketNumber,
-                  valor: valorStr,
-                  integradorEmail: intEmail || undefined,
-                  integradorName: intName || undefined,
-                  integradorCpfCnpj: intCpfCnpjAuto || undefined,
-                  webhookUrl,
-                };
-                const pref = await createPaymentPreference(paymentArgs);
-                paymentLink = pref.initPoint;
-                const updatePayment: any = {
-                  paymentLink: pref.initPoint,
-                  paymentId: pref.id,
-                  paymentStatus: "pending",
-                  paymentGateway: "mp",
-                };
-                try {
-                  const pix = await createPixPayment(paymentArgs);
-                  updatePayment.pixQrCode = pix.qrCode;
-                  updatePayment.pixQrCodeBase64 = pix.qrCodeBase64;
-                  updatePayment.pixPaymentId = pix.paymentId;
-                } catch (pixErr) {
-                  console.error("[mercadopago] Erro ao criar PIX:", pixErr);
-                }
-                await storage.updateProject((req.params.id as string), updatePayment);
-                await storage.addTimelineEntry({
-                  projectId: (req.params.id as string),
-                  event: "Pagamento disponível",
-                  details: "Mercado Pago (PIX e Cartão) disponível para pagamento.",
-                  createdByRole: "admin",
-                });
-              } catch (err) {
-                console.error("[mercadopago] Erro ao criar pagamento:", err);
+                const pix = await createPixPayment(paymentArgs);
+                updatePayment.pixQrCode = pix.qrCode;
+                updatePayment.pixQrCodeBase64 = pix.qrCodeBase64;
+                updatePayment.pixPaymentId = pix.paymentId;
+                console.log(`[mercadopago] PIX criado para projeto ${(req.params.id as string)}`);
+              } catch (pixErr) {
+                console.error("[mercadopago] Erro ao criar PIX (continuando sem):", pixErr);
               }
-            }
-
-            // ── PagSeguro ──────────────────────────────────────────
-            if (psEnabled) {
-              try {
-                const psSandbox = settingsMap["pagseguro_sandbox"] === "true";
-                const charge = await createPagSeguroPixCharge({
-                  token: settingsMap["pagseguro_token"],
-                  sandbox: psSandbox,
-                  projectId: (req.params.id as string),
-                  projectTitle: current.title,
-                  ticketNumber: current.ticketNumber,
-                  valor: valorStr,
-                  payerName: intName || undefined,
-                  payerCpfCnpj: intCpfCnpjAuto || undefined,
-                  payerEmail: intEmail || undefined,
-                });
-                await storage.updateProject((req.params.id as string), {
-                  paymentId: charge.chargeId,
-                  paymentStatus: "pending",
-                  paymentGateway: "pagseguro",
-                  pixQrCode: charge.qrCode,
-                  pixQrCodeBase64: charge.qrCodeBase64,
-                  pixPaymentId: charge.chargeId,
-                } as any);
-                await storage.addTimelineEntry({
-                  projectId: (req.params.id as string),
-                  event: "Pagamento disponível",
-                  details: "PagSeguro PIX disponível para pagamento.",
-                  createdByRole: "admin",
-                });
-              } catch (err) {
-                console.error("[pagseguro] Erro ao criar pagamento automático:", err);
-              }
-            }
-
-            // ── Asaas ──────────────────────────────────────────────
-            if (asaasEnabled) {
-              try {
-                const asaasSandbox = settingsMap["asaas_sandbox"] === "true";
-                const charge = await createAsaasPixCharge({
-                  apiKey: settingsMap["asaas_api_key"],
-                  sandbox: asaasSandbox,
-                  projectId: (req.params.id as string),
-                  projectTitle: current.title,
-                  ticketNumber: current.ticketNumber,
-                  valor: valorStr,
-                  payerName: intName || undefined,
-                  payerCpfCnpj: intCpfCnpjAuto || undefined,
-                  payerEmail: intEmail || undefined,
-                });
-                await storage.updateProject((req.params.id as string), {
-                  paymentId: charge.chargeId,
-                  paymentStatus: "pending",
-                  paymentGateway: "asaas",
-                  pixQrCode: charge.qrCode,
-                  pixQrCodeBase64: charge.qrCodeBase64,
-                  pixPaymentId: charge.chargeId,
-                } as any);
-                await storage.addTimelineEntry({
-                  projectId: (req.params.id as string),
-                  event: "Pagamento disponível",
-                  details: "Asaas PIX disponível para pagamento.",
-                  createdByRole: "admin",
-                });
-              } catch (err) {
-                console.error("[asaas] Erro ao criar pagamento automático:", err);
-              }
+              await storage.updateProject((req.params.id as string), updatePayment);
+              console.log(`[mercadopago] Preferência criada para projeto ${(req.params.id as string)}`);
+            } catch (err) {
+              console.error("[mercadopago] Erro ao criar pagamento:", err);
             }
           }
-          // Se múltiplos gateways ativos: não gera automaticamente, admin escolhe
+
+          // Timeline entry for payment
+          if (mpToken) {
+            await storage.addTimelineEntry({
+              projectId: (req.params.id as string),
+              event: "Pagamento disponível",
+              details: "Mercado Pago (PIX e Cartão) disponível para pagamento.",
+              createdByRole: "admin",
+            });
+          }
         }
 
         // Send email to integrador
@@ -1071,7 +969,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
               const autoFinCep = client?.cep || proj.cep || undefined;
               const autoFinCidade = client?.cidade || proj.cidade || undefined;
               const autoFinUf = client?.estado || proj.estado || undefined;
-              const autoFinIbge = client?.codigoMunicipio || await lookupMunicipioIbge(autoFinCep, autoFinCidade, autoFinUf) || undefined;
+              const autoFinIbge = await lookupMunicipioIbge(autoFinCep, autoFinCidade, autoFinUf) || undefined;
               const result = await emitirNfse({
                 config: nfseConfig,
                 numeroDps: String(proximoDps),
@@ -1150,46 +1048,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   });
 
 
-  // ── CONFIRM PAYMENT MANUALLY ──────────────────────────────────────────────
-  app.post("/api/projects/:id/confirm-payment-manual", requireAuth, async (req, res) => {
-    try {
-      const user = await getCurrentUser(req);
-      if (!user || !["admin", "financeiro"].includes(user.role)) return res.status(403).json({ error: "Sem permissão. Apenas administradores e financeiro podem confirmar pagamentos manualmente." });
-
-      const project = await storage.getProject((req.params.id as string));
-      if (!project) return res.status(404).json({ error: "Projeto não encontrado" });
-
-      if (project.paymentStatus === "approved") {
-        return res.status(400).json({ error: "Pagamento já está aprovado" });
-      }
-
-      if (project.status !== "aprovado_pagamento_pendente") {
-        return res.status(400).json({ error: "Projeto não está com pagamento pendente" });
-      }
-
-      const { valor, observacao } = req.body;
-      const paidValue = parseFloat(valor) || parseFloat(project.valor || "0") || 0;
-      const adminName = user?.name || user?.email || "Admin";
-      const obs = observacao ? ` Observação: ${observacao}.` : "";
-
-      await advanceProjectAfterPayment(project, (req.params.id as string), "manual", paidValue, `Confirmação manual (${adminName})`);
-
-      // Update timeline with manual confirmation details
-      await storage.addTimelineEntry({
-        projectId: (req.params.id as string),
-        event: "Pagamento confirmado manualmente",
-        details: `Pagamento confirmado manualmente pelo administrador ${adminName}. Valor: R$ ${paidValue.toFixed(2).replace(".", ",")}.${obs}`,
-        createdByRole: "admin",
-      });
-
-      const updated = await storage.getProject((req.params.id as string));
-      res.json({ success: true, project: updated });
-    } catch (err: any) {
-      console.error("[manual-payment] Erro:", err);
-      res.status(500).json({ error: err.message || "Erro ao confirmar pagamento" });
-    }
-  });
-
   app.post("/api/projects/:id/generate-payment", requireAuth, async (req, res) => {
     try {
       const user = await getCurrentUser(req);
@@ -1212,75 +1070,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const updateData: any = {};
       let gatewayLabel = "";
 
-      if (method === "asaas") {
-        const asaasKey = settingsMap["asaas_api_key"];
-        const asaasEnabled = settingsMap["asaas_enabled"] === "true";
-        if (!asaasKey || !asaasEnabled) {
-          return res.status(400).json({ error: "Asaas não está configurado ou ativo" });
-        }
-        try {
-          const asaasSandbox = settingsMap["asaas_sandbox"] === "true";
-          const charge = await createAsaasPixCharge({
-            apiKey: asaasKey,
-            sandbox: asaasSandbox,
-            projectId: (req.params.id as string),
-            projectTitle: project.title,
-            ticketNumber: project.ticketNumber,
-            valor: project.valor,
-            payerName: intName || undefined,
-            payerCpfCnpj: intCpfCnpj || undefined,
-            payerEmail: intEmail || undefined,
-          });
-          updateData.paymentId = charge.chargeId;
-          updateData.paymentStatus = "pending";
-          updateData.paymentGateway = "asaas";
-          updateData.pixQrCode = charge.qrCode;
-          updateData.pixQrCodeBase64 = charge.qrCodeBase64;
-          updateData.pixPaymentId = charge.chargeId;
-          gatewayLabel = "Asaas";
-        } catch (asaasErr: any) {
-          console.error("[asaas] Erro ao gerar pagamento:", asaasErr);
-          return res.status(500).json({ error: asaasErr.message || "Erro ao gerar cobrança Asaas" });
-        }
-      } else if (method === "mp2") {
-        const mp2Token = settingsMap["mp2_access_token"];
-        const mp2Enabled = settingsMap["mp2_enabled"] === "true";
-        if (!mp2Token || !mp2Enabled) {
-          return res.status(400).json({ error: "Mercado Pago 2 não está configurado ou ativo" });
-        }
-        try {
-          const portalUrl = settingsMap["email_portal_url"] || "https://projetos.randolisolar.com.br";
-          const webhookUrl = `${portalUrl}/api/mercadopago/webhook`;
-          const paymentArgs = {
-            accessToken: mp2Token,
-            projectId: (req.params.id as string),
-            projectTitle: project.title,
-            ticketNumber: project.ticketNumber,
-            valor: project.valor,
-            integradorEmail: intEmail || undefined,
-            integradorName: intName || undefined,
-            integradorCpfCnpj: intCpfCnpj || undefined,
-            webhookUrl,
-          };
-          const pref = await createPaymentPreference(paymentArgs);
-          updateData.paymentLink = pref.initPoint;
-          updateData.paymentId = pref.id;
-          updateData.paymentStatus = "pending";
-          updateData.paymentGateway = "mp2";
-          try {
-            const pix = await createPixPayment(paymentArgs);
-            updateData.pixQrCode = pix.qrCode;
-            updateData.pixQrCodeBase64 = pix.qrCodeBase64;
-            updateData.pixPaymentId = pix.paymentId;
-          } catch (pixErr) {
-            console.error("[mp2] Erro ao criar PIX:", pixErr);
-          }
-          gatewayLabel = "Mercado Pago 2";
-        } catch (mp2Err: any) {
-          console.error("[mp2] Erro ao gerar pagamento:", mp2Err);
-          return res.status(500).json({ error: mp2Err.message || "Erro ao gerar cobrança Mercado Pago 2" });
-        }
-      } else if (method === "pagseguro") {
+      if (method === "pagseguro") {
         const psToken = settingsMap["pagseguro_token"];
         const psEnabled = settingsMap["pagseguro_enabled"] === "true";
         if (!psToken || !psEnabled) {
@@ -1732,16 +1522,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           });
         }
         const adminPhone = await getWhatsAppAdminPhone();
-        const engineerPhone = await getWhatsAppEngineerPhone();
         if (adminPhone) {
           await sendWhatsAppPaymentNotification({
             config: waConfig, phone: adminPhone, recipientName: "Admin",
-            projectTitle: project.title, ticketNumber: project.ticketNumber || "", valor,
-          });
-        }
-        if (engineerPhone && engineerPhone !== adminPhone) {
-          await sendWhatsAppPaymentNotification({
-            config: waConfig, phone: engineerPhone, recipientName: "Engenheiro",
             projectTitle: project.title, ticketNumber: project.ticketNumber || "", valor,
           });
         }
@@ -1751,7 +1534,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     // Auto NFS-e emission after payment (check gateway filter)
     const nfseGatewayFilter = (sMap["nfse_auto_emit_gateways"] || "").split(",").filter(Boolean);
     const gatewayKeyMap: Record<string, string> = {
-      "Mercado Pago 2": "mp2",
       "Mercado Pago": "mp", "mercado_pago": "mp", "mp": "mp",
       "PagSeguro": "pagseguro", "pagseguro": "pagseguro",
       "Inter PIX": "inter_pix", "inter_pix": "inter_pix", "Banco Inter PIX": "inter_pix",
@@ -1778,7 +1560,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           const payWbkCep = client?.cep || project.cep || undefined;
           const payWbkCidade = client?.cidade || project.cidade || undefined;
           const payWbkUf = client?.estado || project.estado || undefined;
-          const payWbkIbge = client?.codigoMunicipio || await lookupMunicipioIbge(payWbkCep, payWbkCidade, payWbkUf) || undefined;
+          const payWbkIbge = await lookupMunicipioIbge(payWbkCep, payWbkCidade, payWbkUf) || undefined;
           const result = await emitirNfse({
             config: nfseConfig,
             numeroDps: String(proximoDps),
@@ -1973,42 +1755,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
-  // ── ASAAS WEBHOOK ──────────────────────────────────────────────────────────
-  app.post("/api/asaas/webhook", async (req, res) => {
-    try {
-      res.sendStatus(200);
-      const event = req.body;
-      console.log("[asaas] Webhook recebido:", JSON.stringify(event).slice(0, 500));
-      // Asaas envia: { event: "PAYMENT_CONFIRMED", payment: { id, externalReference, value, status } }
-      const payment = event?.payment;
-      if (!payment) {
-        console.log("[asaas] Webhook sem payment:", JSON.stringify(event));
-        return;
-      }
-      const projectId = payment.externalReference;
-      if (!projectId) return;
-      const project = await storage.getProject(projectId);
-      if (!project) {
-        console.log(`[asaas] Projeto não encontrado: ${projectId}`);
-        return;
-      }
-      const eventType = event?.event || "";
-      const paymentStatus = (eventType === "PAYMENT_CONFIRMED" || eventType === "PAYMENT_RECEIVED" || payment.status === "CONFIRMED" || payment.status === "RECEIVED") ? "approved" : "pending";
-      const chargeId = payment.id;
-      const paidValue = payment.value || parseFloat(project.valor || "0");
-      console.log(`[asaas] Webhook processando: evento=${eventType} projeto=${projectId} status=${paymentStatus}`);
-      if (project.paymentStatus === "approved" && project.status !== "aprovado_pagamento_pendente") return;
-      await storage.updateProject(projectId, { paymentStatus } as any);
-      if (paymentStatus === "approved" && project.status === "aprovado_pagamento_pendente") {
-        const settingsMap = await getSettingsMap();
-        await advanceProjectAfterPayment(project, projectId, chargeId, paidValue, "Asaas", settingsMap);
-        console.log(`[asaas] ✓ Projeto ${projectId} avançado após pagamento`);
-      }
-    } catch (err) {
-      console.error("[asaas] Webhook error:", err);
-    }
-  });
-
   app.post("/api/projects/:id/verify-payment", requireAuth, async (req, res) => {
     try {
       const user = await getCurrentUser(req);
@@ -2020,37 +1766,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const settingsMap = await getSettingsMap();
       const gateway = project.paymentGateway || "mp";
 
-      if (gateway === "mp2") {
-        // MP2 usa a mesma API do MP, só com token diferente
-        const mp2Token = settingsMap["mp2_access_token"];
-        if (!mp2Token) return res.status(400).json({ error: "Token MP2 não configurado" });
-        // Reutiliza lógica do MP trocando o token
-        const results: any[] = [];
-        if (project.pixPaymentId) {
-          const pixPayment = await getPaymentInfo(project.pixPaymentId, mp2Token);
-          if (pixPayment) {
-            results.push({ id: pixPayment.id, status: pixPayment.status, gateway: "mp2" });
-            if (pixPayment.status === "approved") {
-              await processPaymentUpdate(String(pixPayment.id), mp2Token, "verify-manual-pix-mp2");
-            }
-          }
-        }
-        const updatedProject = await storage.getProject((req.params.id as string));
-        return res.json({ payments: results, project: updatedProject });
-      } else if (gateway === "asaas") {
-        const asaasKey = settingsMap["asaas_api_key"];
-        if (!asaasKey) return res.status(400).json({ error: "API Key Asaas não configurada" });
-        if (!project.pixPaymentId && !project.paymentId) return res.status(400).json({ error: "Nenhum pagamento para verificar" });
-        const asaasSandbox = settingsMap["asaas_sandbox"] === "true";
-        const chargeId = project.pixPaymentId || project.paymentId || "";
-        const paymentStatus = await getAsaasPaymentStatus(asaasKey, chargeId, asaasSandbox);
-        await storage.updateProject((req.params.id as string), { paymentStatus } as any);
-        if (paymentStatus === "approved" && project.status === "aprovado_pagamento_pendente") {
-          await advanceProjectAfterPayment(project, (req.params.id as string), chargeId, parseFloat(project.valor || "0"), "Asaas", settingsMap);
-        }
-        const updatedProject = await storage.getProject((req.params.id as string));
-        return res.json({ payments: [{ status: paymentStatus, gateway: "asaas" }], project: updatedProject });
-      } else if (gateway === "pagseguro") {
+      if (gateway === "pagseguro") {
         const psToken = settingsMap["pagseguro_token"];
         if (!psToken) return res.status(400).json({ error: "Token PagSeguro não configurado" });
         if (!project.paymentId) return res.status(400).json({ error: "Nenhum pagamento para verificar" });
@@ -2841,103 +2557,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   });
 
   // ─── NFS-e ROUTES ────────────────────────────────────────────────────
-  // ── NOTAS FISCAIS DO INTEGRADOR (portal) ────────────────────────────────
-  app.get("/api/portal/minhas-notas", requireAuth, async (req, res) => {
-    try {
-      const user = await getCurrentUser(req);
-      if (!user) return res.status(401).json({ error: "Não autenticado" });
-
-      // Busca todos os projetos do integrador
-      const allProjects = await storage.getProjects();
-      const myProjects = allProjects.filter((p: any) =>
-        p.integradorId === user.id || p.clientId === user.id
-      );
-      const myProjectIds = new Set(myProjects.map((p: any) => p.id));
-
-      // Busca todas as notas e filtra as do integrador
-      const allNotas = await storage.getNfseNotas();
-      const myNotas = allNotas.filter((n: any) => myProjectIds.has(n.projectId));
-
-      // Enriquece com dados do projeto
-      const notasComProjeto = myNotas.map((nota: any) => {
-        const projeto = myProjects.find((p: any) => p.id === nota.projectId);
-        return { ...nota, projeto: projeto ? { title: projeto.title, ticketNumber: projeto.ticketNumber } : null };
-      });
-
-      res.json(notasComProjeto);
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
-    }
-  });
-
-  // ── GERAR PDF NFS-e ─────────────────────────────────────────────────────
-  app.get("/api/nfse/notas/:notaId/pdf", requireAuth, async (req, res) => {
-    try {
-      const nota = await storage.getNfseNota(req.params.notaId);
-      if (!nota) return res.status(404).json({ error: "Nota não encontrada" });
-
-      const { execFile } = await import("child_process");
-      const { promisify } = await import("util");
-      const { join } = await import("path");
-      const { tmpdir } = await import("os");
-      const { unlink, readFile } = await import("fs/promises");
-      const execFileAsync = promisify(execFile);
-
-      const tmpPath = join(tmpdir(), `nfse_${nota.id}_${Date.now()}.pdf`);
-      const scriptPath = join(import.meta.dirname || __dirname, "gerar_nfse_pdf.py");
-      const notaJson = JSON.stringify(nota);
-
-      try {
-        await execFileAsync("python3", [scriptPath, notaJson, tmpPath], { timeout: 15000 });
-        const pdfBuffer = await readFile(tmpPath);
-        await unlink(tmpPath).catch(() => {});
-        res.setHeader("Content-Type", "application/pdf");
-        res.setHeader("Content-Disposition", `attachment; filename="NFS-e_${nota.numeroNota || nota.id}.pdf"`);
-        res.send(pdfBuffer);
-      } catch (scriptErr: any) {
-        await unlink(tmpPath).catch(() => {});
-        console.error("[nfse-pdf] Erro ao gerar PDF:", scriptErr);
-        res.status(500).json({ error: "Erro ao gerar PDF da NFS-e" });
-      }
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
-    }
-  });
-
-  // ── GERAR PDF NFS-e (portal integrador - sem requireAuth admin) ──────────
-  app.get("/api/portal/nfse/:notaId/pdf", requireAuth, async (req, res) => {
-    try {
-      const nota = await storage.getNfseNota(req.params.notaId);
-      if (!nota) return res.status(404).json({ error: "Nota não encontrada" });
-
-      const { execFile } = await import("child_process");
-      const { promisify } = await import("util");
-      const { join } = await import("path");
-      const { tmpdir } = await import("os");
-      const { unlink, readFile } = await import("fs/promises");
-      const execFileAsync = promisify(execFile);
-
-      const tmpPath = join(tmpdir(), `nfse_${nota.id}_${Date.now()}.pdf`);
-      const scriptPath = join(import.meta.dirname || __dirname, "gerar_nfse_pdf.py");
-      const notaJson = JSON.stringify(nota);
-
-      try {
-        await execFileAsync("python3", [scriptPath, notaJson, tmpPath], { timeout: 15000 });
-        const pdfBuffer = await readFile(tmpPath);
-        await unlink(tmpPath).catch(() => {});
-        res.setHeader("Content-Type", "application/pdf");
-        res.setHeader("Content-Disposition", `attachment; filename="NFS-e_${nota.numeroNota || nota.id}.pdf"`);
-        res.send(pdfBuffer);
-      } catch (scriptErr: any) {
-        await unlink(tmpPath).catch(() => {});
-        console.error("[nfse-pdf] Erro ao gerar PDF:", scriptErr);
-        res.status(500).json({ error: "Erro ao gerar PDF da NFS-e" });
-      }
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
-    }
-  });
-
   app.get("/api/nfse/notas", requireAuth, async (req, res) => {
     const user = await getCurrentUser(req);
     if (!user || !["admin", "financeiro"].includes(user.role)) return res.status(403).json({ error: "Sem permissão" });
@@ -2977,7 +2596,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const tomadorCep = client?.cep || project.cep || undefined;
       const tomadorCidade = client?.cidade || project.cidade || undefined;
       const tomadorUf = client?.estado || project.estado || undefined;
-      const tomadorCodigoMunicipio = client?.codigoMunicipio || await lookupMunicipioIbge(tomadorCep, tomadorCidade, tomadorUf) || undefined;
+      const tomadorCodigoMunicipio = await lookupMunicipioIbge(tomadorCep, tomadorCidade, tomadorUf) || undefined;
 
       const result = await emitirNfse({
         config,
@@ -3045,7 +2664,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const reemitCep = client?.cep || project.cep || undefined;
       const reemitCidade = client?.cidade || project.cidade || undefined;
       const reemitUf = client?.estado || project.estado || undefined;
-      const reemitIbge = client?.codigoMunicipio || await lookupMunicipioIbge(reemitCep, reemitCidade, reemitUf) || undefined;
+      const reemitIbge = await lookupMunicipioIbge(reemitCep, reemitCidade, reemitUf) || undefined;
       const result = await emitirNfse({
         config,
         numeroDps: nota.numeroRps,
@@ -3088,47 +2707,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     } catch (err: any) {
       console.error("[nfse] Erro na re-emissão:", err);
       res.status(500).json({ error: err?.message || "Erro interno ao re-emitir NFS-e" });
-    }
-  });
-
-  // ── GERAR PDF NFS-e ──────────────────────────────────────────────────────
-  app.get("/api/nfse/notas/:notaId/pdf", async (req, res) => {
-    try {
-      const nota = await storage.getNfseNota(req.params.notaId);
-      if (!nota) return res.status(404).json({ error: "Nota não encontrada" });
-
-      const { execFile } = await import("child_process");
-      const { promisify } = await import("util");
-      const { mkdtemp, unlink, readFile } = await import("fs/promises");
-      const { tmpdir } = await import("os");
-      const { join } = await import("path");
-      const execFileAsync = promisify(execFile);
-
-      const tmpDir = await mkdtemp(join(tmpdir(), "nfse-"));
-      const pdfPath = join(tmpDir, `nfse_${nota.numeroNota || nota.id}.pdf`);
-      const scriptPath = join(process.cwd(), "server", "gerar_nfse_pdf.py");
-
-      const notaJson = JSON.stringify({
-        id: nota.id,
-        numeroNota: nota.numeroNota,
-        valor: nota.valor,
-        tomadorNome: nota.tomadorNome,
-        tomadorCpfCnpj: nota.tomadorCpfCnpj,
-        codigoVerificacao: nota.codigoVerificacao,
-        xmlContent: nota.xmlContent,
-      });
-
-      await execFileAsync("python3", [scriptPath, notaJson, pdfPath]);
-
-      const pdfBuffer = await readFile(pdfPath);
-      unlink(pdfPath).catch(() => {});
-
-      res.setHeader("Content-Type", "application/pdf");
-      res.setHeader("Content-Disposition", `attachment; filename="NFS-e_${nota.numeroNota || nota.id}.pdf"`);
-      res.send(pdfBuffer);
-    } catch (err: any) {
-      console.error("[nfse-pdf] Erro ao gerar PDF:", err);
-      res.status(500).json({ error: "Erro ao gerar PDF da NFS-e" });
     }
   });
 

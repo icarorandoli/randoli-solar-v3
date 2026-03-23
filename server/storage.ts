@@ -148,6 +148,7 @@ export interface IStorage {
   updateAnnouncement(id: string, data: Partial<InsertAnnouncement>): Promise<Announcement | undefined>;
   deleteAnnouncement(id: string): Promise<void>;
   getUnreadAnnouncements(userId: string): Promise<Announcement[]>;
+  getAnnouncementsForUser(userId: string): Promise<Announcement[]>;
   markAnnouncementRead(announcementId: string, userId: string): Promise<void>;
 }
 
@@ -683,7 +684,28 @@ export class DatabaseStorage implements IStorage {
       .from(announcementReads).where(eq(announcementReads.userId, userId));
     const readIds = reads.map(r => r.announcementId);
     const active = await this.getActiveAnnouncements();
-    return active.filter(a => !readIds.includes(a.id));
+    return active.filter(a => {
+      if (readIds.includes(a.id)) return false;
+      // Se tem targetUserIds, só mostrar para esses usuários
+      if (a.targetUserIds) {
+        try {
+          const targets: string[] = JSON.parse(a.targetUserIds);
+          if (targets.length > 0 && !targets.includes(userId)) return false;
+        } catch {}
+      }
+      return true;
+    });
+  }
+
+  async getAnnouncementsForUser(userId: string): Promise<Announcement[]> {
+    const active = await this.getActiveAnnouncements();
+    return active.filter(a => {
+      if (!a.targetUserIds) return true;
+      try {
+        const targets: string[] = JSON.parse(a.targetUserIds);
+        return targets.length === 0 || targets.includes(userId);
+      } catch { return true; }
+    });
   }
   async markAnnouncementRead(announcementId: string, userId: string): Promise<void> {
     await db.insert(announcementReads).values({ announcementId, userId }).onConflictDoNothing();

@@ -62,17 +62,20 @@ function ProjectDetailSheet({
   open,
   onClose,
   onEdit,
+  showIntegradorData = false,
 }: {
   project: ProjectWithClient | null;
   open: boolean;
   onClose: () => void;
   onEdit?: (id: string) => void;
+  showIntegradorData?: boolean;
 }) {
   const { toast } = useToast();
   const { user } = useAuth();
   const canDeleteDocs = ["admin", "engenharia"].includes(user?.role || "");
   const canEditValor = ["admin", "financeiro"].includes(user?.role || "");
-  const isAdmin = user?.role === "admin";
+  const isAdmin = ["admin", "engenharia"].includes(user?.role || "");
+  const isOnlyAdmin = user?.role === "admin";
   const [timelineNote, setTimelineNote] = useState("");
   const [newStatus, setNewStatus] = useState("");
   const [newProtocolo, setNewProtocolo] = useState("");
@@ -730,6 +733,51 @@ function ProjectDetailSheet({
                   <InfoRow label="Telefone" value={project.telefoneCliente} />
                 </div>
               </div>
+
+              {/* Dados do Integrador — visível para admin e engenharia */}
+              {showIntegradorData && project.client && (
+                <Card className="border-none shadow-md rounded-2xl overflow-hidden bg-blue-50/30 dark:bg-blue-900/10">
+                  <CardHeader className="pb-3 pt-5 px-6 border-b border-blue-100 dark:border-blue-900/30">
+                    <CardTitle className="text-sm font-bold flex items-center gap-2">
+                      <User className="h-4 w-4 text-primary" />
+                      Dados do Integrador
+                      <Badge className="ml-2 text-[9px] bg-primary/10 text-primary border-none uppercase tracking-wider">Para TRT</Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="px-6 py-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm">
+                      {[
+                        { label: "Nome Completo", value: (project.client as any)?.name },
+                        { label: "CPF / CNPJ", value: (project.client as any)?.cpfCnpj },
+                        { label: "E-mail", value: (project.client as any)?.email },
+                        { label: "Telefone", value: (project.client as any)?.phone },
+                        { label: "Empresa", value: (project.client as any)?.company },
+                        { label: "CEP", value: (project.client as any)?.cep },
+                        { label: "Rua", value: (project.client as any)?.rua },
+                        { label: "Número", value: (project.client as any)?.numero },
+                        { label: "Bairro", value: (project.client as any)?.bairro },
+                        { label: "Cidade", value: (project.client as any)?.cidade },
+                        { label: "Estado", value: (project.client as any)?.estado },
+                        { label: "Cód. Município", value: (project.client as any)?.codigoMunicipio },
+                      ].filter(i => i.value).map(({ label, value }) => (
+                        <div key={label} className="flex flex-col gap-0.5">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-semibold text-foreground text-xs">{value}</span>
+                            <button
+                              onClick={() => { navigator.clipboard.writeText(value!); }}
+                              className="text-muted-foreground hover:text-primary transition-colors shrink-0"
+                              title={`Copiar ${label}`}
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </TabsContent>
 
             <TabsContent value="equipamento" className="mt-0 focus-visible:ring-0">
@@ -748,7 +796,53 @@ function ProjectDetailSheet({
                   </CardContent>
                 </Card>
 
-                <Card className="border-border/40 shadow-sm bg-muted/10">
+                
+              {/* Dados do Integrador — visível para admin e engenharia */}
+              {showIntegradorData && project.client && (
+                <Card className="border-none shadow-md rounded-2xl overflow-hidden">
+                  <CardHeader className="pb-3 pt-5 px-6">
+                    <CardTitle className="text-base font-bold flex items-center gap-2">
+                      <User className="h-4 w-4 text-primary" />
+                      Dados do Integrador
+                      <Badge className="ml-2 text-[9px] bg-primary/10 text-primary border-none">Para TRT</Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="px-6 pb-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm">
+                      {[
+                        { label: "Nome Completo", value: (project.client as any)?.name },
+                        { label: "CPF / CNPJ", value: (project.client as any)?.cpfCnpj },
+                        { label: "E-mail", value: (project.client as any)?.email },
+                        { label: "Telefone", value: (project.client as any)?.phone },
+                        { label: "Empresa", value: (project.client as any)?.company },
+                        { label: "CEP", value: (project.client as any)?.cep },
+                        { label: "Rua", value: (project.client as any)?.rua },
+                        { label: "Número", value: (project.client as any)?.numero },
+                        { label: "Bairro", value: (project.client as any)?.bairro },
+                        { label: "Cidade", value: (project.client as any)?.cidade },
+                        { label: "Estado", value: (project.client as any)?.estado },
+                        { label: "Cód. Município", value: (project.client as any)?.codigoMunicipio },
+                      ].map(({ label, value }) => value ? (
+                        <div key={label} className="flex flex-col gap-0.5">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-foreground">{value}</span>
+                            <button
+                              onClick={() => { navigator.clipboard.writeText(value); }}
+                              className="text-muted-foreground hover:text-primary transition-colors"
+                              title="Copiar"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                            </button>
+                          </div>
+                        </div>
+                      ) : null)}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              <Card className="border-border/40 shadow-sm bg-muted/10">
                   <CardHeader className="pb-3 border-b border-border/30 bg-muted/20 rounded-t-xl">
                     <CardTitle className="text-xs font-bold uppercase tracking-wider flex items-center gap-2">
                       <Sun className="h-3.5 w-3.5 text-primary" /> Módulos Fotovoltaicos
@@ -1616,6 +1710,14 @@ function AdminEditProjectDialog({ projectId, open, onClose }: { projectId: strin
   );
 }
 
+
+// Helper: projeto criado nas últimas 48h é considerado NOVO
+function isNewProject(createdAt: string | Date | null | undefined): boolean {
+  if (!createdAt) return false;
+  const diff = Date.now() - new Date(createdAt).getTime();
+  return diff < 48 * 60 * 60 * 1000;
+}
+
 export default function ProjectsPage() {
   const [search, setSearch] = useState("");
   const [detailProjectId, setDetailProjectId] = useState<string | null>(null);
@@ -1628,6 +1730,7 @@ export default function ProjectsPage() {
   const { toast } = useToast();
   const { user } = useAuth();
   const canDelete = user?.role === "admin";
+  const isAdmin = ["admin", "engenharia"].includes(user?.role || "");
 
   const { data: projects = [], isLoading } = useQuery<ProjectWithClient[]>({ queryKey: ["/api/projects"] });
   const { data: archived = [], isLoading: archivedLoading } = useQuery<ProjectWithClient[]>({
@@ -1656,12 +1759,20 @@ export default function ProjectsPage() {
   const detailProject = detailProjectId ? allProjects.find(p => p.id === detailProjectId) || null : null;
 
   // Auto-open project from ?open= query param (e.g. clicked from a notification)
+  const pendingOpenRef = useRef<string | null>(null);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const openId = params.get("open");
-    if (openId && allProjects.length > 0) {
-      setDetailProjectId(openId);
+    if (openId) {
+      pendingOpenRef.current = openId;
       navigate("/projetos", { replace: true });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (pendingOpenRef.current && allProjects.length > 0) {
+      setDetailProjectId(pendingOpenRef.current);
+      pendingOpenRef.current = null;
     }
   }, [allProjects.length]);
 
@@ -1724,6 +1835,7 @@ export default function ProjectsPage() {
       p.nomeCliente?.toLowerCase().includes(s) ||
       p.concessionaria?.toLowerCase().includes(s) ||
       (p.ticketNumber || "").toLowerCase().includes(s) ||
+      ((p as any).cidade || "").toLowerCase().includes(s) ||
       (p.endereco || "").toLowerCase().includes(s) ||
       (p.numeroInstalacao || "").toLowerCase().includes(s);
     const matchesStatus = statusFilter === "todos" || p.status === statusFilter;
@@ -1819,18 +1931,20 @@ export default function ProjectsPage() {
 
       {/* Filters & Search Toolbar */}
       <Card className="border-border/40 shadow-sm bg-muted/10 overflow-visible rounded-2xl">
-        <CardContent className="p-4 flex flex-col lg:flex-row gap-4">
-          <div className="relative flex-1 group">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50 group-focus-within:text-primary transition-colors" />
+        <CardContent className="p-4 flex flex-col gap-3">
+          {/* Search - full width */}
+          <div className="relative w-full group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground/50 group-focus-within:text-primary transition-colors" />
             <Input
-              placeholder="Pesquisar por cliente, integrador, ticket..."
+              placeholder="Buscar por cliente, cidade, integrador, ticket, concessionária, protocolo..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="pl-10 h-11 bg-background border-border/40 focus:border-primary/50 transition-all rounded-xl shadow-inner text-sm"
+              className="pl-11 h-12 w-full bg-background border-border/40 focus:border-primary/50 transition-all rounded-xl shadow-inner text-sm font-medium"
               data-testid="input-search-projects"
             />
           </div>
           
+          {/* Filters row */}
           <div className="flex flex-wrap items-center gap-3">
             <div className="min-w-[180px]">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -1912,7 +2026,7 @@ export default function ProjectsPage() {
               </div>
             )}
 
-            {user?.role === "admin" && (
+            {isAdmin && (
               <Button
                 onClick={() => setShowNewProject(true)}
                 className="h-11 rounded-xl px-4 font-bold text-[10px] uppercase tracking-wider"
@@ -2067,7 +2181,7 @@ export default function ProjectsPage() {
                                 <Button size="sm" variant="outline" className="rounded-lg text-[11px] h-8" onClick={e => { e.stopPropagation(); setDetailProjectId(project.id); }}>
                                   Gerenciar
                                 </Button>
-                                {user?.role === "admin" && (
+                                {isAdmin && (
                                   <Button size="sm" variant="outline" className="rounded-lg text-[11px] h-8 border-blue-200 text-blue-700 hover:bg-blue-50" onClick={e => { e.stopPropagation(); setEditProjectId(project.id); }}>
                                     <Pencil className="h-3 w-3" />
                                   </Button>
@@ -2236,6 +2350,11 @@ export default function ProjectsPage() {
                       className="group relative bg-background rounded-3xl border border-amber-200/40 shadow-md hover:shadow-lg transition-all duration-300 hover:border-amber-400/40 cursor-pointer overflow-hidden flex flex-col"
                       onClick={() => setDetailProjectId(project.id)}
                     >
+                      {isNewProject(project.createdAt) && (
+                        <div className="absolute top-3 left-3 z-10 flex items-center gap-1 bg-emerald-500 text-white text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full shadow-md shadow-emerald-500/30 animate-pulse">
+                          ● NOVO
+                        </div>
+                      )}
                       <div className={`h-1.5 w-full ${getStatusBadge(project.status).split(" ")[1]}`} />
                       <div className="p-5 flex-1 flex flex-col gap-3">
                         <div className="flex items-start justify-between gap-2">
@@ -2304,6 +2423,11 @@ export default function ProjectsPage() {
               onClick={() => setDetailProjectId(project.id)}
               data-testid={`card-project-${project.id}`}
             >
+              {isNewProject(project.createdAt) && (
+                <div className="absolute top-3 left-3 z-10 flex items-center gap-1 bg-emerald-500 text-white text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full shadow-md shadow-emerald-500/30 animate-pulse">
+                  ● NOVO
+                </div>
+              )}
               <div className={`h-1.5 w-full ${getStatusBadge(project.status).split(" ")[1]}`} />
               <CardContent className="p-6">
                 <div className="flex justify-between items-start mb-4">
@@ -2326,6 +2450,15 @@ export default function ProjectsPage() {
                     <span className="text-muted-foreground font-semibold uppercase tracking-tight">Integrador</span>
                     <span className="font-bold text-foreground/80 truncate max-w-[140px]">{(project as any).integrador?.name || project.client?.name || "—"}</span>
                   </div>
+                  {(project as any).cidade && (
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-muted-foreground font-semibold uppercase tracking-tight">Cidade</span>
+                      <span className="font-bold text-foreground/80 flex items-center gap-1">
+                        <MapPin className="h-3 w-3 text-primary/60" />
+                        {(project as any).cidade}{(project as any).estado ? `, ${(project as any).estado}` : ""}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between text-[11px]">
                     <span className="text-muted-foreground font-semibold uppercase tracking-tight">Potência</span>
                     <div className="flex items-center gap-1.5 font-bold text-foreground/80">
@@ -2382,7 +2515,7 @@ export default function ProjectsPage() {
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     )}
-                    {user?.role === "admin" && (
+                    {isAdmin && (
                       <Button size="icon" variant="outline" className="h-8 w-8 rounded-lg border-blue-200 text-blue-700 hover:bg-blue-50" onClick={e => { e.stopPropagation(); setEditProjectId(project.id); }}>
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
@@ -2406,7 +2539,8 @@ export default function ProjectsPage() {
         project={detailProject}
         open={!!detailProjectId}
         onClose={() => setDetailProjectId(null)}
-        onEdit={user?.role === "admin" ? (id: string) => { setDetailProjectId(null); setEditProjectId(id); } : undefined}
+        onEdit={isAdmin ? (id: string) => { setDetailProjectId(null); setEditProjectId(id); } : undefined}
+        showIntegradorData={isAdmin}
       />
 
       <Dialog open={!!deleteProjectId} onOpenChange={(open) => { if (!open) setDeleteProjectId(null); }}>

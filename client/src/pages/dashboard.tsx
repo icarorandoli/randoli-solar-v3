@@ -4,13 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
-  FolderOpen, Users, CheckCircle, Clock, Zap, AlertCircle,
+  FolderOpen, Users, CheckCircle, Clock, Zap, AlertCircle, AlertTriangle,
   XCircle, FileText, ClipboardList, Wrench, Eye, ShieldCheck,
   DollarSign, TrendingUp, BadgeCheck, Hourglass, ChevronRight,
-  KanbanSquare, Plus, Settings, ExternalLink,
+  KanbanSquare, Plus, Settings, ExternalLink, TrendingDown, Activity, Sun,
 } from "lucide-react";
 import {
-  BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell,
+  BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell, CartesianGrid,
+  ComposedChart, Line, Area, AreaChart,
 } from "recharts";
 import type { Project, Client } from "@shared/schema";
 import { useAuth } from "@/contexts/AuthContext";
@@ -175,6 +176,54 @@ export default function DashboardPage() {
 
   const recentProjects = projects.slice(0, 5);
 
+  // Monthly evolution calculation
+  const currentYear = new Date().getFullYear();
+  const MONTHS = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+  const monthlyData = MONTHS.map((month, i) => {
+    const monthProjects = projects.filter(p => {
+      if (!p.createdAt) return false;
+      const d = new Date(p.createdAt);
+      return d.getFullYear() === currentYear && d.getMonth() === i;
+    });
+    const kwp = monthProjects.reduce((sum, p) => {
+      const v = parseFloat(String(p.potencia || "0").replace(",", ".")) || 0;
+      return sum + v;
+    }, 0);
+    return { month, projetos: monthProjects.length, kwp: parseFloat(kwp.toFixed(2)) };
+  });
+
+  // Add linear trend line to monthlyData
+  const pastMonths = monthlyData.slice(0, new Date().getMonth() + 1);
+  const n = pastMonths.length;
+  const sumX = pastMonths.reduce((s, _, i) => s + i, 0);
+  const sumY = pastMonths.reduce((s, m) => s + m.projetos, 0);
+  const sumXY = pastMonths.reduce((s, m, i) => s + i * m.projetos, 0);
+  const sumX2 = pastMonths.reduce((s, _, i) => s + i * i, 0);
+  const slope = n > 1 ? (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX) : 0;
+  const intercept = n > 0 ? (sumY - slope * sumX) / n : 0;
+
+  const monthlyDataWithTrend = monthlyData.map((m, i) => ({
+    ...m,
+    tendencia: i <= new Date().getMonth() ? parseFloat(Math.max(0, intercept + slope * i).toFixed(2)) : null,
+  }));
+
+  const monthsWithData = monthlyData.filter(m => m.projetos > 0);
+  const bestMonth = monthsWithData.length > 0 
+    ? monthsWithData.reduce((a, b) => a.projetos >= b.projetos ? a : b)
+    : null;
+  const avgMonthly = monthsWithData.length > 0
+    ? (monthsWithData.reduce((s, m) => s + m.projetos, 0) / monthsWithData.length).toFixed(1)
+    : "0";
+  const avgKwp = monthsWithData.length > 0
+    ? (monthsWithData.reduce((s, m) => s + m.kwp, 0) / monthsWithData.length).toFixed(1)
+    : "0";
+  const totalKwpInstalled = projects.reduce((sum, p) => {
+    return sum + (parseFloat(String(p.potencia || "0").replace(",", ".")) || 0);
+  }, 0);
+  const tendencia = monthsWithData.length >= 2
+    ? (monthsWithData[monthsWithData.length - 1].projetos >= monthsWithData[monthsWithData.length - 2].projetos ? "Alta" : "Baixa")
+    : "Alta";
+
   const homologados = (stats?.byStatus?.homologado ?? 0) + (stats?.byStatus?.finalizado ?? 0);
   const emAndamento = Object.entries(stats?.byStatus || {})
     .filter(([s]) => !["orcamento", "homologado", "cancelado", "finalizado"].includes(s))
@@ -183,6 +232,11 @@ export default function DashboardPage() {
   const projectsByStatus = activeStatus
     ? projects.filter(p => p.status === activeStatus)
     : [];
+
+  const comPendencias = projects.filter(p =>
+    p.status === "aprovado_pagamento_pendente" ||
+    (p as any).hasPendency === true
+  ).length;
 
   const attentionProjects = projects.filter(p =>
     p.status === "aprovado_pagamento_pendente" || p.status === "cancelado"
@@ -279,7 +333,7 @@ export default function DashboardPage() {
       )}
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
         {[
           { 
             label: "Total Projetos", 
@@ -324,6 +378,17 @@ export default function DashboardPage() {
             border: "border-emerald-500/20",
             gradient: "from-emerald-500/5 to-transparent",
             testId: "text-homologated-projects"
+          },
+          { 
+            label: "Com Pendências", 
+            value: comPendencias, 
+            sub: "Requerem atenção", 
+            icon: AlertTriangle, 
+            color: "text-orange-600 dark:text-orange-400", 
+            bg: "bg-orange-500/10",
+            border: "border-orange-500/20",
+            gradient: "from-orange-500/5 to-transparent",
+            testId: "text-pending-projects"
           }
         ].map((kpi, idx) => (
           <Card key={idx} className={`group hover-elevate border-none bg-card shadow-md shadow-black/5 overflow-hidden rounded-2xl`}>
@@ -351,6 +416,126 @@ export default function DashboardPage() {
       </div>
 
       {/* Financial Stats */}
+      {/* Evolução Mensal */}
+      <Card className="border-none bg-card shadow-md shadow-black/5 overflow-hidden rounded-2xl">
+        <CardContent className="p-7">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                <Activity className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-xl font-black text-foreground">Evolução Mensal</h2>
+                <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">{currentYear} — Projetos & kWp</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 text-xs font-semibold text-muted-foreground">
+              <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-primary inline-block"/>Projetos</span>
+              <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-emerald-500 inline-block"/>kWp</span>
+            </div>
+          </div>
+          <div className="h-56">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={monthlyDataWithTrend} margin={{ left: -20, right: 10, top: 10 }}>
+                <XAxis
+                  dataKey="month"
+                  tick={{ fontSize: 11, fontWeight: 600, fill: "hsl(var(--muted-foreground))" }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  yAxisId="proj"
+                  orientation="left"
+                  tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                  axisLine={false}
+                  tickLine={false}
+                  allowDecimals={false}
+                />
+                <YAxis
+                  yAxisId="kwp"
+                  orientation="right"
+                  tick={{ fontSize: 10, fill: "#10b981" }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(v) => `${v}`}
+                />
+                <Tooltip
+                  contentStyle={{
+                    borderRadius: "12px",
+                    border: "none",
+                    boxShadow: "0 4px 24px rgba(0,0,0,0.12)",
+                    fontSize: "12px",
+                    padding: "10px 14px",
+                  }}
+                  formatter={(value: any, name: string) => {
+                    if (name === "kwp") return [`${value} kWp`, "Potência (kWp)"];
+                    if (name === "projetos") return [`${value}`, "Projetos"];
+                    if (name === "tendencia") return [`${Number(value).toFixed(1)}`, "Tendência"];
+                    return [value, name];
+                  }}
+                  labelStyle={{ fontWeight: 700, marginBottom: 4 }}
+                />
+                <Bar
+                  yAxisId="proj"
+                  dataKey="projetos"
+                  radius={[4, 4, 0, 0]}
+                  maxBarSize={48}
+                >
+                  {monthlyData.map((entry, index) => {
+                    const isCurrentOrPast = index <= new Date().getMonth();
+                    const isCurrent = index === new Date().getMonth();
+                    return (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={isCurrent ? "#22c55e" : isCurrentOrPast && entry.projetos > 0 ? "#94a3b8" : "transparent"}
+                        opacity={isCurrent ? 1 : 0.7}
+                      />
+                    );
+                  })}
+                </Bar>
+                <Line
+                  yAxisId="proj"
+                  type="monotone"
+                  dataKey="tendencia"
+                  stroke="#3b82f6"
+                  strokeWidth={2}
+                  strokeDasharray="6 3"
+                  dot={false}
+                  connectNulls
+                />
+                <Line
+                  yAxisId="kwp"
+                  type="monotone"
+                  dataKey="kwp"
+                  stroke="#10b981"
+                  strokeWidth={2.5}
+                  dot={(props: any) => {
+                    const { cx, cy, value } = props;
+                    if (!value) return <g key={props.key} />;
+                    return <circle key={props.key} cx={cx} cy={cy} r={4} fill="#10b981" stroke="#fff" strokeWidth={1.5} />;
+                  }}
+                  connectNulls
+                />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 pt-6 border-t border-border/40">
+            {[
+              { label: "Tendência", value: tendencia, sub: `${avgMonthly} proj/mês`, color: tendencia === "Alta" ? "text-emerald-600" : "text-red-500", icon: TrendingUp },
+              { label: "Melhor Mês", value: bestMonth?.month || "—", sub: bestMonth ? `${bestMonth.projetos} projeto${bestMonth.projetos !== 1 ? "s" : ""}` : "Sem dados", color: "text-blue-600", icon: BadgeCheck },
+              { label: "Média Mensal", value: avgMonthly, sub: "proj/mês", color: "text-violet-600", icon: Activity },
+              { label: "Potência Total", value: `${totalKwpInstalled.toFixed(1)}`, sub: "kWp instalados", color: "text-amber-600", icon: Sun },
+            ].map((card, i) => (
+              <div key={i} className="text-center p-3 rounded-xl bg-muted/30">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">{card.label}</p>
+                <p className={`text-xl font-black ${card.color}`}>{card.value}</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">{card.sub}</p>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
       {canSeeFinancial && (
         <div className="space-y-6 pt-2">
           <div className="flex items-center justify-between">
@@ -366,7 +551,7 @@ export default function DashboardPage() {
             <div className="h-[2px] flex-1 mx-8 bg-gradient-to-r from-border/50 via-border/10 to-transparent hidden md:block" />
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
             {[
               { key: "today" as FinancialFilter, label: "Receita Hoje", value: formatBRL(finStats?.todayTotal), icon: TrendingUp, color: "text-emerald-500", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
               { key: "month" as FinancialFilter, label: "Faturamento Mês", value: formatBRL(finStats?.monthTotal), icon: DollarSign, color: "text-blue-500", bg: "bg-blue-500/10", border: "border-blue-500/20" },

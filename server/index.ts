@@ -18,13 +18,13 @@ declare module "http" {
 
 app.use(
   express.json({
+    limit: "10mb",
     verify: (req, _res, buf) => {
       req.rawBody = buf;
     },
   }),
 );
-
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ limit: "10mb", extended: false }));
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
@@ -72,6 +72,98 @@ app.use((req, res, next) => {
     const { pool: dbPool } = await import("./db");
     await dbPool.query(`ALTER TABLE projects ADD COLUMN IF NOT EXISTS payment_gateway TEXT`);
     console.log("[migration] payment_gateway column ensured");
+    await dbPool.query(`ALTER TABLE pricing_ranges ADD COLUMN IF NOT EXISTS table_type TEXT NOT NULL DEFAULT 'legacy'`);
+    console.log("[migration] pricing_ranges.table_type column ensured");
+    // Set all existing ranges as legacy
+    await dbPool.query(`UPDATE pricing_ranges SET table_type = 'legacy' WHERE table_type = 'legacy' OR table_type IS NULL`);
+    // Seed new standard pricing table if not yet created
+    const stdCheck = await dbPool.query(`SELECT COUNT(*) FROM pricing_ranges WHERE table_type = 'standard'`);
+    if (parseInt(stdCheck.rows[0].count) === 0) {
+      const newRanges = [
+        { label: '1 a 10 kWp',   min: 1,    max: 10,   price: 350,  sort: 1 },
+        { label: '10 a 15 kWp',  min: 10.1, max: 15,   price: 450,  sort: 2 },
+        { label: '15 a 25 kWp',  min: 15,   max: 25,   price: 590,  sort: 3 },
+        { label: '25 a 50 kWp',  min: 25,   max: 50,   price: 750,  sort: 4 },
+        { label: '50 a 75 kWp',  min: 50,   max: 75,   price: 1500, sort: 5 },
+      ];
+      for (const r of newRanges) {
+        await dbPool.query(
+          `INSERT INTO pricing_ranges (id, label, min_kwp, max_kwp, price, active, sort_order, table_type)
+           VALUES (gen_random_uuid(), $1, $2, $3, $4, true, $5, 'standard')`,
+          [r.label, r.min, r.max, r.price, r.sort]
+        );
+      }
+      console.log("[migration] standard pricing table seeded with 5 ranges");
+    // Pendências table
+    await dbPool.query(`
+      CREATE TABLE IF NOT EXISTS pendencias (
+        id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+        project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        descricao TEXT NOT NULL,
+        prioridade TEXT NOT NULL DEFAULT 'media',
+        status TEXT NOT NULL DEFAULT 'aberta',
+        criado_por_id TEXT REFERENCES users(id),
+        resolvido_em TIMESTAMP,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    console.log("[migration] pendencias table ensured");
+
+    // Tabelas do módulo de assinatura digital
+    await dbPool.query(`
+      CREATE TABLE IF NOT EXISTS assinaturas (
+        id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+        titulo TEXT NOT NULL,
+        file_url TEXT NOT NULL,
+        project_id TEXT REFERENCES projects(id) ON DELETE SET NULL,
+        created_by_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+        mensagem TEXT,
+        status TEXT NOT NULL DEFAULT 'pendente',
+        expires_at TIMESTAMP NOT NULL,
+        completed_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    await dbPool.query(`
+      CREATE TABLE IF NOT EXISTS assinatura_signatarios (
+        id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+        assinatura_id TEXT NOT NULL REFERENCES assinaturas(id) ON DELETE CASCADE,
+        nome TEXT NOT NULL,
+        email TEXT NOT NULL,
+        cpf TEXT,
+        telefone TEXT,
+        token TEXT UNIQUE NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pendente',
+        sent_at TIMESTAMP,
+        signed_at TIMESTAMP,
+        signed_ip TEXT,
+        signed_user_agent TEXT,
+        sign_hash TEXT,
+        cpf_informado TEXT,
+        verification_code TEXT,
+        code_expires_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    await dbPool.query(`
+      CREATE TABLE IF NOT EXISTS assinatura_logs (
+        id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+        assinatura_id TEXT NOT NULL REFERENCES assinaturas(id) ON DELETE CASCADE,
+        evento TEXT NOT NULL,
+        descricao TEXT,
+        ip TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    // Add canal column if not exists
+    await dbPool.query(`ALTER TABLE assinatura_signatarios ADD COLUMN IF NOT EXISTS canal TEXT DEFAULT 'ambos'`);
+    await dbPool.query(`ALTER TABLE assinatura_signatarios ADD COLUMN IF NOT EXISTS signature_image TEXT`);
+    await dbPool.query(`ALTER TABLE assinatura_signatarios ADD COLUMN IF NOT EXISTS signature_position TEXT`);
+    console.log("[migration] assinatura tables ensured");
+
+
+    }
     await dbPool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT`);
     console.log("[migration] avatar_url column ensured");
     await dbPool.query(`ALTER TABLE announcements ADD COLUMN IF NOT EXISTS target_user_ids TEXT`);

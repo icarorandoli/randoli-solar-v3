@@ -268,3 +268,20 @@ export async function testWhatsAppConnection(config: WhatsAppConfig): Promise<{ 
     return { ok: false, message: `Erro de conexão: ${err.message}` };
   }
 }
+
+export async function getWhatsAppConfig(): Promise<WhatsAppConfig> {
+  const { storage } = await import("./storage");
+  const map = await storage.getSettingsMap();
+  return {
+    enabled: map["whatsapp_enabled"] === "true",
+    apiUrl: map["whatsapp_api_url"] || "",
+    apiKey: map["whatsapp_api_key"] || "",
+    instanceName: map["whatsapp_instance_name"] || "",
+    notifyNovoProjeto: map["whatsapp_notify_novo_projeto"] !== "false",
+    notifyStatus: map["whatsapp_notify_status"] !== "false",
+    notifyDocumento: map["whatsapp_notify_documento"] === "true",
+    notifyTimeline: map["whatsapp_notify_timeline"] === "true",
+    notifyPagamento: map["whatsapp_notify_pagamento"] !== "false",
+    cooldownMinutos: parseInt(map["whatsapp_cooldown_minutos"] || "0"),
+  };
+}

@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { User, Lock, Save, MapPin } from "lucide-react";
+import { User, Lock, Save, MapPin, Camera, X } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatPhone } from "@/lib/utils";
 
 function formatCep(v: string) {
@@ -35,6 +36,40 @@ export default function ContaPage() {
   });
 
   const [cepLoading, setCepLoading] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>((user as any)?.avatarUrl || null);
+
+  const avatarMut = useMutation({
+    mutationFn: async (avatarUrl: string) => {
+      const res = await apiRequest("POST", "/api/auth/avatar", { avatarUrl });
+      return res.json();
+    },
+    onSuccess: (updated) => {
+      queryClient.setQueryData(["/api/auth/me"], updated);
+      toast({ title: "Foto atualizada!" });
+    },
+    onError: (err: any) => toast({ title: err.message || "Erro ao salvar foto", variant: "destructive" }),
+  });
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 500 * 1024) {
+      toast({ title: "Imagem muito grande. Máximo 500KB.", variant: "destructive" });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      setAvatarPreview(dataUrl);
+      avatarMut.mutate(dataUrl);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveAvatar = () => {
+    setAvatarPreview(null);
+    avatarMut.mutate("");
+  };
 
   const [passwords, setPasswords] = useState({
     currentPassword: "",
@@ -116,6 +151,41 @@ export default function ContaPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
+          {/* Avatar Upload */}
+          <div className="flex items-center gap-5 p-4 rounded-xl bg-muted/30 border border-border/40 mb-4">
+            <div className="relative group">
+              <Avatar className="h-20 w-20 border-2 border-border/40">
+                <AvatarImage src={avatarPreview || ""} />
+                <AvatarFallback className="text-xl font-bold bg-primary/10 text-primary">
+                  {(user?.name || "U").split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <label className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                <Camera className="h-5 w-5 text-white" />
+                <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleAvatarChange} />
+              </label>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold">{user?.name || "Integrador"}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{user?.company || (user as any)?.clientType === "PJ" ? "Pessoa Jurídica" : "Pessoa Física"}</p>
+              <div className="flex items-center gap-2 mt-3">
+                <label className="cursor-pointer">
+                  <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1.5 pointer-events-none">
+                    <Camera className="h-3 w-3" />
+                    {avatarPreview ? "Trocar foto" : "Adicionar foto"}
+                  </Button>
+                  <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleAvatarChange} />
+                </label>
+                {avatarPreview && (
+                  <Button type="button" variant="ghost" size="sm" className="h-7 text-xs text-destructive hover:text-destructive gap-1" onClick={handleRemoveAvatar}>
+                    <X className="h-3 w-3" /> Remover
+                  </Button>
+                )}
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-1.5">JPG, PNG ou WebP • máx. 500KB</p>
+            </div>
+          </div>
+
           <form onSubmit={handleProfile} className="space-y-4">
             <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 text-sm">
               <span className="text-muted-foreground">Usuário:</span>

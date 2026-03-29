@@ -449,6 +449,9 @@ function TimelineItem({ entry, isLast }: { entry: Timeline; isLast: boolean }) {
   );
 }
 
+import { TermAcceptanceModal } from "@/components/term-acceptance-modal";
+import { ShieldCheck, ShieldAlert } from "lucide-react";
+
 export default function PortalProjetoPage() {
   const { id } = useParams<{ id: string }>();
   const { toast } = useToast();
@@ -502,6 +505,13 @@ export default function PortalProjetoPage() {
   });
 
   const [activeTab, setActiveTab] = useState("sobre");
+  const [showTermModal, setShowTermModal] = useState(false);
+
+  const { data: termData } = useQuery<{ term: any; alreadyAccepted: boolean; acceptance?: any }>({
+    queryKey: ["/api/projects", id, "term"],
+    queryFn: () => apiRequest("GET", `/api/projects/${id}/term`).then(r => r.json()),
+    enabled: !!id,
+  });
 
   useEffect(() => {
     queryClient.invalidateQueries({ queryKey: ["/api/projects", id, "documents"] });
@@ -544,7 +554,27 @@ export default function PortalProjetoPage() {
   if (!project) return <div className="p-8 text-center font-bold text-muted-foreground">Projeto não encontrado.</div>;
 
   return (
+    <>
     <div className="p-4 md:p-10 space-y-10 max-w-6xl mx-auto pb-20">
+      {/* Banner de aceite pendente */}
+      {termData && !termData.alreadyAccepted && (
+        <div className="flex items-start gap-4 p-4 rounded-2xl border border-orange-500/30 bg-orange-500/5">
+          <ShieldAlert className="h-5 w-5 text-orange-600 shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-sm font-bold text-orange-700 dark:text-orange-400">Termo de aceite pendente</p>
+            <p className="text-xs text-orange-600/70 dark:text-orange-400/70 mt-0.5">Este projeto ainda não possui o termo de prestação de serviços aceito.</p>
+          </div>
+          <Button size="sm" variant="outline" className="shrink-0 border-orange-300 text-orange-700 hover:bg-orange-50" onClick={() => setShowTermModal(true)}>
+            Aceitar agora
+          </Button>
+        </div>
+      )}
+      {termData?.alreadyAccepted && (
+        <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5">
+          <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0" />
+          <p className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">Termo de aceite registrado — {termData.acceptance?.accepted_at ? new Date(termData.acceptance.accepted_at).toLocaleDateString("pt-BR") : ""}</p>
+        </div>
+      )}
       {/* Header Navigation */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-4">
@@ -860,5 +890,15 @@ export default function PortalProjetoPage() {
         </div>
       </div>
     </div>
+
+    {showTermModal && id && (
+      <TermAcceptanceModal
+        open={showTermModal}
+        projectId={String(id)}
+        onAccepted={() => { setShowTermModal(false); queryClient.invalidateQueries({ queryKey: ["/api/projects", id, "term"] }); }}
+        onClose={() => setShowTermModal(false)}
+      />
+    )}
+    </>
   );
 }

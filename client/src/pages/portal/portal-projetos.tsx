@@ -1,13 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link, useSearch } from "wouter";
+import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FolderOpen, Search, ChevronRight, Zap, Building, FileText, Loader2, MapPin } from "lucide-react";
+import { FolderOpen, Search, ChevronRight, Zap, Building, FileText, Loader2, Sparkles, CreditCard } from "lucide-react";
 import type { Project, Client } from "@shared/schema";
+
+interface StatusConfig { key: string; label: string; color: string; sortOrder: number; showInKanban: boolean; }
 
 const STATUS_LABELS: Record<string, string> = {
   orcamento: "Orçamento",
@@ -52,51 +54,49 @@ type ProjectWithClient = Project & { client: Client | null };
 
 export default function PortalProjetosPage() {
   const [search, setSearch] = useState("");
-  const searchString = useSearch();
-  const urlParams = new URLSearchParams(searchString);
-  const urlFilter = urlParams.get("filter");
-
   const { data: projects = [], isLoading } = useQuery<ProjectWithClient[]>({
     queryKey: ["/api/projects"],
   });
+  const { data: statusConfigs = [] } = useQuery<StatusConfig[]>({ queryKey: ["/api/status-configs"] });
 
-  // Apply URL filter first, then search
-  const filterByUrl = (p: ProjectWithClient) => {
-    if (urlFilter === "homologados") return p.status === "homologado" || p.status === "finalizado";
-    if (urlFilter === "andamento") return !["cancelado", "homologado", "finalizado", "orcamento"].includes(p.status);
-    return true;
+  const getStatusProgress = (key: string): number => {
+    const active = statusConfigs.filter(s => s.key !== "cancelado").sort((a, b) => a.sortOrder - b.sortOrder);
+    const idx = active.findIndex(s => s.key === key);
+    if (idx < 0 || key === "cancelado") return 0;
+    return Math.round(((idx + 1) / active.length) * 100);
+  };
+
+  const RECENT_HOURS = 48;
+  const isRecent = (p: any) => {
+    if (!p.updatedAt) return false;
+    return (Date.now() - new Date(p.updatedAt).getTime()) / (1000 * 60 * 60) < RECENT_HOURS;
   };
 
   const filtered = projects.filter(p => {
-    if (!filterByUrl(p)) return false;
     const q = search.toLowerCase();
-    if (!q) return true;
     return (
       p.title.toLowerCase().includes(q) ||
       (p as any).ticketNumber?.toLowerCase().includes(q) ||
       p.concessionaria?.toLowerCase().includes(q) ||
       p.numeroProtocolo?.toLowerCase().includes(q) ||
-      STATUS_LABELS[p.status]?.toLowerCase().includes(q) ||
-      ((p as any).cidade || "").toLowerCase().includes(q)
+      STATUS_LABELS[p.status]?.toLowerCase().includes(q)
     );
   });
 
-  const filterLabel = urlFilter === "homologados" ? "Homologados" : urlFilter === "andamento" ? "Em Andamento" : null;
+  const sortedFiltered = [...filtered].sort((a, b) => {
+    const aR = isRecent(a) ? 1 : 0;
+    const bR = isRecent(b) ? 1 : 0;
+    if (bR !== aR) return bR - aR;
+    return new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime();
+  });
 
   return (
     <div className="px-4 py-8 md:p-10 space-y-8 max-w-5xl mx-auto">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-1">
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-black tracking-tight text-foreground" data-testid="text-portal-projetos-title">
-              Meus Projetos
-            </h1>
-            {filterLabel && (
-              <span className="px-3 py-1 rounded-full text-xs font-bold bg-primary/10 text-primary border border-primary/20">
-                {filterLabel}
-              </span>
-            )}
-          </div>
+          <h1 className="text-3xl font-black tracking-tight text-foreground" data-testid="text-portal-projetos-title">
+            Meus Projetos
+          </h1>
           <p className="text-muted-foreground font-medium">
             {isLoading ? (
               <span className="flex items-center gap-2">
@@ -108,22 +108,15 @@ export default function PortalProjetosPage() {
           </p>
         </div>
         
-        <div className="flex flex-col items-end gap-2 w-full md:w-auto">
-          {filterLabel && (
-            <Link href="/portal/projetos">
-              <span className="text-xs text-muted-foreground hover:text-primary cursor-pointer underline">Limpar filtro</span>
-            </Link>
-          )}
-          <div className="relative w-full md:w-[500px] group">
+        <div className="relative w-full md:w-96 group">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
           <Input
             placeholder="Buscar por nome, protocolo, concessionária..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="pl-11 h-12 bg-muted/30 border-border/40 focus:bg-background transition-all shadow-sm rounded-xl text-sm font-medium"
+            className="pl-11 h-12 bg-muted/30 border-border/40 focus:bg-background transition-all shadow-sm rounded-xl"
             data-testid="input-search-portal-projects"
           />
-          </div>
         </div>
       </div>
 
@@ -157,7 +150,7 @@ export default function PortalProjetosPage() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 gap-4">
-          {filtered.map(project => (
+          {sortedFiltered.map(project => (
             <Link key={project.id} href={`/portal/projetos/${project.id}`}>
               <Card 
                 className="group border-border/40 hover:border-primary/20 hover:shadow-xl hover:shadow-primary/5 transition-all cursor-pointer overflow-hidden rounded-2xl"
@@ -165,10 +158,10 @@ export default function PortalProjetosPage() {
               >
                 <CardContent className="p-0">
                   <div className="flex items-stretch min-h-[100px]">
-                    {/* Status Indicator Bar */}
+                    {/* Status Indicator Bar — amarelo se pagamento pendente */}
                     <div 
                       className="w-1.5 shrink-0 transition-all group-hover:w-2" 
-                      style={{ backgroundColor: STATUS_COLORS[project.status] }} 
+                      style={{ backgroundColor: (project as any).paymentStatus === "pending" && (project as any).pixQrCode ? "#eab308" : STATUS_COLORS[project.status] }} 
                     />
                     
                     <div className="flex-1 flex flex-col md:flex-row md:items-center gap-6 p-6">
@@ -185,12 +178,6 @@ export default function PortalProjetosPage() {
                         </div>
                         
                         <div className="flex flex-wrap items-center gap-y-2 gap-x-4">
-                          {(project as any).cidade && (
-                            <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
-                              <MapPin className="h-3.5 w-3.5 text-primary/60" />
-                              {(project as any).cidade}{(project as any).estado ? `, ${(project as any).estado}` : ""}
-                            </div>
-                          )}
                           {project.potencia && (
                             <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
                               <Zap className="h-3.5 w-3.5 text-amber-500" />
@@ -210,13 +197,39 @@ export default function PortalProjetosPage() {
                             </div>
                           )}
                         </div>
+
+                        {/* Barra de progresso */}
+                        <div className="mt-3 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] text-muted-foreground font-medium">Progresso do projeto</span>
+                            <span className="text-[10px] font-bold text-muted-foreground">{getStatusProgress(project.status)}%</span>
+                          </div>
+                          <div className="h-1.5 w-full bg-muted/40 rounded-full overflow-hidden">
+                            <div
+                              className="h-1.5 rounded-full transition-all duration-700"
+                              style={{ width: `${getStatusProgress(project.status)}%`, backgroundColor: STATUS_COLORS[project.status] }}
+                            />
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="flex items-center justify-between md:justify-end gap-6 shrink-0 pt-4 md:pt-0 border-t md:border-0 border-border/40">
-                        <div className={`px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-sm ${STATUS_BADGE_STYLES[project.status]}`}>
-                          {STATUS_LABELS[project.status]}
+                      <div className="flex items-center justify-between md:justify-end gap-3 shrink-0 pt-4 md:pt-0 border-t md:border-0 border-border/40">
+                        <div className="flex flex-col items-end gap-1.5">
+                          {isRecent(project) && (
+                            <span className="flex items-center gap-0.5 text-[9px] font-black uppercase tracking-wider text-emerald-700 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 px-1.5 py-0.5 rounded-full">
+                              <Sparkles className="h-2.5 w-2.5" /> Atualizado
+                            </span>
+                          )}
+                          {(project as any).paymentStatus === "pending" && (project as any).pixQrCode && (
+                            <span className="flex items-center gap-0.5 text-[9px] font-black uppercase tracking-wider text-yellow-700 bg-yellow-100 dark:bg-yellow-900/30 dark:text-yellow-400 px-1.5 py-0.5 rounded-full">
+                              <CreditCard className="h-2.5 w-2.5" /> Pagar
+                            </span>
+                          )}
+                          <div className={`px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-sm ${STATUS_BADGE_STYLES[project.status]}`}>
+                            {STATUS_LABELS[project.status]}
+                          </div>
                         </div>
-                        <div className="h-10 w-10 rounded-full bg-muted/30 flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-all">
+                        <div className="h-10 w-10 rounded-full bg-muted/30 flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-all shrink-0">
                           <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />
                         </div>
                       </div>

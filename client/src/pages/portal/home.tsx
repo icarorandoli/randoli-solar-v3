@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import {
   Plus, FolderOpen, ShieldCheck, Clock, Zap, ChevronRight, ArrowRight,
-  MessageCircle, Building, TrendingUp, CheckCircle2, AlertCircle,
+  MessageCircle, Building, TrendingUp, CheckCircle2, AlertCircle, Download,
 } from "lucide-react";
 import type { Project, Client } from "@shared/schema";
 
@@ -113,6 +113,7 @@ export default function PortalHomePage() {
             bg: "bg-primary/10",
             borderColor: "border-primary/20",
             testId: "text-portal-total",
+            href: "/portal/projetos",
           },
           {
             label: "Em Andamento",
@@ -122,6 +123,7 @@ export default function PortalHomePage() {
             bg: "bg-amber-500/10",
             borderColor: "border-amber-500/20",
             testId: "text-portal-active",
+            href: "/portal/projetos",
           },
           {
             label: "Homologados",
@@ -131,21 +133,24 @@ export default function PortalHomePage() {
             bg: "bg-emerald-500/10",
             borderColor: "border-emerald-500/20",
             testId: "text-portal-homologados",
+            href: "/portal/projetos",
           },
         ].map((stat) => (
-          <Card key={stat.label} className={`border ${stat.borderColor} shadow-none hover:shadow-sm transition-all duration-200`}>
-            <CardContent className="p-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{stat.label}</p>
-                  <p className="text-3xl font-bold mt-1.5 tracking-tight" data-testid={stat.testId}>{stat.value}</p>
+          <Link key={stat.label} href={stat.href}>
+            <Card className={`border ${stat.borderColor} shadow-none hover:shadow-sm transition-all duration-200 cursor-pointer`}>
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{stat.label}</p>
+                    <p className="text-3xl font-bold mt-1.5 tracking-tight" data-testid={stat.testId}>{stat.value}</p>
+                  </div>
+                  <div className={`h-11 w-11 rounded-xl ${stat.bg} flex items-center justify-center`}>
+                    <stat.icon className={`h-5 w-5 ${stat.color}`} />
+                  </div>
                 </div>
-                <div className={`h-11 w-11 rounded-xl ${stat.bg} flex items-center justify-center`}>
-                  <stat.icon className={`h-5 w-5 ${stat.color}`} />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </Link>
         ))}
       </div>
 
@@ -304,6 +309,17 @@ export default function PortalHomePage() {
                   </div>
                 ))}
               </div>
+              {settings?.procuracao_url && (
+                <a
+                  href={settings.procuracao_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-2 mt-4 pt-3 border-t border-border/40 text-xs text-primary hover:underline font-semibold transition-colors"
+                >
+                  <Download className="h-3.5 w-3.5 shrink-0" />
+                  Baixar Modelo de Procuração
+                </a>
+              )}
             </CardContent>
           </Card>
         </div>

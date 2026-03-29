@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useLocation, Link } from "wouter";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useUpload } from "@/hooks/use-upload";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +17,9 @@ import {
 } from "lucide-react";
 import { useForm, Controller } from "react-hook-form";
 import { formatCpfCnpj, formatPhone } from "@/lib/utils";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const CONCESSIONARIAS = [
   "ENEL SP", "ENEL CE", "ENEL GO", "ENEL RJ",
@@ -204,9 +207,18 @@ export default function NovoProjetoPage() {
     foto_local: null,
   });
   const [submitting, setSubmitting] = useState(false);
+  const [showTermModal, setShowTermModal] = useState(false);
+  const [termAccepted, setTermAccepted] = useState(false);
+  const [pendingFormData, setPendingFormData] = useState<NovoProjetoForm | null>(null);
 
   const [priceEstimate, setPriceEstimate] = useState<{ price: number; label: string; isPromotional?: boolean } | null>(null);
   const [priceLoading, setPriceLoading] = useState(false);
+
+  const { data: activeTerm, isLoading: termLoading } = useQuery<{ id: string; title: string; content: string; version: string } | null>({
+    queryKey: ["/api/term-templates/active"],
+    queryFn: () => fetch("/api/term-templates/active", { credentials: "include" }).then(r => r.json()),
+    staleTime: 60000,
+  });
 
   const { register, handleSubmit, control, watch, setValue, formState: { errors } } = useForm<NovoProjetoForm>({
     defaultValues: {
@@ -221,6 +233,8 @@ export default function NovoProjetoPage() {
   });
 
   const watchPotenciaUnit = watch("potenciaPainel");
+  const watchTitle = watch("nomeCliente");
+  const watchValor = watch("valor");
   const watchQuantidade = watch("quantidadePaineis");
   const watchPotencia = watch("potencia");
 
@@ -270,7 +284,7 @@ export default function NovoProjetoPage() {
     return () => clearTimeout(timer);
   }, [watchPotencia, fetchPrice]);
 
-  const onSubmit = async (data: NovoProjetoForm) => {
+  const doSubmit = async (data: NovoProjetoForm) => {
     setSubmitting(true);
     try {
       const res = await apiRequest("POST", "/api/projects", {
@@ -291,6 +305,14 @@ export default function NovoProjetoPage() {
         });
       }
 
+      // Aceitar termo automaticamente
+      if (activeTerm) {
+        await apiRequest("POST", `/api/projects/${project.id}/term/accept-on-create`, {
+          projectTitle: project.title || data.nomeCliente,
+          projectValue: String(project.valor || data.valor || "A definir"),
+        }).catch(() => {});
+      }
+
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
       toast({
         title: "Projeto solicitado com sucesso!",
@@ -301,6 +323,28 @@ export default function NovoProjetoPage() {
       toast({ title: "Erro ao criar projeto", description: err.message, variant: "destructive" });
     } finally {
       setSubmitting(false);
+      setShowTermModal(false);
+      setPendingFormData(null);
+      setTermAccepted(false);
+    }
+  };
+
+  const onSubmit = (data: NovoProjetoForm) => {
+    // Validate required docs
+    if (!uploadedDocs.procuracao) {
+      toast({ title: "Procuração obrigatória", description: "Envie a procuração assinada antes de continuar.", variant: "destructive" });
+      return;
+    }
+    if (!data.localizacao?.trim()) {
+      toast({ title: "Localização obrigatória", description: "Informe o link do Google Maps ou coordenadas GPS.", variant: "destructive" });
+      return;
+    }
+    // Show modal if term is loaded OR still loading (to be safe)
+    if (activeTerm !== null) {
+      setPendingFormData(data);
+      setShowTermModal(true);
+    } else {
+      doSubmit(data);
     }
   };
 
@@ -750,13 +794,66 @@ export default function NovoProjetoPage() {
         <Button
           type="submit"
           className="w-full h-11 text-base"
-          disabled={submitting}
+          disabled={submitting || termLoading}
           data-testid="button-submit-novo-projeto"
         >
           <Send className="h-4 w-4 mr-2" />
           {submitting ? "Enviando solicitação..." : "Enviar Solicitação de Projeto"}
         </Button>
       </form>
+
+      {/* Modal de Termo de Aceite Obrigatório */}
+      {(activeTerm || showTermModal) && (
+        <Dialog open={showTermModal} onOpenChange={(open) => { if (!open) { setShowTermModal(false); setTermAccepted(false); } }}>
+          <DialogContent className="max-w-2xl h-[90vh] flex flex-col gap-0">
+            <DialogHeader className="pb-3 border-b">
+              <DialogTitle className="flex items-center gap-2 text-base">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                {activeTerm?.title || "Termo de Aceite"}
+                <span className="text-xs font-normal text-muted-foreground">{activeTerm?.version ? `v${activeTerm.version}` : ""}</span>
+              </DialogTitle>
+            </DialogHeader>
+
+            <ScrollArea className="flex-1 border rounded-xl px-5 py-4 my-3 bg-muted/20">
+              <div
+                className="text-sm text-foreground/80 leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: (activeTerm?.content || "")
+                  .replace(/{{project_name}}/g, watchTitle || pendingFormData?.nomeCliente || "[Nome do Cliente]")
+                  .replace(/{{ticket_number}}/g, "[Gerado após envio]")
+                  .replace(/{{project_value}}/g, watchValor ? `R$ ${Number(watchValor).toLocaleString("pt-BR", {minimumFractionDigits: 2})}` : "[A definir]")
+                  .replace(/{{accepted_at}}/g, new Date().toLocaleString("pt-BR", {timeZone: "America/Cuiaba"}))
+                  .replace(/\r\n/g, "<br/>").replace(/\n/g, "<br/>").replace(/(<br\/>){3,}/g, "<br/><br/>") }}
+              />
+            </ScrollArea>
+
+            <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800 mx-0">
+              <Checkbox
+                id="term-accept"
+                checked={termAccepted}
+                onCheckedChange={(v) => setTermAccepted(!!v)}
+                className="mt-0.5 shrink-0"
+              />
+              <label htmlFor="term-accept" className="text-sm font-medium cursor-pointer leading-snug">
+                Declaro que li integralmente e aceito os termos de prestação de serviços técnicos vinculados a este projeto, reconhecendo a cobrança do serviço e a forma de pagamento.
+              </label>
+            </div>
+
+            <DialogFooter className="gap-2 pt-3 border-t mt-3">
+              <Button variant="outline" onClick={() => { setShowTermModal(false); setTermAccepted(false); }}>
+                Cancelar
+              </Button>
+              <Button
+                disabled={!termAccepted || submitting}
+                onClick={() => pendingFormData && doSubmit(pendingFormData)}
+                className="min-w-40"
+              >
+                {submitting ? "Enviando..." : "✓ Aceitar e Enviar Projeto"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
     </div>
   );
 }

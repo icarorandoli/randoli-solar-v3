@@ -19,6 +19,11 @@ function timeAgo(date: string | Date | null): string {
   return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
 }
 
+function isNewNotif(createdAt: string | Date | null | undefined): boolean {
+  if (!createdAt) return false;
+  return Date.now() - new Date(createdAt).getTime() < 48 * 60 * 60 * 1000;
+}
+
 function NotifIcon({ type }: { type: string }) {
   if (type === "document") return <FileText className="h-4 w-4 text-blue-500 flex-shrink-0" />;
   if (type === "message") return <MessageSquare className="h-4 w-4 text-violet-500 flex-shrink-0" />;
@@ -176,7 +181,12 @@ export function NotificationBell() {
                         {notif.ticketNumber && (
                           <span className="text-[10px] font-mono text-primary">{notif.ticketNumber}</span>
                         )}
-                        {!notif.readAt && (
+                        {isNewNotif(notif.createdAt) && !notif.readAt && (
+                          <span className="inline-flex items-center gap-0.5 bg-emerald-500 text-white text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full animate-pulse">
+                            ● NOVO
+                          </span>
+                        )}
+                        {!isNewNotif(notif.createdAt) && !notif.readAt && (
                           <span className="h-1.5 w-1.5 rounded-full bg-blue-500 flex-shrink-0" />
                         )}
                       </div>

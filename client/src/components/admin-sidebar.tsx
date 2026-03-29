@@ -34,6 +34,8 @@ import {
   ChevronRight,
   Megaphone,
   Receipt,
+  AlertTriangle,
+  FileSignature,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
@@ -47,10 +49,15 @@ const SECTION_OPERACIONAL = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Projetos", url: "/projetos", icon: FolderOpen },
   { title: "Kanban", url: "/kanban", icon: KanbanSquare },
+  { title: "Pendências", url: "/pendencias", icon: AlertTriangle },
+  { title: "Assinaturas", url: "/assinaturas", icon: FileSignature },
   { title: "Clientes", url: "/clientes", icon: Users },
 ];
 
 const SECTION_FINANCEIRO = [
+  { title: "Visão Geral", url: "/financeiro", icon: DollarSign, roles: ["admin", "financeiro"] },
+  { title: "DRE", url: "/financeiro/dre", icon: BarChart3, roles: ["admin", "financeiro"] },
+  { title: "Fluxo de Caixa", url: "/financeiro/fluxo-caixa", icon: TrendingUp, roles: ["admin", "financeiro"] },
   { title: "Preços", url: "/precos", icon: DollarSign, roles: ["admin", "financeiro"] },
   { title: "Relatórios", url: "/relatorios", icon: BarChart3, roles: ["admin", "financeiro"] },
   { title: "Analytics", url: "/analytics", icon: TrendingUp, roles: ["admin", "financeiro", "engenharia"] },
@@ -78,26 +85,29 @@ function NavSection({
   location,
   userRole,
   unreadCount,
+  pendenciasCount = 0,
   label,
 }: {
   items: { title: string; url: string; icon: any; roles?: string[] }[];
   location: string;
   userRole: string;
   unreadCount: number;
+  pendenciasCount?: number;
   label: string;
 }) {
   const visible = items.filter(i => !i.roles || i.roles.includes(userRole));
   if (visible.length === 0) return null;
   return (
     <SidebarGroup>
-      <SidebarGroupLabel className="px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50 mb-2">
+      <SidebarGroupLabel className="px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-white/35 mb-2">
         {label}
       </SidebarGroupLabel>
       <SidebarGroupContent>
         <SidebarMenu>
           {visible.map(item => {
             const isActive = location === item.url;
-            const showBadge = item.url === "/projetos" && unreadCount > 0;
+            const showBadge = (item.url === "/projetos" && unreadCount > 0) || (item.url === "/pendencias" && (pendenciasCount ?? 0) > 0);
+            const badgeCount = item.url === "/projetos" ? unreadCount : (pendenciasCount ?? 0);
             return (
               <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton
@@ -106,26 +116,26 @@ function NavSection({
                   data-active={isActive}
                   data-testid={`link-nav-${item.title.toLowerCase().replace(/\s/g, "-")}`}
                   className={cn(
-                    "group transition-all duration-200 h-9",
+                    "group transition-all duration-200 h-9 rounded-lg",
                     isActive 
-                      ? "bg-primary/10 text-primary font-semibold border-l-[3px] border-primary rounded-none" 
-                      : "hover:bg-primary/5 text-sidebar-foreground/70 hover:text-primary"
+                      ? "bg-white/15 text-white font-semibold" 
+                      : "hover:bg-white/8 text-white/70 hover:text-white"
                   )}
                 >
                   <Link href={item.url} className="flex items-center w-full px-3">
                     <item.icon className={cn(
                       "h-4 w-4 shrink-0 transition-colors",
-                      isActive ? "text-primary" : "text-sidebar-foreground/40 group-hover:text-primary"
+                      isActive ? "text-white" : "text-white/50 group-hover:text-white"
                     )} />
                     <span className="ml-3 flex-1">{item.title}</span>
                     {showBadge && (
                       <Badge 
-                        className="ml-auto h-5 min-w-5 flex items-center justify-center rounded-full p-0 text-[10px] bg-primary text-primary-foreground animate-pulse border-none"
+                        className="ml-auto h-5 min-w-5 flex items-center justify-center rounded-full p-0 text-[10px] bg-white text-blue-900 animate-pulse border-none font-bold"
                       >
-                        {unreadCount > 99 ? "99+" : unreadCount}
+                        {badgeCount > 99 ? "99+" : badgeCount}
                       </Badge>
                     )}
-                    {isActive && <ChevronRight className="ml-auto h-3 w-3 text-primary/50" />}
+                    {isActive && <ChevronRight className="ml-auto h-3 w-3 text-white/50" />}
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -163,7 +173,7 @@ function UserFooter({ user, logout, roleLabel }: { user: any; logout: () => void
         <div className="flex flex-col min-w-0 flex-1">
           <span className="text-sm font-bold truncate leading-tight text-sidebar-foreground">{user?.name}</span>
           <div className="flex items-center mt-1">
-            <Badge className="text-[9px] px-2 py-0 h-4 font-bold uppercase tracking-wider bg-primary/10 text-primary border-none">
+            <Badge className="text-[9px] px-2 py-0 h-4 font-bold uppercase tracking-wider bg-white/15 text-white border-none">
               {roleLabel}
             </Badge>
           </div>
@@ -172,7 +182,7 @@ function UserFooter({ user, logout, roleLabel }: { user: any; logout: () => void
       <Button
         variant="ghost"
         size="sm"
-        className="w-full justify-start text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200 group"
+        className="w-full justify-start text-white/60 hover:text-red-300 hover:bg-red-500/15 transition-all duration-200 group"
         onClick={logout}
         data-testid="button-admin-logout"
       >
@@ -199,6 +209,13 @@ export function AdminSidebar() {
   const companyName = settings?.company_name || "Randoli Engenharia";
   const logoUrl = settings?.logo_url;
   const userRole = user?.role ?? "";
+  const { data: pendenciasData } = useQuery<{ abertas: number }>({
+    queryKey: ["/api/pendencias/counts"],
+    queryFn: () => apiRequest("GET", "/api/pendencias/counts").then(r => r.json()),
+    refetchInterval: 30000,
+    enabled: ["admin", "engenharia"].includes(userRole),
+  });
+  const pendenciasCount = pendenciasData?.abertas ?? 0;
 
   const roleLabel: Record<string, string> = {
     admin: "Administrador",
@@ -227,10 +244,10 @@ export function AdminSidebar() {
             <div className="absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full bg-emerald-500 border-2 border-sidebar animate-pulse" />
           </div>
           <div className="flex flex-col min-w-0">
-            <span className="text-lg font-bold text-sidebar-foreground tracking-tight truncate leading-tight" data-testid="text-company-name">
+            <span className="text-lg font-bold text-white tracking-tight truncate leading-tight" data-testid="text-company-name">
               {companyName}
             </span>
-            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest mt-0.5">Sistema de Gestão</span>
+            <span className="text-[11px] font-semibold text-white/50 uppercase tracking-widest mt-0.5">Sistema de Gestão</span>
           </div>
         </div>
       </SidebarHeader>
@@ -242,6 +259,7 @@ export function AdminSidebar() {
             location={location}
             userRole={userRole}
             unreadCount={unreadCount}
+            pendenciasCount={pendenciasCount}
             label="Principal"
           />
 
@@ -271,7 +289,7 @@ export function AdminSidebar() {
         </div>
       </SidebarContent>
 
-      <SidebarFooter className="p-6 bg-sidebar-accent/30 border-t border-sidebar-border mt-auto">
+      <SidebarFooter className="p-6 bg-black/20 border-t border-white/10 mt-auto">
         <UserFooter 
           user={user} 
           logout={logout} 

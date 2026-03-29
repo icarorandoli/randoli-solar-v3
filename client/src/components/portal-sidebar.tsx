@@ -4,7 +4,7 @@ import {
   SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
   SidebarHeader, SidebarFooter,
 } from "@/components/ui/sidebar";
-import { LayoutDashboard, Plus, User, LogOut, Zap, ChevronRight, Megaphone, Receipt } from "lucide-react";
+import { LayoutDashboard, Plus, User, LogOut, Zap, ChevronRight, Megaphone, Receipt, AlertTriangle, FileSignature } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
@@ -15,6 +15,8 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { title: "Meus Projetos", url: "/portal", icon: LayoutDashboard },
+  { title: "Pendências", url: "/pendencias", icon: AlertTriangle },
+  { title: "Assinaturas", url: "/portal/assinaturas", icon: FileSignature },
   { title: "Novo Projeto", url: "/portal/novo-projeto", icon: Plus },
   { title: "Informativos", url: "/portal/informativos", icon: Megaphone },
   { title: "Notas Fiscais", url: "/portal/notas-fiscais", icon: Receipt },
@@ -39,6 +41,18 @@ export function PortalSidebar() {
   });
 
   const unreadCount = chatUnread?.count ?? 0;
+
+  const { data: minhasAssinaturas } = useQuery<any[]>({
+    queryKey: ["/api/minha-assinaturas"],
+    queryFn: () => fetch("/api/minha-assinaturas", { credentials: "include" })
+      .then(r => r.json())
+      .then(d => Array.isArray(d) ? d : [])
+      .catch(() => []),
+    refetchInterval: 60000,
+  });
+  const pendingSignatures = Array.isArray(minhasAssinaturas) 
+    ? minhasAssinaturas.filter((a: any) => !a.signed_at && a.doc_status !== "cancelado" && new Date(a.expires_at) > new Date()).length
+    : 0;
   const companyName = settings?.company_name || "Randoli Engenharia";
   const logoUrl = settings?.logo_url;
   const clientType = user?.clientType ? CLIENT_TYPE_LABELS[user.clientType] ?? user.clientType : "Integrador";
@@ -90,7 +104,8 @@ export function PortalSidebar() {
               {navItems.map(item => {
                 const isActive = location === item.url ||
                   (item.url === "/portal" && (location.startsWith("/portal/projetos")));
-                const showBadge = item.url === "/portal" && unreadCount > 0;
+                const showBadge = (item.url === "/portal" && unreadCount > 0) || (item.url === "/portal/assinaturas" && pendingSignatures > 0);
+                const badgeCount = item.url === "/portal" ? unreadCount : pendingSignatures;
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
@@ -115,7 +130,7 @@ export function PortalSidebar() {
                           <Badge
                             className="ml-auto h-5 min-w-5 flex items-center justify-center rounded-full p-0 text-[10px] bg-primary text-primary-foreground border-none"
                           >
-                            {unreadCount > 99 ? "99+" : unreadCount}
+                            {badgeCount > 99 ? "99+" : badgeCount}
                           </Badge>
                         )}
                         {isActive && <ChevronRight className="ml-auto h-3 w-3 text-primary/40" />}

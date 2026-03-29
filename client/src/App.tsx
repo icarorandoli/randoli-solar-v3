@@ -49,6 +49,14 @@ import ProductionSimulatorPage from "@/pages/production-simulator";
 import EngineeringReportPage from "@/pages/engineering-report";
 import InformativosPage from "@/pages/informativos";
 import NfsePage from "@/pages/nfse";
+import PendenciasPage from "@/pages/pendencias";
+import FinanceiroVisaoGeralPage from "@/pages/financeiro-visao-geral";
+import FinanceiroDREPage from "@/pages/financeiro-dre";
+import FinanceiroFluxoCaixaPage from "@/pages/financeiro-fluxo";
+import AssinaturasPage from "@/pages/assinaturas";
+import AssinarPage from "@/pages/assinar";
+import VerificarPage from "@/pages/verificar";
+import PortalAssinaturasPage from "@/pages/portal-assinaturas";
 import { NotificationBell } from "@/components/notification-bell";
 import { GlobalSearch } from "@/components/global-search";
 import { AnnouncementPopup } from "@/components/announcement-popup";
@@ -164,6 +172,21 @@ function AdminLayout() {
               <Route path="/nfse">
                 <RoleGuard allow={["admin", "financeiro"]}><NfsePage /></RoleGuard>
               </Route>
+              <Route path="/pendencias">
+                <RoleGuard allow={["admin", "engenharia", "financeiro"]}><PendenciasPage /></RoleGuard>
+              </Route>
+              <Route path="/financeiro">
+                <RoleGuard allow={["admin", "financeiro"]}><FinanceiroVisaoGeralPage /></RoleGuard>
+              </Route>
+              <Route path="/financeiro/dre">
+                <RoleGuard allow={["admin", "financeiro"]}><FinanceiroDREPage /></RoleGuard>
+              </Route>
+              <Route path="/assinaturas">
+                <RoleGuard allow={["admin", "engenharia", "financeiro"]}><AssinaturasPage /></RoleGuard>
+              </Route>
+              <Route path="/financeiro/fluxo-caixa">
+                <RoleGuard allow={["admin", "financeiro"]}><FinanceiroFluxoCaixaPage /></RoleGuard>
+              </Route>
               <Route><Redirect to="/" /></Route>
             </Switch>
           </main>
@@ -183,16 +206,19 @@ function PortalLayout() {
             <SidebarTrigger data-testid="button-portal-sidebar-toggle" />
             <div className="flex-1" />
             <span className="text-xs text-muted-foreground font-medium hidden sm:block">Portal do Integrador</span>
+            <NotificationBell />
             <ThemeToggle />
           </header>
           <main className="flex-1 overflow-auto">
             <Switch>
-              <Route path="/portal" component={PortalHomePage} />
               <Route path="/portal/novo-projeto" component={NovoProjetoPage} />
-              <Route path="/portal/projetos" component={PortalProjetosPage} />
               <Route path="/portal/projetos/:id" component={PortalProjetoPage} />
+              <Route path="/portal/projetos" component={PortalProjetosPage} />
               <Route path="/portal/conta" component={ContaPage} />
               <Route path="/portal/informativos" component={PortalInformativosPage} />
+              <Route path="/portal/assinaturas" component={PortalAssinaturasPage} />
+              <Route path="/pendencias" component={PendenciasPage} />
+              <Route path="/portal" component={PortalHomePage} />
               <Route><Redirect to="/portal" /></Route>
             </Switch>
           </main>
@@ -232,6 +258,14 @@ function ClienteLayout() {
 function AppRoutes() {
   const { user, isLoading } = useAuth();
   const [location] = useLocation();
+
+  // Public signing page - MUST be before isLoading check - no auth required ever
+  if (location.startsWith("/assinar/")) {
+    return <AssinarPage />;
+  }
+  if (location.startsWith("/verificar/")) {
+    return <VerificarPage />;
+  }
 
   if (isLoading) return <LoadingScreen />;
 
@@ -288,10 +322,18 @@ function AppRoutes() {
     return <ClienteLayout />;
   }
 
-  if (!location.startsWith("/portal")) {
+  // Allow /pendencias for integrador without portal prefix
+  const portalAllowed = location.startsWith("/portal") || location === "/pendencias" || location.startsWith("/assinaturas");
+  if (!portalAllowed) {
     return <Redirect to="/portal" />;
   }
   return <PortalLayout />;
+}
+
+function ConditionalAiAssistant() {
+  const { user } = useAuth();
+  if (!user || !["admin", "engenharia"].includes(user.role)) return null;
+  return <AiAssistant />;
 }
 
 function App() {
@@ -301,7 +343,7 @@ function App() {
         <AuthProvider>
           <FaviconUpdater />
           <AppRoutes />
-          <AiAssistant />
+          <ConditionalAiAssistant />
           <Toaster />
         </AuthProvider>
       </TooltipProvider>

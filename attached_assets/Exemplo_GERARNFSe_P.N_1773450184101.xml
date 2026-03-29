@@ -1,0 +1,98 @@
+<soapenv:Envelope
+	xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+	xmlns:trib="Tributario">
+	<soapenv:Header/>
+	<soapenv:Body>
+		<trib:nfse_web_service.GERARNFSE>
+			<trib:Gerarnfserequest>
+				<trib:nfseCabecMsg>
+					<![CDATA[             
+            	<cabecalho versao=""2.01""><versaoDados>2.01</versaoDados></cabecalho> 
+            ]]>
+				</trib:nfseCabecMsg>
+				<trib:nfseDadosMsg>
+					<![CDATA[
+					<GerarNfseEnvio
+	xmlns="http://www.sped.fazenda.gov.br/nfse"
+	xmlns:dsig="http://www.w3.org/2000/09/xmldsig#"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<DPS versao="1.01">
+		<infDPS Id="DPS510790921503915300011000001000000000000003">
+			<tpAmb>2</tpAmb>
+			<dhEmi>2025-12-05T14:30:00-03:00</dhEmi>
+			<verAplic>1.01</verAplic>
+			<serie>1</serie>
+			<nDPS>3</nDPS>
+			<dCompet>2025-12-05</dCompet>
+			<tpEmit>1</tpEmit>
+			<cLocEmi>5107909</cLocEmi>
+			<prest>
+				<CNPJ>00000000000000</CNPJ>
+				<IM>0000</IM>
+				<xNome>LTDA</xNome>
+				<regTrib>
+					<opSimpNac>1</opSimpNac>
+					<regEspTrib>0</regEspTrib>
+				</regTrib>
+			</prest>
+			<toma>
+				<CNPJ>00000000000000</CNPJ>
+				<xNome>LTDA</xNome>
+			</toma>
+			<serv>
+				<locPrest>
+					<cLocPrestacao>5107909</cLocPrestacao>
+				</locPrest>
+				<cServ>
+					<cTribNac>140101</cTribNac>
+					<cTribMun>123</cTribMun>
+					<xDescServ>000000000REV10 - REVISAO 10.000 = 170,13||Tipo O.S:V2 ,Numero O.S:63829 ,Chassi:8A18SRDG4TL230759 ,Placa:SPW0I28 ,KM:9541 ,ProdutoRENAULT/KANGOO ,DN:07600671, DRG 382434 Forma de Pagamento: Garantia, Trib aprox R$: 22,88 Federal,8,51 Municipal,Fonte:IBPT/empresometro.com.br,5FF712 FA-157686-1 23/01/26 170,13</xDescServ>
+					<cNBS>101028000</cNBS>
+				</cServ>
+			</serv>
+			<valores>
+				<vServPrest>
+					<vReceb>180.00</vReceb>
+					<vServ>180.00</vServ>
+				</vServPrest>
+				<trib>
+					<tribMun>
+						<tribISSQN>1</tribISSQN>
+						<tpRetISSQN>2</tpRetISSQN>
+						<pAliq>4.00</pAliq>
+					</tribMun>
+					<totTrib>
+						<indTotTrib>0</indTotTrib>
+					</totTrib>
+				</trib>
+			</valores>
+		</infDPS>
+		<Signature
+			xmlns="http://www.w3.org/2000/09/xmldsig#">
+			<SignedInfo>
+				<CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/>
+				<SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/>
+				<Reference URI="#5601204">
+					<Transforms>
+						<Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/>
+						<Transform Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/>
+					</Transforms>
+					<DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/>
+					<DigestValue>GY0UMzusugSsL2ewFH346jl454s=</DigestValue>
+				</Reference>
+			</SignedInfo>
+			<SignatureValue>c9gWlRKE5HOuUxipv56dXS7Yd7iTvM+uM5tFaT4xCzKjREWvqrUmmXgEypUBVWVkVRpdpkdbN3MzwSx48RdrByKXcKwcYNVpbSbib2akE86LYt9AU1MbfLwVmfbiCKXLEn8jvZGrPerKIP+2Qag1q/iKoTE+990BCr8imB6F/pRGZlKVKvDN/HZqNX3vKlm3872Vi+FLDGhFwDZkP8WVVrwriQeGzRs0Srwy4bwoG+6A/rvFZTgI1S6MHfLe2DCzEvcWmMSPRGj60Q3xWWbLFtij9QJlX1LXWCtqjRylzlrcHZRmw3XBBHKoI9IhYDvpU8x3hbwReyu1nWU4GYyzKg==</SignatureValue>
+			<KeyInfo>
+				<X509Data>
+					<X509Certificate>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</X509Certificate>
+				</X509Data>
+			</KeyInfo>
+		</Signature>
+	</DPS>
+</GerarNfseEnvio>undefined</GerarNfseEnvio> 
+					]]>
+				</trib:nfseDadosMsg>
+			</trib:Gerarnfserequest>
+		</trib:nfse_web_service.GERARNFSE>
+	</soapenv:Body>
+</soapenv:Envelope> 
